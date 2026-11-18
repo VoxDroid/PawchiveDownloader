@@ -290,8 +290,16 @@ impl PawchiveClient {
                 .unwrap_or(serde_json::Value::Array(vec![])),
             _ => serde_json::Value::Array(vec![]),
         };
-        let raw: Vec<RawPost> = serde_json::from_value(list).unwrap_or_default();
-        Ok(raw.into_iter().map(normalize_post).collect())
+        // One odd entry must not empty the whole page.
+        let items = match list {
+            serde_json::Value::Array(items) => items,
+            _ => Vec::new(),
+        };
+        Ok(items
+            .into_iter()
+            .filter_map(|v| serde_json::from_value::<RawPost>(v).ok())
+            .map(normalize_post)
+            .collect())
     }
 
     /// Temporary relay links for the post's preview-only files.

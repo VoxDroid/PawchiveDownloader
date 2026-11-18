@@ -168,3 +168,13 @@ test('images open in the viewer and can be selected there', async ({ page }) => 
   await page.keyboard.press('Escape');
   await expect(viewer).toBeHidden();
 });
+
+test('recent posts load and stay loaded', async ({ page }) => {
+  await page.getByRole('button', { name: /Recent posts/ }).click();
+  await expect(page.getByRole('heading', { name: 'Recent posts' })).toBeVisible();
+  const loading = page.getByText('Loading...');
+  await expect(loading).toBeHidden({ timeout: 5000 });
+  // It used to start over after every page, forever.
+  await page.waitForTimeout(1500);
+  await expect(loading).toBeHidden();
+});

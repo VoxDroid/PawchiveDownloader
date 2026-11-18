@@ -1,5 +1,6 @@
 <script lang="ts">
   import { describeError } from '../../ui/state/errors';
+  import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { api } from '../../lib/api';
   import type { JobOverrides, Post } from '../../lib/types';
@@ -55,8 +56,11 @@
     void loadMore();
   }
 
+  // Only a new query starts over. `reset` reads the loading state, and
+  // tracking that here restarted the list after every page, forever.
   $effect(() => {
-    reset(initialQuery);
+    const q = initialQuery;
+    untrack(() => reset(q));
   });
 
   async function download(options: JobOverrides) {
