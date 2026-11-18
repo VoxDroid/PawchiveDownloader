@@ -284,7 +284,9 @@
   }
   .linkbar {
     position: sticky;
-    top: -28px;
+    /* The page has 28px of top padding; stop 14px below the window's edge
+       so the bar floats instead of touching it. */
+    top: -14px;
     z-index: 6;
     display: flex;
     align-items: center;
@@ -299,6 +301,17 @@
     transition:
       border-color var(--dur-fast) var(--ease),
       box-shadow var(--dur-fast) var(--ease);
+  }
+  /* Fades out what scrolls up behind the gap above the bar. */
+  .linkbar::before {
+    content: '';
+    position: absolute;
+    left: -12px;
+    right: -12px;
+    bottom: calc(100% + 1px);
+    height: 16px;
+    background: linear-gradient(var(--bg) 40%, transparent);
+    pointer-events: none;
   }
   .linkbar:focus-within {
     border-color: var(--accent);
