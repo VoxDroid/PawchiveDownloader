@@ -45,7 +45,8 @@ updates:
         exclude-patterns:
           - 'tauri*'
     ignore:
-      - dependency-name: 'tauri*'
+      # Major versions change APIs; they are upgraded by hand.
+      - dependency-name: '*'
         update-types: ['version-update:semver-major']
 
   - package-ecosystem: github-actions

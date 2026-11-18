@@ -102,7 +102,7 @@ function file(
     url: previewOnly
       ? null
       : `https://n1.pawchive.pw/data/${hash}.${ext}?f=${encodeURIComponent(name)}`,
-    thumbnailUrl: category === 'image' ? art(postSeed + i, name) : null,
+    thumbnailUrl: category === 'image' ? art(postSeed + i) : null,
     previewOnly,
     category,
   };
