@@ -17,6 +17,7 @@
   import Toaster from './ui/components/Toaster.svelte';
   import SupportCard from './ui/components/SupportCard.svelte';
   import QueueBanner from './ui/components/QueueBanner.svelte';
+  import Tooltip from './ui/components/Tooltip.svelte';
   import StatsPage from './features/stats/StatsPage.svelte';
   import BrowsePage from './features/browse/BrowsePage.svelte';
   import BatchDialog from './features/browse/BatchDialog.svelte';
@@ -237,6 +238,7 @@
   <BatchDialog />
 {/if}
 <Toaster />
+<Tooltip />
 
 <style>
   .boot {
