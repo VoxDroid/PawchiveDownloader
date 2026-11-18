@@ -874,6 +874,16 @@ async fn a_restarted_app_finishes_the_queue() {
     tokio::time::sleep(Duration::from_millis(600)).await;
     // The app closes in the middle of the job.
     first.shutdown();
+    // A real restart is a new process; here both run in one, so let the
+    // first one's cancelled transfers stop before the second takes over the
+    // same .part files.
+    for _ in 0..200 {
+        if first.engine.active_count() == 0 {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert_eq!(first.engine.active_count(), 0, "transfers stop on shutdown");
     let done_before = first
         .engine
         .items(&id)
@@ -894,7 +904,13 @@ async fn a_restarted_app_finishes_the_queue() {
         }
         tokio::time::sleep(Duration::from_millis(25)).await;
     }
-    assert!(finished, "{:?}", second.engine.summaries());
+    assert!(
+        finished,
+        "{:?}
+{:?}",
+        second.engine.summaries(),
+        second.engine.items(&id)
+    );
     let saved = files_under(&out);
     assert_eq!(saved.len(), 4, "{saved:?}");
     assert!(saved
