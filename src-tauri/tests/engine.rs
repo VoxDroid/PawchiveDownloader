@@ -1175,3 +1175,77 @@ async fn runs_the_when_done_action_after_the_queue_empties() {
     assert!(quit.load(Ordering::SeqCst), "the app was asked to quit");
     assert_eq!(env.core.queue_status().when_done, WhenDone::Nothing);
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn finds_and_restores_deleted_files() {
+    use pawchive_downloader_lib::library;
+    let env = env().await;
+    let a = Fixture::new("keep.png", 300, 100);
+    let b = Fixture::new("lost.png", 300, 101);
+    env.mount_creator(vec![post("601", "Set", &[&a, &b])]).await;
+    env.serve(&a).await;
+    env.serve(&b).await;
+    let id = env.core.engine.create(refs_request("601", no_text()));
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    let lost = files_under(&env.out())
+        .into_iter()
+        .find(|p| p.to_string_lossy().ends_with("lost.png"))
+        .unwrap();
+    std::fs::remove_file(&lost).unwrap();
+    let report = library::check(&env.core.store.list_known_files());
+    assert_eq!((report.checked, report.missing_files), (2, 1));
+    assert_eq!(report.posts[0].post, "patreon:7:601");
+    library::forget(&env.core.store, &report.posts).unwrap();
+    let again = env.core.engine.create(refs_request("601", no_text()));
+    let job = env.wait(&again).await;
+    assert_eq!(job.status, JobStatus::Done);
+    assert_eq!(
+        (job.stats.done, job.stats.skipped),
+        (1, 1),
+        "only the lost file again"
+    );
+    assert!(lost.exists());
+    assert_eq!(
+        library::check(&env.core.store.list_known_files()).missing_files,
+        0
+    );
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn watchlist_downloads_can_filter_posts() {
+    let env = env().await;
+    let a = Fixture::new("a.png", 300, 102);
+    let b = Fixture::new("b.png", 300, 103);
+    env.mount_creator(vec![
+        post("701", "Final art", &[&a]),
+        post("702", "Rough WIP", &[&b]),
+    ])
+    .await;
+    env.serve(&a).await;
+    env.serve(&b).await;
+    let filter = pawchive_downloader_lib::jobs::filter::PostFilter {
+        skip_words: vec!["wip".into()],
+        ..Default::default()
+    };
+    let id = env.core.engine.create(JobRequest::Refs {
+        title: None,
+        creator: None,
+        refs: ["701", "702"]
+            .iter()
+            .map(|p| PostRef {
+                service: "patreon".into(),
+                creator_id: "7".into(),
+                post_id: (*p).into(),
+            })
+            .collect(),
+        options: JobOverrides {
+            filter: Some(filter),
+            apply_post_filter: Some(true),
+            ..no_text()
+        },
+    });
+    let job = env.wait(&id).await;
+    assert_eq!(job.status, JobStatus::Done);
+    assert_eq!(job.post_count, 1);
+    assert_eq!(files_under(&env.out()).len(), 1);
+}

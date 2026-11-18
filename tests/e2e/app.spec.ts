@@ -21,6 +21,7 @@ test('every page opens from the sidebar', async ({ page }) => {
     ['History', 'History'],
     ['Watchlist', 'Watchlist'],
     ['Favorites', 'Favorites'],
+    ['Statistics', 'Statistics'],
     ['Logs', 'Logs'],
     ['Settings', 'Settings'],
     ['Help', 'Help'],
@@ -144,4 +145,26 @@ test('a creator download can carry its own filters', async ({ page }) => {
   await expect(dialog.getByRole('button', { name: 'Remove wip' })).toBeVisible();
   await dialog.getByRole('button', { name: 'Close' }).last().click();
   await expect(page.getByRole('button', { name: /Filters\s*1/ })).toBeVisible();
+});
+
+test('statistics list missing files and offer to fetch them again', async ({ page }) => {
+  await page.getByRole('link', { name: /Statistics/ }).click();
+  await expect(page.getByRole('heading', { name: 'Most downloaded creators' })).toBeVisible();
+  await page.getByRole('button', { name: 'Check now' }).click();
+  await expect(page.getByText('3 files are missing, in 2 posts.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Download them again' })).toBeVisible();
+});
+
+test('images open in the viewer and can be selected there', async ({ page }) => {
+  await openLink(page, `${CREATOR}/post/175580025`);
+  await page.getByRole('button', { name: 'View' }).first().click();
+  const viewer = page.getByRole('dialog');
+  await expect(viewer.getByText(/1 \/ \d+/)).toBeVisible();
+  // Every file starts selected; the viewer can take one out and put it back.
+  await viewer.getByRole('button', { name: 'Selected' }).click();
+  await expect(viewer.getByRole('button', { name: 'Select', exact: true })).toBeVisible();
+  await page.keyboard.press('Space');
+  await expect(viewer.getByRole('button', { name: 'Selected' })).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(viewer).toBeHidden();
 });

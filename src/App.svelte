@@ -17,6 +17,7 @@
   import Toaster from './ui/components/Toaster.svelte';
   import SupportCard from './ui/components/SupportCard.svelte';
   import QueueBanner from './ui/components/QueueBanner.svelte';
+  import StatsPage from './features/stats/StatsPage.svelte';
   import BrowsePage from './features/browse/BrowsePage.svelte';
   import BatchDialog from './features/browse/BatchDialog.svelte';
   import DownloadsPage from './features/downloads/DownloadsPage.svelte';
@@ -212,6 +213,8 @@
             <WatchlistPage />
           {:else if router.route === 'favorites'}
             <FavoritesPage />
+          {:else if router.route === 'stats'}
+            <StatsPage />
           {:else if router.route === 'logs'}
             <LogsPage />
           {:else if router.route === 'settings'}

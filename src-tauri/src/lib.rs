@@ -4,6 +4,7 @@ pub mod app;
 pub mod commands;
 pub mod core;
 pub mod jobs;
+pub mod library;
 pub mod logs;
 pub mod naming;
 pub mod net;
@@ -144,6 +145,10 @@ pub fn run() {
             commands::get_linked_accounts,
             commands::search_creators,
             commands::queue_status,
+            commands::library_stats,
+            commands::check_library,
+            commands::repair_library,
+            commands::set_watch_options,
             commands::set_when_done,
             commands::cancel_when_done,
             commands::get_creator_posts,

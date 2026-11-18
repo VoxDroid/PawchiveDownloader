@@ -142,6 +142,20 @@ pub struct WatchEntry {
     pub error: Option<String>,
     /// Queue new posts for download automatically when found.
     pub auto_download: bool,
+    /// How this creator's new posts are downloaded.
+    #[serde(default)]
+    pub options: WatchOptions,
+}
+
+/// Per-creator choices for the watchlist; empty fields use the settings.
+#[derive(Debug, Clone, Default, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", default)]
+pub struct WatchOptions {
+    /// Absolute folder for this creator's downloads.
+    pub download_dir: Option<String>,
+    pub mode: Option<crate::settings::DownloadMode>,
+    /// Which new posts and files to take.
+    pub filter: Option<crate::jobs::filter::PostFilter>,
 }
 
 pub fn watch_key(service: &str, creator_id: &str) -> String {
@@ -161,6 +175,7 @@ impl WatchEntry {
             new_posts: vec![],
             error: None,
             auto_download: false,
+            options: WatchOptions::default(),
         }
     }
 

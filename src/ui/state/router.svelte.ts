@@ -6,6 +6,7 @@ export type Route =
   | 'history'
   | 'watchlist'
   | 'favorites'
+  | 'stats'
   | 'logs'
   | 'settings'
   | 'help'
@@ -17,6 +18,7 @@ export const ROUTES: Array<{ id: Route; icon: IconName; group: 'main' | 'library
   { id: 'history', icon: 'history', group: 'library' },
   { id: 'watchlist', icon: 'eye', group: 'library' },
   { id: 'favorites', icon: 'starOutline', group: 'library' },
+  { id: 'stats', icon: 'database', group: 'library' },
   { id: 'logs', icon: 'logs', group: 'app' },
   { id: 'settings', icon: 'settings', group: 'app' },
   { id: 'help', icon: 'book', group: 'app' },

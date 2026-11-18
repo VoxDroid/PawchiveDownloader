@@ -917,6 +917,7 @@ impl Engine {
             } => {
                 let one_post = refs.len() == 1;
                 let untitled = title.is_none();
+                let matcher = options.filter.matcher();
                 let mut creators: HashMap<String, CreatorInfo> = HashMap::new();
                 if let Some(c) = creator {
                     creators.insert(format!("{}:{}", c.service, c.id), c);
@@ -982,6 +983,8 @@ impl Engine {
                         }
                         let scan = job.scan.get_or_insert_with(Scan::default);
                         scan.posts += 1;
+                        let post =
+                            post.filter(|p| !options.apply_post_filter || matcher.accepts_post(p));
                         if let Some(post) = post {
                             scan.matched += 1;
                             let saved = job.creator.clone();

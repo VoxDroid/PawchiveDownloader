@@ -218,7 +218,12 @@ mod imp {
             }
             let pid = std::process::id().to_string();
             #[cfg(target_os = "macos")]
-            let command = Command::new("caffeinate").args(["-i", "-w", &pid]).spawn();
+            let command = Command::new("caffeinate")
+                .args(["-i", "-w", &pid])
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null())
+                .spawn();
             #[cfg(not(target_os = "macos"))]
             let command = {
                 let _ = &pid;

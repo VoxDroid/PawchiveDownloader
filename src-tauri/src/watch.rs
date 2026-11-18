@@ -219,7 +219,13 @@ impl Watcher {
                 name: entry.name.clone(),
             }),
             refs,
-            options: JobOverrides::default(),
+            options: JobOverrides {
+                download_dir: entry.options.download_dir.clone(),
+                mode: entry.options.mode,
+                apply_post_filter: entry.options.filter.as_ref().map(|_| true),
+                filter: entry.options.filter.clone(),
+                ..Default::default()
+            },
         }))
     }
 

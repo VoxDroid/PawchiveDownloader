@@ -18,12 +18,16 @@
   import Switch from '../../ui/components/Switch.svelte';
   import TextInput from '../../ui/components/TextInput.svelte';
   import PageHeader from '../../ui/layout/PageHeader.svelte';
+  import WatchOptionsDialog from './WatchOptionsDialog.svelte';
 
   let entries = $state<WatchEntry[] | null>(null);
   let checking = $state<string | null>(null);
   let link = $state('');
   let adding = $state(false);
   let expanded = $state<string | null>(null);
+  let optionsFor = $state<WatchEntry | null>(null);
+  const customized = (e: WatchEntry) =>
+    Boolean(e.options?.downloadDir || e.options?.mode || e.options?.filter);
 
   const sorted = $derived(
     [...(entries ?? [])].sort(
@@ -250,6 +254,12 @@
               />
             {/if}
             <IconButton
+              icon="filter"
+              active={customized(entry)}
+              label={t('watch.options')}
+              onclick={() => (optionsFor = entry)}
+            />
+            <IconButton
               icon="sync"
               label={t('watch.checkNow')}
               disabled={checking !== null}
@@ -272,6 +282,14 @@
     {/each}
   </div>
 {/if}
+
+<WatchOptionsDialog
+  entry={optionsFor}
+  onclose={(saved) => {
+    optionsFor = null;
+    if (saved) void load();
+  }}
+/>
 
 <style>
   .add {

@@ -13,6 +13,7 @@ import {
   type QueueStatus,
   type Settings,
   type WatchEntry,
+  type WatchOptions,
   type WhenDone,
 } from './types';
 
@@ -621,6 +622,59 @@ export function createMockBackend(): Backend {
       emit('jobs', jobs);
     },
     queue_status: () => queue,
+    library_stats: () => ({
+      downloads: 48,
+      files: 2214,
+      failed: 3,
+      skipped: 120,
+      bytes: 18_400_000_000,
+      posts: 391,
+      creators: 5,
+      knownFiles: 2214,
+      firstAt: Date.parse('2026-01-12T10:00:00Z'),
+      lastAt: Date.now() - 3_600_000,
+      topCreators: CREATORS.map((c, i) => ({
+        service: c.service,
+        id: c.id,
+        name: c.name,
+        files: [920, 610, 380, 210, 94][i] ?? 10,
+        bytes: [8.1e9, 5.2e9, 3.0e9, 1.6e9, 0.5e9][i] ?? 1e8,
+        downloads: [18, 12, 9, 6, 3][i] ?? 1,
+      })),
+      months: Array.from({ length: 12 }, (_, i) => {
+        const d = new Date(2025, 11 + i, 1);
+        const bytes = [0.2, 0.4, 0.9, 1.1, 0.6, 1.8, 2.4, 1.2, 2.9, 3.1, 2.2, 1.6][i] ?? 0;
+        return {
+          month: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+          files: Math.round(bytes * 120),
+          bytes: bytes * 1e9,
+        };
+      }),
+      categories: { image: 1730, video: 212, archive: 160, document: 88, audio: 24 },
+    }),
+    check_library: () => ({
+      checked: 2214,
+      missingFiles: 3,
+      posts: [
+        {
+          post: `patreon:${CREATORS[0]?.id}:175580017`,
+          hashes: ['a', 'b'],
+          example: 'C:/Users/me/Downloads/Pawchive/Aster Vale (patreon)/2026-05-02 Forest/01_a.png',
+          count: 2,
+        },
+        {
+          post: `fanbox:${CREATORS[1]?.id}:175580034`,
+          hashes: ['c'],
+          example:
+            'C:/Users/me/Downloads/Pawchive/Moss and Marrow (fanbox)/2026-04-11 Reeds/02_b.png',
+          count: 1,
+        },
+      ],
+    }),
+    repair_library: ({ redownload }) => (redownload ? 'job-repair' : null),
+    set_watch_options: ({ key, options }) => {
+      watch = watch.map((w) => (w.key === key ? { ...w, options: options as WatchOptions } : w));
+    },
     set_when_done: ({ action }) => {
       queue = { ...queue, whenDone: action as WhenDone };
       emit('queue', queue);

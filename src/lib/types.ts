@@ -446,6 +446,50 @@ export interface WatchEntry {
   newPosts: NewPost[];
   error: string | null;
   autoDownload: boolean;
+  options?: WatchOptions;
+}
+
+/** Per-creator watchlist choices; empty fields use the settings. */
+export interface WatchOptions {
+  downloadDir?: string | null;
+  mode?: DownloadMode | null;
+  filter?: PostFilter | null;
+}
+
+export interface LibraryStats {
+  downloads: number;
+  files: number;
+  failed: number;
+  skipped: number;
+  bytes: number;
+  posts: number;
+  creators: number;
+  knownFiles: number;
+  firstAt: number | null;
+  lastAt: number | null;
+  topCreators: Array<{
+    service: string;
+    id: string;
+    name: string;
+    files: number;
+    bytes: number;
+    downloads: number;
+  }>;
+  months: Array<{ month: string; files: number; bytes: number }>;
+  categories: Partial<Record<FileCategory, number>>;
+}
+
+export interface MissingPost {
+  post: string;
+  hashes: string[];
+  example: string;
+  count: number;
+}
+
+export interface LibraryCheck {
+  checked: number;
+  missingFiles: number;
+  posts: MissingPost[];
 }
 
 export interface Favorite {

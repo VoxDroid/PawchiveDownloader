@@ -348,6 +348,87 @@ pub async fn search_creators(
 }
 
 #[tauri::command(async)]
+pub fn library_stats(core: State<'_, Core_>) -> crate::library::Stats {
+    crate::library::stats(
+        &core.store.list_history(),
+        &core.store.list_known_files(),
+        now_ms(),
+    )
+}
+
+/// Looks for downloaded files that were deleted or moved since.
+#[tauri::command]
+pub async fn check_library(core: State<'_, Core_>) -> R<crate::library::LibraryCheck> {
+    let known = core.store.list_known_files();
+    tauri::async_runtime::spawn_blocking(move || crate::library::check(&known))
+        .await
+        .map_err(|e| e.to_string())
+}
+
+/// Forgets the missing files and, when asked, downloads their posts again
+/// (only the missing files are fetched; the rest are still known).
+#[tauri::command(async)]
+pub fn repair_library(
+    core: State<'_, Core_>,
+    posts: Vec<crate::library::MissingPost>,
+    redownload: bool,
+) -> R<Option<String>> {
+    crate::library::forget(&core.store, &posts)?;
+    core.log.info(format!(
+        "Forgot {} missing files in {} posts",
+        posts.iter().map(|p| p.hashes.len()).sum::<usize>(),
+        posts.len()
+    ));
+    if !redownload || posts.is_empty() {
+        return Ok(None);
+    }
+    let refs: Vec<PostRef> = posts
+        .iter()
+        .filter_map(|p| {
+            let mut parts = p.post.splitn(3, ':');
+            Some(PostRef {
+                service: parts.next()?.to_string(),
+                creator_id: parts.next()?.to_string(),
+                post_id: parts.next()?.to_string(),
+            })
+        })
+        .collect();
+    if refs.is_empty() {
+        return Ok(None);
+    }
+    check_folder(&core.settings().download_dir)?;
+    let count = refs.len();
+    let id = core.engine.create(JobRequest::Refs {
+        title: Some(format!("Missing files ({count} posts)")),
+        creator: None,
+        refs,
+        options: JobOverrides {
+            skip_downloaded: Some(true),
+            ..Default::default()
+        },
+    });
+    Ok(Some(id))
+}
+
+#[tauri::command(async)]
+pub fn set_watch_options(
+    core: State<'_, Core_>,
+    key: String,
+    options: crate::store::records::WatchOptions,
+) -> R<()> {
+    let options = crate::store::records::WatchOptions {
+        download_dir: options.download_dir.filter(|d| Path::new(d).is_absolute()),
+        mode: options.mode,
+        filter: options.filter.map(|f| f.cleaned()),
+    };
+    core.watcher.update(|entries| {
+        if let Some(e) = entries.iter_mut().find(|e| e.key == key) {
+            e.options = options;
+        }
+    })
+}
+
+#[tauri::command(async)]
 pub fn queue_status(core: State<'_, Core_>) -> crate::core::QueueStatus {
     core.queue_status()
 }

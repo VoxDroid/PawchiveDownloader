@@ -45,6 +45,15 @@ CREATE TABLE IF NOT EXISTS watch (key TEXT PRIMARY KEY, position INTEGER NOT NUL
 CREATE TABLE IF NOT EXISTS favorites (key TEXT PRIMARY KEY, added_at INTEGER NOT NULL, data TEXT NOT NULL);
 ";
 
+/// A downloaded file the library remembers.
+#[derive(Debug, Clone, PartialEq)]
+pub struct KnownFile {
+    pub hash: String,
+    /// `service:creator:post`.
+    pub post: String,
+    pub path: String,
+}
+
 impl Store {
     pub fn open(path: &Path) -> Result<Self> {
         if let Some(dir) = path.parent() {
@@ -209,6 +218,44 @@ impl Store {
             )
             .map(|_| ())
             .map_err(err)
+    }
+
+    /// Every remembered file.
+    pub fn list_known_files(&self) -> Vec<KnownFile> {
+        let conn = self.conn.lock();
+        let Ok(mut stmt) = conn.prepare("SELECT hash, post, path FROM files") else {
+            return vec![];
+        };
+        stmt.query_map([], |r| {
+            Ok(KnownFile {
+                hash: r.get(0)?,
+                post: r.get(1)?,
+                path: r.get(2)?,
+            })
+        })
+        .map(|rows| rows.filter_map(|r| r.ok()).collect())
+        .unwrap_or_default()
+    }
+
+    /// Forgets some files and the "downloaded" mark of their posts.
+    pub fn forget_files(&self, hashes: &[String], posts: &[String]) -> Result<()> {
+        let mut conn = self.conn.lock();
+        let tx = conn.transaction().map_err(err)?;
+        {
+            let mut files = tx
+                .prepare("DELETE FROM files WHERE hash = ?1")
+                .map_err(err)?;
+            for h in hashes {
+                files.execute([h]).map_err(err)?;
+            }
+            let mut marks = tx
+                .prepare("DELETE FROM posts WHERE key = ?1")
+                .map_err(err)?;
+            for k in posts {
+                marks.execute([k]).map_err(err)?;
+            }
+        }
+        tx.commit().map_err(err)
     }
 
     pub fn forget_known(&self) -> Result<()> {

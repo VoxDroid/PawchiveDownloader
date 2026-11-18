@@ -14,7 +14,10 @@ import type {
   JobOverrides,
   JobRequest,
   JobSummary,
+  LibraryCheck,
+  LibraryStats,
   LogEntry,
+  MissingPost,
   ParsedLink,
   PostPage,
   PostView,
@@ -23,6 +26,7 @@ import type {
   TemplatePreview,
   UpdateInfo,
   WatchEntry,
+  WatchOptions,
   WhenDone,
 } from './types';
 
@@ -131,6 +135,12 @@ export const api = {
   jobsActionAll: (action: 'pause' | 'resume' | 'retry') =>
     call<void>('jobs_action_all', { action }),
   queueStatus: () => call<QueueStatus>('queue_status'),
+  libraryStats: () => call<LibraryStats>('library_stats'),
+  checkLibrary: () => call<LibraryCheck>('check_library'),
+  repairLibrary: (posts: MissingPost[], redownload: boolean) =>
+    call<string | null>('repair_library', { posts, redownload }),
+  setWatchOptions: (key: string, options: WatchOptions) =>
+    call<void>('set_watch_options', { key, options }),
   setWhenDone: (action: WhenDone) => call<void>('set_when_done', { action }),
   cancelWhenDone: () => call<void>('cancel_when_done'),
   clearFinished: () => call<void>('clear_finished'),

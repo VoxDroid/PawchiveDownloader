@@ -78,6 +78,8 @@ pub struct JobOptions {
     pub download_dir: String,
     #[serde(default)]
     pub filter: PostFilter,
+    #[serde(default)]
+    pub apply_post_filter: bool,
     /// Words taken out of post titles and file names.
     #[serde(default)]
     pub name_remove: Vec<String>,
@@ -98,6 +100,9 @@ pub struct JobOverrides {
     pub download_dir: Option<String>,
     /// Replaces the filter from the settings.
     pub filter: Option<PostFilter>,
+    /// Apply the post rules of the filter to the posts of a list of links
+    /// too (they otherwise apply to creator scans only).
+    pub apply_post_filter: Option<bool>,
 }
 
 impl JobOptions {
@@ -134,6 +139,7 @@ impl JobOptions {
             zip_videos_separately: s.zip_videos_separately,
             download_dir,
             filter: o.filter.as_ref().unwrap_or(&s.filter).cleaned(),
+            apply_post_filter: o.apply_post_filter.unwrap_or(false),
             name_remove: s.name_remove.clone(),
         }
     }

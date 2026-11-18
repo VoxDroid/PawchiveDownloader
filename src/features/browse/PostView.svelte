@@ -22,6 +22,7 @@
   import DownloadBar from './DownloadBar.svelte';
   import { queueJob } from './queue';
   import FileTile from './FileTile.svelte';
+  import Lightbox from './Lightbox.svelte';
   import { rememberRecent } from './batch.svelte';
 
   let { service, creatorId, postId }: { service: string; creatorId: string; postId: string } =
@@ -114,6 +115,17 @@
     if (next.has(category)) next.delete(category);
     else next.add(category);
     filter = next;
+  }
+
+  // Images (and anything with a thumbnail) can be looked at in the viewer.
+  const viewable = $derived(visible.filter((f) => f.thumbnailUrl));
+  let viewing = $state<number | null>(null);
+
+  function toggleOne(index: number) {
+    const next = new Set(selected);
+    if (next.has(index)) next.delete(index);
+    else next.add(index);
+    selected = next;
   }
 
   function onselect(index: number, event: MouseEvent) {
@@ -355,6 +367,7 @@
               downloaded={Boolean(file.hash && known.has(file.hash))}
               relay={file.previewOnly ? app.settings.previewOnly === 'relay' : null}
               onselect={(e) => onselect(file.index, e)}
+              onpreview={() => (viewing = viewable.findIndex((f) => f.index === file.index))}
             />
           {/each}
         </div>
@@ -408,6 +421,14 @@
     {:else}
       <Empty compact icon="text" title={t('post.noText')} />
     {/if}
+
+    <Lightbox
+      files={viewable}
+      index={viewing}
+      {selected}
+      onindex={(i) => (viewing = i)}
+      ontoggle={toggleOne}
+    />
 
     <DownloadBar
       label={selected.size

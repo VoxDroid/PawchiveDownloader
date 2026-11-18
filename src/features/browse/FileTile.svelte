@@ -11,9 +11,11 @@
     downloaded: boolean;
     relay: boolean | null;
     onselect: (event: MouseEvent) => void;
+    /** Opens the image in the viewer. */
+    onpreview?: () => void;
   }
 
-  let { file, selected, downloaded, relay, onselect }: Props = $props();
+  let { file, selected, downloaded, relay, onselect, onpreview }: Props = $props();
 
   const CATEGORY_ICON: Record<PostFile['category'], IconName> = {
     image: 'image',
@@ -38,6 +40,7 @@
   tabindex="0"
   title={file.name}
   onclick={onselect}
+  ondblclick={() => onpreview?.()}
   onkeydown={(e) => {
     if (e.key === ' ' || e.key === 'Enter') {
       e.preventDefault();
@@ -64,6 +67,19 @@
       <svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" /></svg>
     </span>
     {#if file.ext}<span class="ext">{file.ext}</span>{/if}
+    {#if onpreview && file.thumbnailUrl}
+      <button
+        type="button"
+        class="open zoom"
+        aria-label={t('file.view')}
+        onclick={(e) => {
+          e.stopPropagation();
+          onpreview?.();
+        }}
+      >
+        <Icon name="eye" />
+      </button>
+    {/if}
     {#if link}
       <a
         class="open"
@@ -230,6 +246,11 @@
     opacity: 0;
     transition: opacity var(--dur-fast) var(--ease);
     text-decoration: none;
+  }
+  .zoom {
+    right: 34px;
+    border: 0;
+    padding: 0;
   }
   .tile:hover .open,
   .open:focus-visible {
