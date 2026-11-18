@@ -284,9 +284,10 @@
   }
   .linkbar {
     position: sticky;
-    /* The page has 28px of top padding; stop 14px below the window's edge
-       so the bar floats instead of touching it. */
-    top: -14px;
+    /* The page has 28px of top padding and the bar a -8px margin, so it
+       rests 20px below the window's edge; -8px keeps it right there while
+       scrolling instead of sliding up against the title bar. */
+    top: -8px;
     z-index: 6;
     display: flex;
     align-items: center;
@@ -310,13 +311,17 @@
     left: -16px;
     right: -16px;
     bottom: calc(100% + 1px);
-    height: 20px;
+    height: 24px;
     background: var(--bg);
     pointer-events: none;
+    /* Behind the bar's own layer, so the focus ring draws over it. */
+    z-index: -1;
   }
+  /* The same ring as elsewhere, drawn as an outline. */
   .linkbar:focus-within {
     border-color: var(--accent);
-    box-shadow: var(--focus-ring);
+    outline: 2px solid color-mix(in srgb, var(--accent) 70%, transparent);
+    outline-offset: 2px;
   }
   .linkbar.invalid {
     border-color: var(--danger);
