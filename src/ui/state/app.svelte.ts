@@ -63,7 +63,9 @@ export function startApp(): Promise<void> {
     app.systemDark = media.matches;
     media.addEventListener('change', (e) => (app.systemDark = e.matches));
     await Promise.all([
-      on<JobSummary[]>('jobs', (jobs) => (app.jobs = jobs)),
+      on<JobSummary[]>('jobs', (jobs) => {
+        app.jobs = jobs;
+      }),
       on<Settings>('settings', applySettings),
       on<{ newCount: number; checking: boolean }>('watch', (w) => {
         app.watchNew = w.newCount;
@@ -82,7 +84,9 @@ export function startApp(): Promise<void> {
       setTimeout(() => {
         void api
           .checkUpdates()
-          .then((u) => (app.update = u))
+          .then((u) => {
+            app.update = u;
+          })
           .catch(() => undefined);
       }, 8000);
     }

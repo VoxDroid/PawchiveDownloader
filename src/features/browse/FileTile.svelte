@@ -1,8 +1,9 @@
 <script lang="ts">
-  import type { PostFile } from '../../../lib/pawchive/types';
-  import type { IconName } from '../../../ui/icons.generated';
-  import Icon from '../../../ui/components/Icon.svelte';
-  import { t } from '../../../ui/state/app.svelte';
+  import { openUrl } from '../../lib/api';
+  import type { PostFile } from '../../lib/types';
+  import type { IconName } from '../../ui/icons.generated';
+  import Icon from '../../ui/components/Icon.svelte';
+  import { t } from '../../ui/state/app.svelte';
 
   interface Props {
     file: PostFile;
@@ -70,26 +71,32 @@
         target="_blank"
         rel="noreferrer noopener"
         aria-label={t('file.open')}
-        onclick={(e) => e.stopPropagation()}><Icon name="external" /></a
+        onclick={(e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          void openUrl(link);
+        }}
       >
+        <Icon name="external" />
+      </a>
     {/if}
   </div>
   <div class="name">{file.name}</div>
   <div class="tags">
     {#if downloaded}
-      <span class="tag ok" data-tip={t('file.downloadedHint')}
-        ><Icon name="check" />{t('file.downloaded')}</span
-      >
+      <span class="tag ok" data-tip={t('file.downloadedHint')}>
+        <Icon name="check" />{t('file.downloaded')}
+      </span>
     {/if}
     {#if file.previewOnly}
       {#if relay}
-        <span class="tag relay" data-tip={t('file.relayHint')}
-          ><Icon name="timer" />{t('file.relay')}</span
-        >
+        <span class="tag relay" data-tip={t('file.relayHint')}>
+          <Icon name="timer" />{t('file.relay')}
+        </span>
       {:else}
-        <span class="tag warn" data-tip={t('file.previewHint')}
-          ><Icon name="eyeOff" />{t('file.preview')}</span
-        >
+        <span class="tag warn" data-tip={t('file.previewHint')}>
+          <Icon name="eyeOff" />{t('file.preview')}
+        </span>
       {/if}
     {/if}
   </div>

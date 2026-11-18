@@ -34,8 +34,10 @@
           onclick={() => {
             item.action?.run();
             dismissToast(item.id);
-          }}>{item.action.label}</button
+          }}
         >
+          {item.action.label}
+        </button>
       {/if}
       <button
         type="button"

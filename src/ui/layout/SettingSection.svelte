@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
-  import type { IconName } from '../../ui/icons.generated';
-  import Icon from '../../ui/components/Icon.svelte';
+  import type { IconName } from '../icons.generated';
+  import Icon from '../components/Icon.svelte';
 
   let {
     id,

@@ -74,14 +74,14 @@
 
 <article class="job {tone}" class:compact class:finished>
   <div class="head">
-    <span class="status-dot" data-tip={statusLabel}
-      ><Icon name={statusIcon} spin={job.status === 'resolving'} /></span
-    >
+    <span class="status-dot" data-tip={statusLabel}>
+      <Icon name={statusIcon} spin={job.status === 'resolving'} />
+    </span>
     <div class="titles">
       {#if onopen}
-        <button type="button" class="title truncate link" onclick={onopen}
-          >{job.title || t('common.untitled')}</button
-        >
+        <button type="button" class="title truncate link" onclick={onopen}>
+          {job.title || t('common.untitled')}
+        </button>
       {:else}
         <span class="title truncate">{job.title || t('common.untitled')}</span>
       {/if}
@@ -144,9 +144,9 @@
       {#if s.failed}<span class="bad">{t('jobs.failed', { count: s.failed })}</span>{/if}
       {#if s.skipped}<span>{t('jobs.skipped', { count: s.skipped })}</span>{/if}
       {#if s.bytes > 0}<span>{fmt.bytes(s.bytes)}</span>{/if}
-      {#if job.status === 'running' && job.speed > 0}<span class="speed"
-          >{fmt.bytes(job.speed)}/s</span
-        >{/if}
+      {#if job.status === 'running' && job.speed > 0}<span class="speed">
+          {fmt.bytes(job.speed)}/s
+        </span>{/if}
       {#if eta > 0 && !compact}<span>{t('jobs.eta', { time: fmt.duration(eta) })}</span>{/if}
     {/if}
   </div>

@@ -37,11 +37,23 @@
       <h2>{t('support.title')}</h2>
       <p>{t('support.body')}</p>
       <div class="actions">
-        <a class="btn primary" href={LINKS.kofi} target="_blank" rel="noopener noreferrer" onclick={external}>
+        <a
+          class="btn primary"
+          href={LINKS.kofi}
+          target="_blank"
+          rel="noopener noreferrer"
+          onclick={external}
+        >
           <Icon name="coffee" />
           <span>{t('support.kofi')}</span>
         </a>
-        <a class="btn" href={LINKS.repo} target="_blank" rel="noopener noreferrer" onclick={external}>
+        <a
+          class="btn"
+          href={LINKS.repo}
+          target="_blank"
+          rel="noopener noreferrer"
+          onclick={external}
+        >
           <Icon name="starOutline" />
           <span>{t('support.star')}</span>
         </a>

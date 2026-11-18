@@ -13,8 +13,10 @@
   class="icon {className}"
   class:spin
   aria-hidden="true"
-  style={size ? `font-size:${size}px` : undefined}>{ICONS[name]}</span
+  style={size ? `font-size:${size}px` : undefined}
 >
+  {ICONS[name]}
+</span>
 
 <style>
   .spin {

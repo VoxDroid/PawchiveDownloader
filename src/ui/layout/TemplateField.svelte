@@ -1,8 +1,8 @@
 <script lang="ts">
   import { TEMPLATE_TOKENS, validateTemplate } from '../../lib/naming/template';
-  import { t } from '../../ui/state/app.svelte';
-  import Chip from '../../ui/components/Chip.svelte';
-  import TextInput from '../../ui/components/TextInput.svelte';
+  import { t } from '../state/app.svelte';
+  import Chip from '../components/Chip.svelte';
+  import TextInput from '../components/TextInput.svelte';
 
   interface Props {
     value: string;
@@ -39,9 +39,9 @@
     {#each Object.entries(presets) as [name, preset] (name)}
       <Chip label={t(`preset.${name}`)} active={value === preset} onclick={() => commit(preset)} />
     {/each}
-    <button type="button" class="tokens-toggle" onclick={() => (showTokens = !showTokens)}
-      >{showTokens ? t('settings.hideTokens') : t('settings.showTokens')}</button
-    >
+    <button type="button" class="tokens-toggle" onclick={() => (showTokens = !showTokens)}>
+      {showTokens ? t('settings.hideTokens') : t('settings.showTokens')}
+    </button>
   </div>
   {#if showTokens}
     <div class="tokens">
@@ -51,8 +51,9 @@
           class="token"
           title={t(`token.${token}`)}
           onclick={() => commit(`${draft}{${token}}`)}
-          >{`{${token}}`}<span>{t(`token.${token}`)}</span></button
         >
+          {`{${token}}`}<span>{t(`token.${token}`)}</span>
+        </button>
       {/each}
     </div>
   {/if}

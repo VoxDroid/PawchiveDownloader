@@ -1,21 +1,30 @@
 <script lang="ts">
   import { onDestroy, onMount, tick } from 'svelte';
-  import { call } from '../../../lib/messages';
-  import { formatLog, type LogEntry } from '../../../lib/log';
-  import type { LogLevel } from '../../../lib/settings';
-  import { app, onLog, t, updateSettings } from '../../../ui/state/app.svelte';
-  import { toast } from '../../../ui/state/toasts.svelte';
-  import Button from '../../../ui/components/Button.svelte';
-  import Chip from '../../../ui/components/Chip.svelte';
-  import Empty from '../../../ui/components/Empty.svelte';
-  import Select from '../../../ui/components/Select.svelte';
-  import Switch from '../../../ui/components/Switch.svelte';
-  import TextInput from '../../../ui/components/TextInput.svelte';
-  import VirtualList from '../../../ui/components/VirtualList.svelte';
-  import PageHeader from '../PageHeader.svelte';
-  import { saveTextFile, stamp } from '../download';
+  import { api } from '../../lib/api';
+  import { saveTextFile, stamp } from '../../lib/files';
+  import type { LogEntry, LogLevel } from '../../lib/types';
+  import { app, onLog, t, updateSettings } from '../../ui/state/app.svelte';
+  import { toast } from '../../ui/state/toasts.svelte';
+  import Button from '../../ui/components/Button.svelte';
+  import Chip from '../../ui/components/Chip.svelte';
+  import Empty from '../../ui/components/Empty.svelte';
+  import Select from '../../ui/components/Select.svelte';
+  import Switch from '../../ui/components/Switch.svelte';
+  import TextInput from '../../ui/components/TextInput.svelte';
+  import VirtualList from '../../ui/components/VirtualList.svelte';
+  import PageHeader from '../../ui/layout/PageHeader.svelte';
 
   const LEVELS: LogLevel[] = ['debug', 'info', 'warn', 'error'];
+
+  function formatLog(list: LogEntry[]): string {
+    return list
+      .map((e) => {
+        const at = new Date(e.at).toISOString().replace('T', ' ').slice(0, 19);
+        const detail = e.detail ? `\n    ${e.detail}` : '';
+        return `${at} [${e.level.toUpperCase()}] ${e.message}${detail}`;
+      })
+      .join('\n');
+  }
   let entries = $state<LogEntry[]>([]);
   let levels = $state(new Set<LogLevel>(['info', 'warn', 'error']));
   let query = $state('');
@@ -27,8 +36,7 @@
     entries.filter(
       (e) =>
         levels.has(e.level) &&
-        (!query ||
-          `${e.scope} ${e.message} ${e.detail ?? ''}`.toLowerCase().includes(query.toLowerCase())),
+        (!query || `${e.message} ${e.detail ?? ''}`.toLowerCase().includes(query.toLowerCase())),
     ),
   );
   const counts = $derived(
@@ -38,7 +46,7 @@
   );
 
   onMount(async () => {
-    entries = await call('logs:list');
+    entries = await api.getLogs();
     unsubscribe = onLog((entry) => {
       entries = [...entries.slice(-1999), entry];
     });
@@ -64,7 +72,7 @@
   }
 
   async function clear() {
-    await call('logs:clear');
+    await api.clearLogs();
     entries = [];
   }
 
@@ -79,12 +87,18 @@
     <Button
       icon="export"
       disabled={!shown.length}
-      onclick={() => saveTextFile(`pawchive-downloader-${stamp()}.log`, `${formatLog(shown)}\n`)}
-      >{t('common.save')}</Button
+      onclick={() =>
+        void saveTextFile(
+          `pawchive-downloader-${stamp()}.log`,
+          `${formatLog(shown)}\n`,
+          t('common.export'),
+        )}
     >
-    <Button variant="ghost" icon="trash" disabled={!entries.length} onclick={clear}
-      >{t('common.clear')}</Button
-    >
+      {t('common.save')}
+    </Button>
+    <Button variant="ghost" icon="trash" disabled={!entries.length} onclick={clear}>
+      {t('common.clear')}
+    </Button>
   {/snippet}
 </PageHeader>
 
@@ -107,9 +121,9 @@
     clearable
     bind:value={query}
   />
-  <label class="follow"
-    ><Switch label={t('logs.follow')} bind:checked={follow} /><span>{t('logs.follow')}</span></label
-  >
+  <label class="follow">
+    <Switch label={t('logs.follow')} bind:checked={follow} /><span>{t('logs.follow')}</span>
+  </label>
   <label class="level">
     <span>{t('logs.record')}</span>
     <Select
@@ -127,10 +141,9 @@
       <div class="line {entry.level}" title={entry.detail ?? entry.message}>
         <span class="time mono-num">{time(entry.at)}</span>
         <span class="lvl">{entry.level}</span>
-        <span class="scope truncate">{entry.scope}</span>
-        <span class="msg truncate"
-          >{entry.message}{#if entry.detail}<span class="detail"> {entry.detail}</span>{/if}</span
-        >
+        <span class="msg truncate">
+          {entry.message}{#if entry.detail}<span class="detail"> {entry.detail}</span>{/if}
+        </span>
       </div>
     {/snippet}
     {#snippet empty()}

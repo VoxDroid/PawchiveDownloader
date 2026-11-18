@@ -14,6 +14,8 @@
     onconfirm?: () => void;
     oncancel: () => void;
     children?: Snippet;
+    /** Width in pixels. */
+    width?: number;
   }
 
   let {
@@ -25,6 +27,7 @@
     onconfirm,
     oncancel,
     children,
+    width = 440,
   }: Props = $props();
 
   let dialog = $state<HTMLDivElement>();
@@ -50,15 +53,16 @@
     transition:scale={{ start: 0.96, duration: 200, easing: cubicOut }}
     onkeydown={(e) => e.key === 'Escape' && oncancel()}
     tabindex="-1"
+    style="--w:{width}px"
   >
     <h2>{title}</h2>
     {#if children}<div class="body">{@render children()}</div>{/if}
     <div class="actions">
       <Button variant="ghost" onclick={oncancel}>{t('common.cancel')}</Button>
       {#if onconfirm}
-        <Button variant={danger ? 'danger' : 'primary'} loading={busy} onclick={onconfirm}
-          >{confirmLabel ?? t('common.confirm')}</Button
-        >
+        <Button variant={danger ? 'danger' : 'primary'} loading={busy} onclick={onconfirm}>
+          {confirmLabel ?? t('common.confirm')}
+        </Button>
       {/if}
     </div>
   </div>
@@ -78,7 +82,9 @@
     top: 50%;
     translate: -50% -50%;
     z-index: 1001;
-    width: min(440px, calc(100vw - 32px));
+    width: min(var(--w), calc(100vw - 32px));
+    max-height: calc(100vh - 48px);
+    overflow-y: auto;
     padding: 20px;
     border-radius: var(--radius-lg);
     background: var(--bg-elev);

@@ -167,6 +167,7 @@ pub fn run() {
             commands::path_exists,
             commands::ensure_dir,
             commands::read_text_file,
+            commands::write_text_file,
             commands::check_updates,
             ui_ready,
             quit_app,

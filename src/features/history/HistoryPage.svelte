@@ -1,24 +1,53 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { call } from '../../../lib/messages';
-  import { historyToCsv, type HistoryEntry } from '../../../lib/storage/db';
-  import { pageUrls } from '../../../lib/pawchive/urls';
-  import { app, fmt, t, updateSettings } from '../../../ui/state/app.svelte';
-  import { toast } from '../../../ui/state/toasts.svelte';
-  import Button from '../../../ui/components/Button.svelte';
-  import Checkbox from '../../../ui/components/Checkbox.svelte';
-  import Dialog from '../../../ui/components/Dialog.svelte';
-  import Empty from '../../../ui/components/Empty.svelte';
-  import Icon from '../../../ui/components/Icon.svelte';
-  import IconButton from '../../../ui/components/IconButton.svelte';
-  import Segmented from '../../../ui/components/Segmented.svelte';
-  import TextInput from '../../../ui/components/TextInput.svelte';
-  import PageHeader from '../PageHeader.svelte';
-  import { saveTextFile, stamp } from '../download';
+  import { api, errorText } from '../../lib/api';
+  import { saveTextFile, stamp } from '../../lib/files';
+  import type { HistoryEntry } from '../../lib/types';
+  import { pageUrls } from '../../lib/urls';
+  import { go, openLink } from '../../ui/state/router.svelte';
+  import { app, fmt, t, updateSettings } from '../../ui/state/app.svelte';
+  import { toast } from '../../ui/state/toasts.svelte';
+  import Button from '../../ui/components/Button.svelte';
+  import Checkbox from '../../ui/components/Checkbox.svelte';
+  import Dialog from '../../ui/components/Dialog.svelte';
+  import Empty from '../../ui/components/Empty.svelte';
+  import Icon from '../../ui/components/Icon.svelte';
+  import IconButton from '../../ui/components/IconButton.svelte';
+  import Segmented from '../../ui/components/Segmented.svelte';
+  import TextInput from '../../ui/components/TextInput.svelte';
+  import PageHeader from '../../ui/layout/PageHeader.svelte';
 
   let entries = $state<HistoryEntry[] | null>(null);
-  let stats = $state({ files: 0, posts: 0, history: 0 });
+
+  function historyToCsv(list: HistoryEntry[]): string {
+    const header =
+      'finished,title,creator,service,status,mode,posts,files_done,files_failed,files_skipped,bytes,folder';
+    const esc = (v: unknown) => {
+      const text = String(v ?? '');
+      return /[",\n\r]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+    };
+    const rows = list.map((e) =>
+      [
+        new Date(e.finishedAt).toISOString(),
+        e.title,
+        e.creator?.name ?? '',
+        e.creator?.service ?? '',
+        e.status,
+        e.mode,
+        e.postCount,
+        e.files.done,
+        e.files.failed,
+        e.files.skipped,
+        e.bytes,
+        e.folder,
+      ]
+        .map(esc)
+        .join(','),
+    );
+    return `${[header, ...rows].join('\r\n')}\r\n`;
+  }
+  let stats = $state({ files: 0, posts: 0, history: 0, watch: 0, favorites: 0 });
   let query = $state('');
   let status = $state<'all' | 'done' | 'problems'>('all');
   let clearOpen = $state(false);
@@ -51,7 +80,7 @@
   });
 
   async function load() {
-    [entries, stats] = await Promise.all([call('history:list'), call('history:stats')]);
+    [entries, stats] = await Promise.all([api.listHistory(), api.counts()]);
   }
 
   onMount(load);
@@ -65,33 +94,35 @@
   });
 
   async function requeue(entry: HistoryEntry) {
-    const result = await call('history:requeue', { id: entry.id }).catch(() => null);
-    if (result) toast(t('history.requeued', { title: entry.title }), 'success');
+    const result = await api.redownload(entry.id).catch(() => null);
+    if (result)
+      toast(t('history.requeued', { title: entry.title }), 'success', {
+        action: { label: t('nav.downloads'), run: () => go('downloads') },
+      });
     else toast(t('history.requeueFailed'), 'error');
   }
 
   async function reveal(entry: HistoryEntry) {
-    const found = entry.firstFile
-      ? await call('app:show-file', { path: entry.firstFile }).catch(() => false)
-      : false;
-    if (!found) {
+    const target = entry.firstFile ?? entry.folder;
+    const exact = target ? await api.revealPath(target).catch(() => null) : null;
+    if (exact !== true) {
       toast(t('history.folderMissing'), 'warning', {
         action: {
           label: t('history.openDownloads'),
-          run: () => void call('app:open-downloads-folder'),
+          run: () => void api.openPath(app.settings.downloadDir).catch(() => undefined),
         },
       });
     }
   }
 
   async function remove(entry: HistoryEntry) {
-    await call('history:remove', { ids: [entry.id] });
+    await api.removeHistory([entry.id]);
     entries = (entries ?? []).filter((e) => e.id !== entry.id);
   }
 
   async function clearAll() {
     clearing = true;
-    await call('history:clear', { forgetFiles });
+    await api.clearHistory(forgetFiles).catch((e) => toast(errorText(e), 'error'));
     clearing = false;
     clearOpen = false;
     forgetFiles = false;
@@ -100,14 +131,18 @@
   }
 
   function exportCsv() {
-    saveTextFile(`pawchive-history-${stamp()}.csv`, historyToCsv(filtered), 'text/csv');
+    void saveTextFile(
+      `pawchive-history-${stamp()}.csv`,
+      historyToCsv(filtered),
+      t('common.export'),
+    );
   }
 
   function exportJson() {
-    saveTextFile(
+    void saveTextFile(
       `pawchive-history-${stamp()}.json`,
       `${JSON.stringify(filtered, null, 2)}\n`,
-      'application/json',
+      t('common.export'),
     );
   }
 </script>
@@ -120,8 +155,10 @@
       variant="danger"
       icon="trash"
       disabled={!entries?.length && stats.files === 0}
-      onclick={() => (clearOpen = true)}>{t('history.clear')}</Button
+      onclick={() => (clearOpen = true)}
     >
+      {t('history.clear')}
+    </Button>
   {/snippet}
 </PageHeader>
 
@@ -129,9 +166,9 @@
   <div class="banner" in:fade>
     <Icon name="pause" />
     <span>{t('history.recordingOff')}</span>
-    <Button size="sm" variant="subtle" onclick={() => updateSettings({ recordHistory: true })}
-      >{t('history.turnOn')}</Button
-    >
+    <Button size="sm" variant="subtle" onclick={() => updateSettings({ recordHistory: true })}>
+      {t('history.turnOn')}
+    </Button>
   </div>
 {/if}
 
@@ -207,22 +244,29 @@
               {#if entry.creator}
                 <a
                   href={pageUrls.creator(entry.creator.service, entry.creator.id)}
+                  onclick={(e) => {
+                    e.preventDefault();
+                    if (entry.creator)
+                      openLink(pageUrls.creator(entry.creator.service, entry.creator.id));
+                  }}
                   target="_blank"
-                  rel="noreferrer">{entry.creator.name}</a
+                  rel="noreferrer"
                 >
+                  {entry.creator.name}
+                </a>
                 <span class="sep">/</span>
               {/if}
               <span class="mono-num">{t('history.rowFiles', { count: entry.files.done })}</span>
-              {#if entry.files.failed}<span class="sep">/</span><span class="fail mono-num"
-                  >{t('jobs.failed', { count: entry.files.failed })}</span
-                >{/if}
-              {#if entry.files.skipped}<span class="sep">/</span><span class="mono-num"
-                  >{t('jobs.skipped', { count: entry.files.skipped })}</span
-                >{/if}
+              {#if entry.files.failed}<span class="sep">/</span><span class="fail mono-num">
+                  {t('jobs.failed', { count: entry.files.failed })}
+                </span>{/if}
+              {#if entry.files.skipped}<span class="sep">/</span><span class="mono-num">
+                  {t('jobs.skipped', { count: entry.files.skipped })}
+                </span>{/if}
               <span class="sep">/</span><span class="mono-num">{fmt.bytes(entry.bytes)}</span>
-              {#if entry.startedAt}<span class="sep">/</span><span class="mono-num"
-                  >{fmt.duration(entry.finishedAt - entry.startedAt)}</span
-                >{/if}
+              {#if entry.startedAt}<span class="sep">/</span><span class="mono-num">
+                  {fmt.duration(entry.finishedAt - entry.startedAt)}
+                </span>{/if}
             </span>
             {#if entry.errors.length}
               <details>
@@ -235,9 +279,9 @@
               </details>
             {/if}
           </div>
-          <span class="time faint mono-num" title={fmt.date(entry.finishedAt, true)}
-            >{fmt.relative(entry.finishedAt)}</span
-          >
+          <span class="time faint mono-num" title={fmt.date(entry.finishedAt, true)}>
+            {fmt.relative(entry.finishedAt)}
+          </span>
           <div class="actions">
             <IconButton
               icon="folderOpen"
@@ -263,9 +307,9 @@
   {/each}
   {#if filtered.length > limit}
     <div class="more">
-      <Button variant="ghost" onclick={() => (limit += 100)}
-        >{t('history.more', { count: filtered.length - limit })}</Button
-      >
+      <Button variant="ghost" onclick={() => (limit += 100)}>
+        {t('history.more', { count: filtered.length - limit })}
+      </Button>
     </div>
   {/if}
 {/if}

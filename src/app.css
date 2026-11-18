@@ -1,0 +1,62 @@
+@import './ui/styles/theme.css';
+@import './ui/styles/base.css';
+
+@font-face {
+  font-family: 'PDL JetBrains Mono';
+  src: url('/fonts/JetBrainsMonoNerdFont-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'PDL JetBrains Mono';
+  src: url('/fonts/JetBrainsMonoNerdFont-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'PDL JetBrains Mono';
+  src: url('/fonts/JetBrainsMonoNerdFont-SemiBold.woff2') format('woff2');
+  font-weight: 600;
+  font-display: block;
+}
+
+@font-face {
+  font-family: 'PDL JetBrains Mono';
+  src: url('/fonts/JetBrainsMonoNerdFont-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-display: block;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+#app {
+  height: 100vh;
+  background: var(--bg);
+  transition: background-color var(--dur) var(--ease);
+}
+
+/* A desktop app: interface text is not selectable unless it is content. */
+#app {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+#app :where(input, textarea, .selectable, pre, code) {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+/* Desktop density: slightly larger than the extension's compact panel. */
+#app {
+  --fs-sm: 12.5px;
+  --fs-md: 13.5px;
+}

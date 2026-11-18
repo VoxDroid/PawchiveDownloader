@@ -1,4 +1,4 @@
-import type { Locale } from '../settings';
+import type { Locale } from '../types';
 import de from './locales/de.json';
 import en from './locales/en.json';
 import es from './locales/es.json';

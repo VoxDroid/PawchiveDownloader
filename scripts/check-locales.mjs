@@ -3,7 +3,6 @@
 //  - every plural message has the forms its language needs (CLDR),
 //  - every {placeholder} in English also appears in the translation,
 //  - every static t('key') used in the source exists in English,
-//  - the _locales manifest strings exist for every locale.
 // Usage: node scripts/check-locales.mjs [--list-used]
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join, relative } from 'node:path';
@@ -59,13 +58,6 @@ for (const [locale, tag] of Object.entries(LOCALES)) {
       if (name === 'count' && PLURAL.test(key)) continue;
       if (!value.includes(`{${name}}`)) problems.push(`${locale}: "${key}" lacks {${name}}`);
     }
-  }
-
-  const manifest = JSON.parse(
-    readFileSync(join(root, 'public/_locales', locale, 'messages.json'), 'utf8'),
-  );
-  for (const key of ['extName', 'extDescription', 'cmdTogglePanel', 'cmdDownloadPage']) {
-    if (!manifest[key]?.message) problems.push(`_locales/${locale}: missing ${key}`);
   }
 }
 

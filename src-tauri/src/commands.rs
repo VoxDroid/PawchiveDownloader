@@ -809,6 +809,11 @@ pub fn ensure_dir(path: String) -> R<()> {
 }
 
 #[tauri::command]
+pub fn write_text_file(path: String, text: String) -> R<()> {
+    std::fs::write(path, text).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 pub fn read_text_file(path: String) -> R<String> {
     let meta = std::fs::metadata(&path).map_err(|e| e.to_string())?;
     if meta.len() > 8 * 1024 * 1024 {

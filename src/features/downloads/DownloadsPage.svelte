@@ -1,44 +1,50 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { call } from '../../../lib/messages';
-  import type { Item, Job } from '../../../lib/jobs/types';
-  import { app, fmt, overallProgress, t } from '../../../ui/state/app.svelte';
-  import { toast } from '../../../ui/state/toasts.svelte';
-  import type { IconName } from '../../../ui/icons.generated';
-  import Button from '../../../ui/components/Button.svelte';
-  import Empty from '../../../ui/components/Empty.svelte';
-  import Icon from '../../../ui/components/Icon.svelte';
-  import IconButton from '../../../ui/components/IconButton.svelte';
-  import JobCard from '../../../ui/components/JobCard.svelte';
-  import Segmented from '../../../ui/components/Segmented.svelte';
-  import VirtualList from '../../../ui/components/VirtualList.svelte';
-  import PageHeader from '../PageHeader.svelte';
-  import SupportCard from '../../../ui/components/SupportCard.svelte';
-  import { SUPPORT_PROMPT_AFTER } from '../../../lib/links';
-  import { supportCardDismissed } from '../../../lib/storage/prefs';
-  import { onMount } from 'svelte';
+  import { api, errorText } from '../../lib/api';
+  import { SUPPORT_PROMPT_AFTER } from '../../lib/links';
+  import type { ItemView, JobAction } from '../../lib/types';
+  import type { IconName } from '../../ui/icons.generated';
+  import { app, fmt, overallProgress, t } from '../../ui/state/app.svelte';
+  import { go } from '../../ui/state/router.svelte';
+  import { toast } from '../../ui/state/toasts.svelte';
+  import Button from '../../ui/components/Button.svelte';
+  import Empty from '../../ui/components/Empty.svelte';
+  import Icon from '../../ui/components/Icon.svelte';
+  import IconButton from '../../ui/components/IconButton.svelte';
+  import JobCard from '../../ui/components/JobCard.svelte';
+  import Segmented from '../../ui/components/Segmented.svelte';
+  import SupportCard from '../../ui/components/SupportCard.svelte';
+  import VirtualList from '../../ui/components/VirtualList.svelte';
+  import PageHeader from '../../ui/layout/PageHeader.svelte';
 
   type Filter = 'all' | 'active' | 'finished';
   let filter = $state<Filter>('all');
   let openId = $state<string | null>(null);
-  let detail = $state<Job | null>(null);
+  let detail = $state<ItemView[] | null>(null);
   let itemFilter = $state<'all' | 'failed'>('all');
 
   const isLive = (status: string) =>
     status === 'running' || status === 'queued' || status === 'resolving' || status === 'paused';
+  // Live jobs in queue order (the order they run in), finished ones newest first.
   const jobs = $derived(
-    [...app.jobs]
-      .filter((j) =>
+    app.jobs
+      .map((job, order) => ({ job, order }))
+      .filter(({ job: j }) =>
         filter === 'all' ? true : filter === 'active' ? isLive(j.status) : !isLive(j.status),
       )
       .sort(
-        (a, b) => Number(isLive(b.status)) - Number(isLive(a.status)) || b.createdAt - a.createdAt,
-      ),
+        (a, b) =>
+          Number(isLive(b.job.status)) - Number(isLive(a.job.status)) ||
+          (isLive(a.job.status) ? a.order - b.order : b.job.createdAt - a.job.createdAt),
+      )
+      .map(({ job }) => job),
   );
   const totals = $derived(overallProgress(app.jobs));
   const finishedCount = $derived(app.jobs.filter((j) => !isLive(j.status)).length);
+  const liveCount = $derived(app.jobs.filter((j) => isLive(j.status)).length);
   const anyRunning = $derived(
     app.jobs.some(
       (j) => j.status === 'running' || j.status === 'queued' || j.status === 'resolving',
@@ -46,22 +52,37 @@
   );
   const anyPaused = $derived(app.jobs.some((j) => j.status === 'paused'));
   const items = $derived(
-    (detail?.items ?? []).filter((i) => itemFilter === 'all' || i.status === 'failed'),
+    (detail ?? []).filter((i) => itemFilter === 'all' || i.status === 'failed'),
   );
 
-  // Refresh the open job's items whenever its summary changes.
+  // Refresh the open job's items while it runs.
   $effect(() => {
-    const summary = app.jobs.find((j) => j.id === openId);
-    void summary?.stats.done;
-    void summary?.stats.failed;
-    void summary?.status;
-    if (!openId) return;
     const id = openId;
-    call('jobs:detail', { jobId: id })
-      .then((job) => {
-        if (openId === id) detail = job;
-      })
-      .catch(() => undefined);
+    if (!id) return;
+    const load = () =>
+      api
+        .jobItems(id)
+        .then((list) => {
+          if (openId === id) detail = list;
+        })
+        .catch(() => undefined);
+    void load();
+    const timer = setInterval(() => {
+      const job = app.jobs.find((j) => j.id === id);
+      if (job && isLive(job.status)) void load();
+    }, 700);
+    return () => clearInterval(timer);
+  });
+
+  // One last refresh when the open job finishes.
+  $effect(() => {
+    const job = app.jobs.find((j) => j.id === openId);
+    if (job && !isLive(job.status)) {
+      const id = job.id;
+      void api.jobItems(id).then((list) => {
+        if (openId === id) detail = list;
+      });
+    }
   });
 
   function toggle(id: string) {
@@ -76,29 +97,46 @@
   }
 
   async function all(action: 'pause' | 'resume') {
-    await call('jobs:all', { action });
+    await api.jobsActionAll(action);
   }
 
-  async function showFile(path: string) {
-    const found = await call('app:show-file', { path }).catch(() => false);
+  async function act(jobId: string, action: JobAction) {
+    await api.jobAction(jobId, action).catch((e) => toast(errorText(e), 'error'));
+  }
+
+  async function showFile(path: string | null) {
+    if (!path) return;
+    const found = await api.revealPath(path).catch(() => false);
     if (!found) toast(t('downloads.fileMissing'), 'warning');
+  }
+
+  async function openFolder(path: string) {
+    await api.ensureDir(path).catch(() => undefined);
+    await api.openPath(path).catch(() => toast(t('history.folderMissing'), 'warning'));
   }
 
   // A one-time thank-you once someone has finished a few downloads.
   let showSupport = $state(false);
   onMount(async () => {
-    const [dismissed, stats] = await Promise.all([
-      supportCardDismissed.getValue(),
-      call('history:stats').catch(() => ({ history: 0 })),
-    ]);
-    showSupport = !dismissed && stats.history >= SUPPORT_PROMPT_AFTER;
+    let dismissed: boolean;
+    try {
+      dismissed = localStorage.getItem('pdl.supportDismissed') === '1';
+    } catch {
+      dismissed = false;
+    }
+    const counts = await api.counts().catch(() => ({ history: 0 }));
+    showSupport = !dismissed && counts.history >= SUPPORT_PROMPT_AFTER;
   });
   function dismissSupport() {
     showSupport = false;
-    void supportCardDismissed.setValue(true);
+    try {
+      localStorage.setItem('pdl.supportDismissed', '1');
+    } catch {
+      // ignore
+    }
   }
 
-  const ITEM_ICON: Record<Item['status'], IconName> = {
+  const ITEM_ICON: Record<ItemView['status'], IconName> = {
     pending: 'clock',
     active: 'download',
     done: 'success',
@@ -110,18 +148,20 @@
 
 <PageHeader title={t('nav.downloads')} description={t('downloads.description')}>
   {#snippet actions()}
-    {#if anyRunning}<Button icon="pause" onclick={() => all('pause')}
-        >{t('downloads.pauseAll')}</Button
-      >{/if}
-    {#if anyPaused}<Button icon="play" onclick={() => all('resume')}
-        >{t('downloads.resumeAll')}</Button
-      >{/if}
+    {#if anyRunning}<Button icon="pause" onclick={() => all('pause')}>
+        {t('downloads.pauseAll')}
+      </Button>{/if}
+    {#if anyPaused}<Button icon="play" onclick={() => all('resume')}>
+        {t('downloads.resumeAll')}
+      </Button>{/if}
     <Button
       variant="ghost"
       icon="trash"
       disabled={finishedCount === 0}
-      onclick={() => call('jobs:clear-finished')}>{t('downloads.clearFinished')}</Button
+      onclick={() => api.clearFinished()}
     >
+      {t('downloads.clearFinished')}
+    </Button>
   {/snippet}
 </PageHeader>
 
@@ -140,9 +180,9 @@
   </div>
   <div class="stat">
     <span class="label">{t('downloads.statProgress')}</span>
-    <span class="value mono-num"
-      >{totals.active > 0 ? `${Math.round(totals.ratio * 100)}%` : '-'}</span
-    >
+    <span class="value mono-num">
+      {totals.active > 0 ? `${Math.round(totals.ratio * 100)}%` : '-'}
+    </span>
   </div>
   <div class="stat">
     <span class="label">{t('downloads.statFinished')}</span>
@@ -164,7 +204,11 @@
 </div>
 
 {#if jobs.length === 0}
-  <Empty icon="queue" title={t('downloads.emptyTitle')} body={t('downloads.emptyBody')} />
+  <Empty icon="queue" title={t('downloads.emptyTitle')} body={t('downloads.emptyBody')}>
+    <Button variant="primary" icon="compass" onclick={() => go('browse')}>
+      {t('downloads.browse')}
+    </Button>
+  </Empty>
 {:else}
   <div class="list">
     {#each jobs as job (job.id)}
@@ -182,7 +226,36 @@
                   ? t('downloads.hideItems')
                   : t('downloads.showItems', { count: job.stats.total })}
               </Button>
-              {#if job.finishedAt}<span class="faint">{fmt.relative(job.finishedAt)}</span>{/if}
+              <span class="job-tools">
+                {#if isLive(job.status) && liveCount > 1}
+                  <IconButton
+                    size="sm"
+                    icon="toTop"
+                    label={t('downloads.toTop')}
+                    onclick={() => act(job.id, 'top')}
+                  />
+                  <IconButton
+                    size="sm"
+                    icon="arrowUp"
+                    label={t('downloads.moveUp')}
+                    onclick={() => act(job.id, 'up')}
+                  />
+                  <IconButton
+                    size="sm"
+                    icon="arrowDown"
+                    label={t('downloads.moveDown')}
+                    onclick={() => act(job.id, 'down')}
+                  />
+                {/if}
+                <IconButton
+                  size="sm"
+                  icon="folderOpen"
+                  label={t('downloads.openFolder')}
+                  tipSide="left"
+                  onclick={() => openFolder(job.folder)}
+                />
+                {#if job.finishedAt}<span class="faint">{fmt.relative(job.finishedAt)}</span>{/if}
+              </span>
             </div>
             {#if openId === job.id}
               <div class="details" transition:slide={{ duration: 220 }}>
@@ -207,25 +280,51 @@
                     <VirtualList {items} rowHeight={40} key={(i) => i.id}>
                       {#snippet row(item)}
                         <div class="item {item.status}">
-                          <Icon name={ITEM_ICON[item.status]} spin={false} />
+                          <Icon name={ITEM_ICON[item.status]} />
                           <div class="item-main">
                             <span class="truncate" title={item.path}>{item.label}</span>
                             {#if item.error || item.skipReason}
-                              <span class="item-note truncate" title={item.error}
-                                >{item.skipReason ? t(`skip.${item.skipReason}`) : item.error}</span
-                              >
+                              <span class="item-note truncate" title={item.error}>
+                                {item.skipReason ? t(`skip.${item.skipReason}`) : item.error}
+                              </span>
                             {/if}
                           </div>
-                          <span class="mono-num faint"
-                            >{item.bytes > 0 ? fmt.bytes(item.bytes) : ''}</span
-                          >
+                          {#if item.status === 'active' && item.totalBytes > 0}
+                            <span
+                              class="item-bar"
+                              style="--p:{Math.min(1, item.bytes / item.totalBytes)}"
+                            >
+                              <span></span>
+                            </span>
+                          {/if}
+                          <span class="mono-num faint">
+                            {item.bytes > 0
+                              ? item.status === 'active' && item.totalBytes > 0
+                                ? `${fmt.bytes(item.bytes)} / ${fmt.bytes(item.totalBytes)}`
+                                : fmt.bytes(item.bytes)
+                              : ''}
+                          </span>
+                          {#if item.fallback}<span
+                              class="tag"
+                              data-tip={t('downloads.fallbackHint')}
+                            >
+                              {t('file.preview')}
+                            </span>{/if}
                           {#if item.status === 'done'}
                             <IconButton
                               size="sm"
                               icon="folderOpen"
                               label={t('downloads.showInFolder')}
                               tipSide="left"
-                              onclick={() => showFile(item.path)}
+                              onclick={() => showFile(item.target)}
+                            />
+                          {:else if item.status === 'failed' || item.status === 'cancelled'}
+                            <IconButton
+                              size="sm"
+                              icon="retry"
+                              label={t('common.retry')}
+                              tipSide="left"
+                              onclick={() => api.retryItem(job.id, item.id)}
                             />
                           {/if}
                         </div>
@@ -343,5 +442,36 @@
   }
   .pad {
     padding: 12px;
+  }
+  .job-tools {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+  }
+  .job-tools .faint {
+    margin-left: 8px;
+  }
+  .item-bar {
+    width: 90px;
+    height: 4px;
+    border-radius: 99px;
+    background: var(--bg-elev-3);
+    overflow: hidden;
+    flex: none;
+  }
+  .item-bar span {
+    display: block;
+    height: 100%;
+    background: var(--accent);
+    transform-origin: left;
+    transform: scaleX(var(--p));
+    transition: transform 600ms var(--ease-out);
+  }
+  .tag {
+    font-size: var(--fs-xs);
+    padding: 1px 7px;
+    border-radius: 99px;
+    color: var(--warning);
+    background: color-mix(in srgb, var(--warning) 14%, transparent);
   }
 </style>

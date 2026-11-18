@@ -3,19 +3,20 @@
   import { flip } from 'svelte/animate';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { call } from '../../../lib/messages';
-  import { pageUrls } from '../../../lib/pawchive/urls';
-  import type { WatchEntry } from '../../../lib/watch';
-  import { app, fmt, t } from '../../../ui/state/app.svelte';
-  import { toast } from '../../../ui/state/toasts.svelte';
-  import Button from '../../../ui/components/Button.svelte';
-  import Empty from '../../../ui/components/Empty.svelte';
-  import Icon from '../../../ui/components/Icon.svelte';
-  import IconButton from '../../../ui/components/IconButton.svelte';
-  import Switch from '../../../ui/components/Switch.svelte';
-  import TextInput from '../../../ui/components/TextInput.svelte';
-  import PageHeader from '../PageHeader.svelte';
-  import { pickTextFile, saveTextFile, stamp } from '../download';
+  import { api, errorText } from '../../lib/api';
+  import { openTextFile, saveTextFile, stamp } from '../../lib/files';
+  import type { WatchEntry } from '../../lib/types';
+  import { pageUrls } from '../../lib/urls';
+  import { openLink } from '../../ui/state/router.svelte';
+  import { app, fmt, t } from '../../ui/state/app.svelte';
+  import { toast } from '../../ui/state/toasts.svelte';
+  import Button from '../../ui/components/Button.svelte';
+  import Empty from '../../ui/components/Empty.svelte';
+  import Icon from '../../ui/components/Icon.svelte';
+  import IconButton from '../../ui/components/IconButton.svelte';
+  import Switch from '../../ui/components/Switch.svelte';
+  import TextInput from '../../ui/components/TextInput.svelte';
+  import PageHeader from '../../ui/layout/PageHeader.svelte';
 
   let entries = $state<WatchEntry[] | null>(null);
   let checking = $state<string | null>(null);
@@ -31,7 +32,29 @@
   const interval = $derived(app.settings.watchIntervalMinutes);
 
   async function load() {
-    entries = await call('watch:list');
+    entries = await api.listWatch();
+  }
+
+  /** Watches every creator linked in the text (post links count for their creator). */
+  async function addLinks(text: string): Promise<number> {
+    const links = await api.parseLinks(text).catch(() => []);
+    const creators = new Map<string, { service: string; creatorId: string }>();
+    for (const { ref } of links) {
+      if (ref.kind === 'creator' || ref.kind === 'post')
+        creators.set(`${ref.service}:${ref.creatorId}`, {
+          service: ref.service,
+          creatorId: ref.creatorId,
+        });
+    }
+    let added = 0;
+    for (const { service, creatorId } of creators.values()) {
+      const name = await api
+        .getCreator(service, creatorId)
+        .then((v) => v.creator.name)
+        .catch(() => creatorId);
+      if (await api.addWatch(service, creatorId, name).catch(() => false)) added += 1;
+    }
+    return added;
   }
 
   onMount(load);
@@ -44,7 +67,7 @@
   async function check(key?: string) {
     checking = key ?? 'all';
     try {
-      const { found } = await call('watch:check', key ? { key } : {});
+      const { found } = await api.checkWatch(key ? [key] : undefined);
       toast(
         found > 0 ? t('watch.foundNew', { count: found }) : t('watch.nothingNew'),
         found > 0 ? 'success' : 'info',
@@ -59,7 +82,7 @@
     if (!link.trim()) return;
     adding = true;
     try {
-      const { added } = await call('watch:import', { lines: [link] });
+      const added = await addLinks(link);
       if (added) {
         toast(t('watch.addedCount', { count: added }), 'success');
         link = '';
@@ -71,23 +94,29 @@
   }
 
   async function downloadNew(entry: WatchEntry) {
-    const result = await call('watch:download-new', { key: entry.key });
+    const result = await api.queueWatchNew(entry.key).catch(() => null);
     if (result) toast(t('toast.queuedPosts', { count: entry.newPosts.length }), 'success');
     await load();
   }
 
   async function importList() {
-    const text = await pickTextFile('.txt,text/plain');
+    let text: string | null = null;
+    try {
+      text = await openTextFile(t('common.import'));
+    } catch (e) {
+      toast(errorText(e), 'error');
+    }
     if (!text) return;
-    const { added } = await call('watch:import', { lines: text.split(/\r?\n/) });
+    const added = await addLinks(text);
     toast(t('watch.addedCount', { count: added }), added ? 'success' : 'info');
     await load();
   }
 
   function exportList() {
-    saveTextFile(
+    void saveTextFile(
       `pawchive-watchlist-${stamp()}.txt`,
       `${(entries ?? []).map((e) => pageUrls.creator(e.service, e.creatorId)).join('\n')}\n`,
+      t('common.export'),
     );
   }
 </script>
@@ -95,16 +124,18 @@
 <PageHeader title={t('nav.watchlist')} description={t('watch.description')}>
   {#snippet actions()}
     <Button icon="import" onclick={importList}>{t('common.import')}</Button>
-    <Button icon="export" disabled={!entries?.length} onclick={exportList}
-      >{t('common.export')}</Button
-    >
+    <Button icon="export" disabled={!entries?.length} onclick={exportList}>
+      {t('common.export')}
+    </Button>
     <Button
       variant="primary"
       icon="sync"
       loading={checking === 'all'}
       disabled={!entries?.length}
-      onclick={() => check()}>{t('watch.checkAll')}</Button
+      onclick={() => check()}
     >
+      {t('watch.checkAll')}
+    </Button>
   {/snippet}
 </PageHeader>
 
@@ -117,9 +148,9 @@
     bind:value={link}
     onkeydown={(e) => e.key === 'Enter' && add()}
   />
-  <Button icon="plus" loading={adding} disabled={!link.trim()} onclick={add}
-    >{t('watch.add')}</Button
-  >
+  <Button icon="plus" loading={adding} disabled={!link.trim()} onclick={add}>
+    {t('watch.add')}
+  </Button>
 </div>
 <p class="schedule faint">
   <Icon name="clock" />
@@ -151,18 +182,22 @@
             <a
               class="name truncate"
               href={pageUrls.creator(entry.service, entry.creatorId)}
-              target="_blank"
-              rel="noreferrer">{entry.name}</a
+              onclick={(e) => {
+                e.preventDefault();
+                openLink(pageUrls.creator(entry.service, entry.creatorId));
+              }}
             >
+              {entry.name}
+            </a>
             <span class="faint truncate">
               {entry.service}<span class="sep">/</span>{entry.lastCheckedAt
                 ? t('watch.checked', { time: fmt.relative(entry.lastCheckedAt) })
                 : t('watch.neverChecked')}
             </span>
           </div>
-          {#if entry.newPosts.length}<span class="new mono-num"
-              >{t('watch.newCount', { count: entry.newPosts.length })}</span
-            >{/if}
+          {#if entry.newPosts.length}<span class="new mono-num">
+              {t('watch.newCount', { count: entry.newPosts.length })}
+            </span>{/if}
         </div>
         {#if entry.error}<p class="error"><Icon name="warning" />{entry.error}</p>{/if}
 
@@ -182,9 +217,13 @@
                   <a
                     class="truncate"
                     href={pageUrls.post(entry.service, entry.creatorId, post.id)}
-                    target="_blank"
-                    rel="noreferrer">{post.title || post.id}</a
+                    onclick={(e) => {
+                      e.preventDefault();
+                      openLink(pageUrls.post(entry.service, entry.creatorId, post.id));
+                    }}
                   >
+                    {post.title || post.id}
+                  </a>
                   <span class="faint mono-num">{fmt.date(post.published)}</span>
                 </li>
               {/each}
@@ -197,8 +236,7 @@
             <Switch
               label={t('watch.auto')}
               checked={entry.autoDownload}
-              onchange={(on) =>
-                call('watch:update', { key: entry.key, patch: { autoDownload: on } }).then(load)}
+              onchange={(on) => api.setWatchAuto(entry.key, on).then(load)}
             />
             <span>{t('watch.auto')}</span>
           </label>
@@ -207,7 +245,7 @@
               <IconButton
                 icon="check"
                 label={t('watch.markSeen')}
-                onclick={() => call('watch:mark-seen', { key: entry.key }).then(load)}
+                onclick={() => api.markWatchSeen(entry.key).then(load)}
               />
             {/if}
             <IconButton
@@ -220,14 +258,14 @@
               icon="trash"
               label={t('common.remove')}
               tipSide="left"
-              onclick={() => call('watch:remove', { key: entry.key }).then(load)}
+              onclick={() => api.removeWatch([entry.key]).then(load)}
             />
           </div>
         </div>
         {#if entry.newPosts.length}
-          <Button variant="primary" icon="download" block onclick={() => downloadNew(entry)}
-            >{t('watch.downloadNew', { count: entry.newPosts.length })}</Button
-          >
+          <Button variant="primary" icon="download" block onclick={() => downloadNew(entry)}>
+            {t('watch.downloadNew', { count: entry.newPosts.length })}
+          </Button>
         {/if}
       </article>
     {/each}

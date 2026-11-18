@@ -1,91 +1,123 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { fade } from 'svelte/transition';
-  import { browser } from 'wxt/browser';
+  import { api, errorText, inTauri, pickFolder } from '../../lib/api';
+  import { openTextFile, saveTextFile, stamp } from '../../lib/files';
+  import { LANGUAGE_NAMES } from '../../lib/i18n';
   import {
     buildArchivePath,
     buildFilePath,
     FILE_TEMPLATE_PRESETS,
     FOLDER_TEMPLATE_PRESETS,
     type NameContext,
-  } from '../../../lib/download/template';
-  import { LANGUAGE_NAMES } from '../../../lib/i18n';
-  import { FILE_CATEGORIES } from '../../../lib/pawchive/normalize';
+  } from '../../lib/naming/template';
   import {
     ACCENTS,
     DEFAULT_SETTINGS,
+    FILE_CATEGORIES,
     LOCALES,
     THEMES,
     WATCH_INTERVALS,
+    type Counts,
+    type ProxyMode,
     type Settings,
-  } from '../../../lib/settings';
-  import {
-    exportSettings,
-    parseSettingsFile,
-    resetSettings,
-    saveSettings,
-  } from '../../../lib/storage/settings-store';
-  import { app, t, updateSettings } from '../../../ui/state/app.svelte';
-  import { toast } from '../../../ui/state/toasts.svelte';
-  import Button from '../../../ui/components/Button.svelte';
-  import Chip from '../../../ui/components/Chip.svelte';
-  import Dialog from '../../../ui/components/Dialog.svelte';
-  import Icon from '../../../ui/components/Icon.svelte';
-  import Segmented from '../../../ui/components/Segmented.svelte';
-  import Select from '../../../ui/components/Select.svelte';
-  import Switch from '../../../ui/components/Switch.svelte';
-  import PageHeader from '../PageHeader.svelte';
-  import SettingRow from '../SettingRow.svelte';
-  import SettingSection from '../SettingSection.svelte';
-  import TemplateField from '../TemplateField.svelte';
-  import { pickTextFile, saveTextFile, stamp } from '../download';
+  } from '../../lib/types';
+  import { app, fmt, replaceSettings, t, updateSettings } from '../../ui/state/app.svelte';
+  import { router } from '../../ui/state/router.svelte';
+  import { toast } from '../../ui/state/toasts.svelte';
+  import Button from '../../ui/components/Button.svelte';
+  import Chip from '../../ui/components/Chip.svelte';
+  import Dialog from '../../ui/components/Dialog.svelte';
+  import Icon from '../../ui/components/Icon.svelte';
+  import Segmented from '../../ui/components/Segmented.svelte';
+  import Select from '../../ui/components/Select.svelte';
+  import Switch from '../../ui/components/Switch.svelte';
+  import TextInput from '../../ui/components/TextInput.svelte';
+  import PageHeader from '../../ui/layout/PageHeader.svelte';
+  import SettingRow from '../../ui/layout/SettingRow.svelte';
+  import SettingSection from '../../ui/layout/SettingSection.svelte';
+  import TemplateField from '../../ui/layout/TemplateField.svelte';
 
   const s = $derived(app.settings);
   let resetOpen = $state(false);
-  let commands = $state<Array<{ name?: string; shortcut?: string; description?: string }>>([]);
-  let hasAccess = $state(true);
+  let forgetOpen = $state(false);
+  let counts = $state<Counts | null>(null);
+  let proxyUrl = $state(app.settings.proxy.url);
+  let proxyError = $state<string | null>(null);
 
   const SAMPLE: NameContext = {
     service: 'patreon',
     creatorId: '2581747',
-    creatorName: 'Histy',
+    creatorName: 'Aster Vale',
     postId: '175580645',
-    postTitle: 'Early access: new outfit pack',
+    postTitle: 'Spring Sketchbook: Forest Studies',
     published: '2026-11-17T08:59:08',
     added: '2026-11-17T10:00:00',
     index: 3,
     count: 12,
-    fileName: 'Screenshot (1790).png',
+    fileName: 'forest-morning.png',
     ext: 'png',
     hash: '64bb473acd217b4e30e4c4a65a78b5dd1d0e649f32e8b9c704912165d3625336',
     role: 'attachment',
   };
-  const example = $derived(buildFilePath(s.folderTemplate, s.fileTemplate, SAMPLE));
-  const archiveExample = $derived(buildArchivePath(s.folderTemplate, s.archiveTemplate, SAMPLE));
+  const sep = $derived(app.info?.platform === 'windows' ? '\\' : '/');
+  const example = $derived(
+    `${s.downloadDir}${sep}${buildFilePath(s.folderTemplate, s.fileTemplate, SAMPLE).replaceAll('/', sep)}`,
+  );
+  const archiveExample = $derived(
+    `${s.downloadDir}${sep}${buildArchivePath(s.folderTemplate, s.archiveTemplate, SAMPLE).replaceAll('/', sep)}`,
+  );
 
-  const MB = (n: number) => (n >= 1024 ? `${(n / 1024).toLocaleString()} GB` : `${n} MB`);
-  const HOSTS = ['https://pawchive.pw/*', 'https://*.pawchive.pw/*'];
+  const GB = (n: number) =>
+    n === 0 ? t('settings.unlimited') : `${(n / 1024).toLocaleString()} GB`;
+  const SPEEDS = [0, 512, 1024, 2048, 5120, 10240, 25600];
+  const speedLabel = (kb: number) =>
+    kb === 0 ? t('settings.unlimited') : `${fmt.bytes(kb * 1024)}/s`;
 
-  onMount(async () => {
-    commands = (await browser.commands.getAll().catch(() => [])) as typeof commands;
-    hasAccess = await browser.permissions.contains({ origins: HOSTS }).catch(() => true);
+  onMount(() => {
+    void api.counts().then((c) => (counts = c));
+    if (router.section) {
+      requestAnimationFrame(() =>
+        document.getElementById(`s-${router.section}`)?.scrollIntoView({ behavior: 'smooth' }),
+      );
+    }
   });
 
   function set<K extends keyof Settings>(key: K, value: Settings[K]) {
-    void updateSettings({ [key]: value } as Partial<Settings>).then(() =>
-      toast(t('settings.saved'), 'success', { duration: 1400 }),
-    );
+    void updateSettings({ [key]: value } as Partial<Settings>)
+      .then(() => toast(t('settings.saved'), 'success', { duration: 1400 }))
+      .catch((e) => toast(errorText(e), 'error'));
   }
 
-  async function grant() {
-    hasAccess = await browser.permissions.request({ origins: HOSTS }).catch(() => false);
+  async function chooseFolder() {
+    const picked = await pickFolder(t('settings.downloadDir'), s.downloadDir);
+    if (picked) set('downloadDir', picked);
+  }
+
+  async function setProxyMode(mode: ProxyMode) {
+    set('proxy', { mode, url: proxyUrl });
+  }
+
+  async function saveProxyUrl() {
+    proxyError = await api.checkProxyUrl(proxyUrl).catch(() => 'invalid');
+    if (!proxyError) set('proxy', { mode: 'custom', url: proxyUrl.trim() });
+  }
+
+  async function exportFile() {
+    const path = await saveTextFile(
+      `pawchive-downloader-settings-${stamp()}.json`,
+      `${JSON.stringify(s, null, 2)}\n`,
+      t('common.export'),
+    );
+    if (path) toast(t('settings.exported'), 'success');
   }
 
   async function importFile() {
-    const text = await pickTextFile('.json,application/json');
-    if (!text) return;
     try {
-      await saveSettings(parseSettingsFile(text));
+      const text = await openTextFile(t('common.import'), ['json']);
+      if (!text) return;
+      const parsed = JSON.parse(text) as Partial<Settings>;
+      if (!parsed || typeof parsed !== 'object') throw new Error('invalid');
+      await updateSettings(parsed);
       toast(t('settings.imported'), 'success');
     } catch {
       toast(t('settings.importFailed'), 'error');
@@ -93,15 +125,17 @@
   }
 
   async function reset() {
-    await resetSettings();
+    replaceSettings(await api.resetSettings());
     resetOpen = false;
+    proxyUrl = '';
     toast(t('settings.resetDone'), 'success');
   }
 
-  function openShortcuts() {
-    const url =
-      import.meta.env.BROWSER === 'firefox' ? 'about:addons' : 'chrome://extensions/shortcuts';
-    void browser.tabs.create({ url }).catch(() => toast(t('settings.shortcutsManual'), 'info'));
+  async function forget() {
+    await api.forgetKnown();
+    forgetOpen = false;
+    counts = await api.counts();
+    toast(t('settings.forgotten'), 'success');
   }
 
   const sections = [
@@ -109,10 +143,20 @@
     ['downloads', 'download'],
     ['naming', 'rename'],
     ['zip', 'folderZip'],
-    ['page', 'web'],
-    ['background', 'bell'],
+    ['network', 'network'],
+    ['background', 'tray'],
     ['shortcuts', 'keyboard'],
     ['data', 'database'],
+  ] as const;
+
+  const SHORTCUTS = [
+    ['Ctrl+L', 'shortcut.focusLink'],
+    ['Ctrl+V', 'shortcut.paste'],
+    ['Ctrl+Shift+B', 'shortcut.batch'],
+    ['Ctrl+1 ... Ctrl+9', 'shortcut.pages'],
+    ['Ctrl+,', 'shortcut.settings'],
+    ['Shift+Click', 'shortcut.range'],
+    ['Enter', 'shortcut.openPost'],
   ] as const;
 </script>
 
@@ -121,7 +165,7 @@
 <nav class="jump">
   {#each sections as [id, icon] (id)}
     <a
-      href="#settings"
+      href="#settings/{id}"
       onclick={(e) => {
         e.preventDefault();
         document.getElementById(`s-${id}`)?.scrollIntoView({ behavior: 'smooth' });
@@ -131,14 +175,6 @@
     </a>
   {/each}
 </nav>
-
-{#if !hasAccess}
-  <div class="access" in:fade>
-    <Icon name="shield" />
-    <span>{t('settings.accessMissing')}</span>
-    <Button variant="primary" size="sm" onclick={grant}>{t('settings.grant')}</Button>
-  </div>
-{/if}
 
 <SettingSection id="s-appearance" icon="palette" title={t('settings.appearance')}>
   <SettingRow label={t('settings.language')} description={t('settings.languageHint')}>
@@ -211,6 +247,23 @@
   title={t('settings.downloads')}
   description={t('settings.downloadsHint')}
 >
+  <SettingRow label={t('settings.downloadDir')} description={t('settings.downloadDirHint')}>
+    <div class="folder-row">
+      <code class="path selectable" title={s.downloadDir}>{s.downloadDir}</code>
+      <Button size="sm" icon="folder" onclick={chooseFolder}>{t('settings.change')}</Button>
+      <Button
+        size="sm"
+        variant="ghost"
+        icon="openFolder"
+        onclick={async () => {
+          await api.ensureDir(s.downloadDir).catch(() => undefined);
+          await api.openPath(s.downloadDir).catch((e) => toast(errorText(e), 'error'));
+        }}
+      >
+        {t('settings.open')}
+      </Button>
+    </div>
+  </SettingRow>
   <SettingRow label={t('settings.mode')} description={t('settings.modeHint')}>
     <Segmented
       label={t('settings.mode')}
@@ -220,7 +273,15 @@
       options={[
         { value: 'individual', label: t('options.individual'), icon: 'layers' },
         { value: 'zip', label: t('options.zip'), icon: 'folderZip' },
+        { value: 'thumbnails', label: t('options.thumbnails'), icon: 'thumbnails' },
       ]}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.fastMode')} description={t('settings.fastModeHint')}>
+    <Switch
+      label={t('settings.fastMode')}
+      checked={s.fastMode}
+      onchange={(v) => set('fastMode', v)}
     />
   </SettingRow>
   <SettingRow label={t('settings.concurrency')} description={t('settings.concurrencyHint')}>
@@ -243,12 +304,20 @@
       }))}
     />
   </SettingRow>
+  <SettingRow label={t('settings.speedLimit')} description={t('settings.speedLimitHint')}>
+    <Select
+      label={t('settings.speedLimit')}
+      value={s.speedLimitKbps}
+      onchange={(v) => set('speedLimitKbps', v)}
+      options={SPEEDS.map((kb) => ({ value: kb, label: speedLabel(kb) }))}
+    />
+  </SettingRow>
   <SettingRow label={t('settings.retries')} description={t('settings.retriesHint')}>
     <Select
       label={t('settings.retries')}
       value={s.maxRetries}
       onchange={(v) => set('maxRetries', v)}
-      options={[0, 1, 2, 3, 5, 8, 10, 15, 20].map((n) => ({ value: n, label: String(n) }))}
+      options={[0, 1, 2, 3, 5, 8, 10, 15, 20, 30, 50].map((n) => ({ value: n, label: String(n) }))}
     />
   </SettingRow>
   <SettingRow label={t('settings.conflict')}>
@@ -259,7 +328,7 @@
       options={[
         { value: 'uniquify', label: t('conflict.uniquify') },
         { value: 'overwrite', label: t('conflict.overwrite') },
-        { value: 'prompt', label: t('conflict.prompt') },
+        { value: 'skip', label: t('conflict.skip') },
       ]}
     />
   </SettingRow>
@@ -268,6 +337,13 @@
       label={t('settings.skipDownloaded')}
       checked={s.skipDownloaded}
       onchange={(v) => set('skipDownloaded', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.verifyHashes')} description={t('settings.verifyHashesHint')}>
+    <Switch
+      label={t('settings.verifyHashes')}
+      checked={s.verifyHashes}
+      onchange={(v) => set('verifyHashes', v)}
     />
   </SettingRow>
   <SettingRow label={t('settings.previewOnly')} description={t('settings.previewOnlyHint')}>
@@ -280,6 +356,16 @@
         { value: 'thumbnail', label: t('preview.thumbnail') },
         { value: 'skip', label: t('preview.skip') },
       ]}
+    />
+  </SettingRow>
+  <SettingRow
+    label={t('settings.thumbnailFallback')}
+    description={t('settings.thumbnailFallbackHint')}
+  >
+    <Switch
+      label={t('settings.thumbnailFallback')}
+      checked={s.thumbnailFallback}
+      onchange={(v) => set('thumbnailFallback', v)}
     />
   </SettingRow>
   <SettingRow label={t('settings.content')} description={t('settings.contentHint')}>
@@ -351,8 +437,8 @@
   </SettingRow>
   <div class="example">
     <span class="faint">{t('settings.example')}</span>
-    <code>{example}</code>
-    <code>{archiveExample}</code>
+    <code class="selectable">{example}</code>
+    <code class="selectable">{archiveExample}</code>
   </div>
 </SettingSection>
 
@@ -367,7 +453,7 @@
       label={t('settings.zipMax')}
       value={s.zipMaxSizeMb}
       onchange={(v) => set('zipMaxSizeMb', v)}
-      options={[500, 1024, 2048, 3900].map((n) => ({ value: n, label: MB(n) }))}
+      options={[0, 1024, 2048, 4096, 8192, 16384].map((n) => ({ value: n, label: GB(n) }))}
     />
   </SettingRow>
   <SettingRow label={t('settings.zipVideos')} description={t('settings.zipVideosHint')}>
@@ -377,64 +463,78 @@
       onchange={(v) => set('zipVideosSeparately', v)}
     />
   </SettingRow>
-  <SettingRow label={t('settings.zipSeparate')} description={t('settings.zipSeparateHint')}>
-    <Select
-      label={t('settings.zipSeparate')}
-      value={s.zipSeparateOverMb}
-      onchange={(v) => set('zipSeparateOverMb', v)}
-      options={[100, 300, 500, 1024, 2048].map((n) => ({ value: n, label: MB(n) }))}
-    />
-  </SettingRow>
 </SettingSection>
 
-<SettingSection id="s-page" icon="web" title={t('settings.page')}>
-  <SettingRow label={t('settings.floatingButton')} description={t('settings.floatingButtonHint')}>
-    <Switch
-      label={t('settings.floatingButton')}
-      checked={s.showFloatingButton}
-      onchange={(v) => set('showFloatingButton', v)}
-    />
-  </SettingRow>
-  <SettingRow label={t('settings.corner')}>
+<SettingSection
+  id="s-network"
+  icon="network"
+  title={t('settings.network')}
+  description={t('settings.networkHint')}
+>
+  <SettingRow label={t('settings.proxy')} description={t('settings.proxyHint')}>
     <Select
-      label={t('settings.corner')}
-      value={s.buttonCorner}
-      onchange={(v) => set('buttonCorner', v)}
-      options={(['bottom-right', 'bottom-left', 'top-right', 'top-left'] as const).map((c) => ({
-        value: c,
-        label: t(`corner.${c}`),
-      }))}
-    />
-  </SettingRow>
-  <SettingRow label={t('settings.panelSide')}>
-    <Segmented
-      label={t('settings.panelSide')}
-      size="sm"
-      value={s.panelSide}
-      onchange={(v) => set('panelSide', v)}
+      label={t('settings.proxy')}
+      value={s.proxy.mode}
+      onchange={(v) => setProxyMode(v)}
       options={[
-        { value: 'left', label: t('side.left') },
-        { value: 'right', label: t('side.right') },
+        { value: 'system', label: t('proxy.system') },
+        { value: 'none', label: t('proxy.none') },
+        { value: 'custom', label: t('proxy.custom') },
+        { value: 'tor', label: t('proxy.tor') },
       ]}
     />
   </SettingRow>
-  <SettingRow label={t('settings.cardSelectors')} description={t('settings.cardSelectorsHint')}>
-    <Switch
-      label={t('settings.cardSelectors')}
-      checked={s.cardSelectors}
-      onchange={(v) => set('cardSelectors', v)}
-    />
-  </SettingRow>
-  <SettingRow label={t('settings.markDownloaded')} description={t('settings.markDownloadedHint')}>
-    <Switch
-      label={t('settings.markDownloaded')}
-      checked={s.markDownloaded}
-      onchange={(v) => set('markDownloaded', v)}
-    />
+  {#if s.proxy.mode === 'custom'}
+    <SettingRow label={t('settings.proxyUrl')} description={t('settings.proxyUrlHint')} stacked>
+      <form
+        class="proxy"
+        onsubmit={(e) => {
+          e.preventDefault();
+          void saveProxyUrl();
+        }}
+      >
+        <TextInput
+          label={t('settings.proxyUrl')}
+          mono
+          placeholder="socks5h://127.0.0.1:1080"
+          bind:value={proxyUrl}
+          invalid={proxyError !== null}
+        />
+        <Button size="sm" type="submit">{t('common.save')}</Button>
+      </form>
+      {#if proxyError}<span class="error">{t('proxy.invalid')}</span>{/if}
+    </SettingRow>
+  {:else if s.proxy.mode === 'tor'}
+    <p class="note"><Icon name="shieldLock" /> {t('proxy.torHint')}</p>
+  {/if}
+  <SettingRow label={t('settings.userAgent')} description={t('settings.userAgentHint')}>
+    <code class="ua selectable">{app.info?.userAgent}</code>
   </SettingRow>
 </SettingSection>
 
-<SettingSection id="s-background" icon="bell" title={t('settings.background')}>
+<SettingSection id="s-background" icon="tray" title={t('settings.background')}>
+  <SettingRow label={t('settings.closeToTray')} description={t('settings.closeToTrayHint')}>
+    <Switch
+      label={t('settings.closeToTray')}
+      checked={s.closeToTray}
+      onchange={(v) => set('closeToTray', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.launchAtLogin')} description={t('settings.launchAtLoginHint')}>
+    <Switch
+      label={t('settings.launchAtLogin')}
+      checked={s.launchAtLogin}
+      disabled={!inTauri}
+      onchange={(v) => set('launchAtLogin', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.startMinimized')} description={t('settings.startMinimizedHint')}>
+    <Switch
+      label={t('settings.startMinimized')}
+      checked={s.startMinimized}
+      onchange={(v) => set('startMinimized', v)}
+    />
+  </SettingRow>
   <SettingRow label={t('settings.notifications')}>
     <Select
       label={t('settings.notifications')}
@@ -455,11 +555,32 @@
       options={WATCH_INTERVALS.map((n) => ({ value: n, label: t(`interval.${n}`) }))}
     />
   </SettingRow>
+  <SettingRow label={t('settings.checkUpdates')} description={t('settings.checkUpdatesHint')}>
+    <Switch
+      label={t('settings.checkUpdates')}
+      checked={s.checkUpdates}
+      onchange={(v) => set('checkUpdates', v)}
+    />
+  </SettingRow>
   <SettingRow label={t('settings.recordHistory')} description={t('settings.recordHistoryHint')}>
     <Switch
       label={t('settings.recordHistory')}
       checked={s.recordHistory}
       onchange={(v) => set('recordHistory', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.logLevel')}>
+    <Segmented
+      label={t('settings.logLevel')}
+      size="sm"
+      value={s.logLevel}
+      onchange={(v) => set('logLevel', v)}
+      options={[
+        { value: 'debug', label: t('logs.debug') },
+        { value: 'info', label: t('logs.info') },
+        { value: 'warn', label: t('logs.warn') },
+        { value: 'error', label: t('logs.error') },
+      ]}
     />
   </SettingRow>
 </SettingSection>
@@ -470,40 +591,51 @@
   title={t('settings.shortcuts')}
   description={t('settings.shortcutsHint')}
 >
-  {#each commands.filter((c) => c.name && !c.name.startsWith('_')) as command (command.name)}
-    <SettingRow label={t(`shortcut.${command.name}`)}>
-      {#if command.shortcut}
-        <span class="keys"
-          >{#each command.shortcut.split('+') as key, i (i)}<kbd>{key}</kbd>{/each}</span
-        >
-      {:else}
-        <span class="faint">{t('settings.noShortcut')}</span>
-      {/if}
+  {#each SHORTCUTS as [keys, label] (label)}
+    <SettingRow label={t(label)}>
+      <span class="keys">
+        {#each keys.split('+') as key, i (i)}<kbd>{key}</kbd>{/each}
+      </span>
     </SettingRow>
   {/each}
-  <SettingRow label={t('settings.changeShortcuts')}>
-    <Button size="sm" icon="external" onclick={openShortcuts}>{t('settings.openShortcuts')}</Button>
-  </SettingRow>
 </SettingSection>
 
 <SettingSection id="s-data" icon="database" title={t('settings.data')}>
   <SettingRow label={t('settings.exportSettings')} description={t('settings.exportHint')}>
-    <Button
-      size="sm"
-      icon="export"
-      onclick={() =>
-        saveTextFile(
-          `pawchive-downloader-settings-${stamp()}.json`,
-          exportSettings(s),
-          'application/json',
-        )}>{t('common.export')}</Button
-    >
+    <Button size="sm" icon="export" onclick={exportFile}>{t('common.export')}</Button>
     <Button size="sm" icon="import" onclick={importFile}>{t('common.import')}</Button>
   </SettingRow>
-  <SettingRow label={t('settings.reset')} description={t('settings.resetHint')}>
-    <Button size="sm" variant="danger" icon="restore" onclick={() => (resetOpen = true)}
-      >{t('settings.reset')}</Button
+  <SettingRow label={t('settings.dataFolder')} description={t('settings.dataFolderHint')}>
+    <Button
+      size="sm"
+      icon="openFolder"
+      disabled={!app.info}
+      onclick={() => app.info && api.openPath(app.info.dataDir)}
     >
+      {t('settings.open')}
+    </Button>
+  </SettingRow>
+  <SettingRow
+    label={t('settings.knownFiles')}
+    description={t('settings.knownFilesHint', {
+      files: counts?.files ?? 0,
+      posts: counts?.posts ?? 0,
+    })}
+  >
+    <Button
+      size="sm"
+      variant="ghost"
+      icon="restore"
+      disabled={!counts?.files && !counts?.posts}
+      onclick={() => (forgetOpen = true)}
+    >
+      {t('settings.forget')}
+    </Button>
+  </SettingRow>
+  <SettingRow label={t('settings.reset')} description={t('settings.resetHint')}>
+    <Button size="sm" variant="danger" icon="restore" onclick={() => (resetOpen = true)}>
+      {t('settings.reset')}
+    </Button>
   </SettingRow>
 </SettingSection>
 
@@ -518,7 +650,58 @@
   <p>{t('settings.resetBody')}</p>
 </Dialog>
 
+<Dialog
+  open={forgetOpen}
+  title={t('settings.forgetTitle')}
+  confirmLabel={t('settings.forget')}
+  danger
+  onconfirm={forget}
+  oncancel={() => (forgetOpen = false)}
+>
+  <p>{t('settings.forgetBody')}</p>
+</Dialog>
+
 <style>
+  .folder-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    max-width: 560px;
+  }
+  .path,
+  .ua {
+    font-size: var(--fs-xs);
+    padding: 5px 9px;
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 320px;
+  }
+  .proxy {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+  .proxy :global(> :first-child) {
+    flex: 1;
+  }
+  .error {
+    color: var(--danger);
+    font-size: var(--fs-xs);
+  }
+  .note {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 12px 18px;
+    border-bottom: 1px solid var(--border);
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+  }
   .jump {
     position: sticky;
     top: 0;
@@ -549,19 +732,6 @@
   .jump a:hover {
     color: var(--text);
     border-color: var(--border-strong);
-  }
-  .access {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 12px 14px;
-    margin-bottom: 20px;
-    border-radius: var(--radius-md);
-    background: color-mix(in srgb, var(--warning) 10%, transparent);
-    border: 1px solid color-mix(in srgb, var(--warning) 26%, transparent);
-  }
-  .access span {
-    flex: 1;
   }
   .themes {
     display: grid;

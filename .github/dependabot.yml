@@ -1,0 +1,54 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      tooling:
+        patterns:
+          - '@types/*'
+          - 'eslint*'
+          - '@eslint/*'
+          - 'typescript-eslint'
+          - 'prettier*'
+          - 'svelte-check'
+          - 'vitest'
+          - '@vitest/*'
+          - '@testing-library/*'
+          - '@playwright/test'
+          - 'jsdom'
+      framework:
+        patterns:
+          - 'svelte'
+          - '@sveltejs/*'
+          - 'vite'
+          - '@tauri-apps/*'
+    ignore:
+      # Tauri 3 is still in alpha.
+      - dependency-name: '@tauri-apps/*'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: cargo
+    directory: /src-tauri
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 5
+    groups:
+      tauri:
+        patterns:
+          - 'tauri*'
+      rust:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - 'tauri*'
+    ignore:
+      - dependency-name: 'tauri*'
+        update-types: ['version-update:semver-major']
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

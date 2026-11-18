@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Private security report
+    url: https://github.com/VoxDroid/PawchiveDownloader/security/advisories/new
+    about: Report a vulnerability privately; only the maintainers can see it.
+  - name: Pawchive Downloader browser app
+    url: https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension
+    about: Issues with the browser app belong in its own repository.

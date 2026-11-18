@@ -196,13 +196,7 @@ export function resolveLocale(preference: Settings['language'], uiLanguage: stri
 // ---------------------------------------------------------------------- jobs
 
 export type JobStatus =
-  | 'resolving'
-  | 'queued'
-  | 'running'
-  | 'paused'
-  | 'done'
-  | 'failed'
-  | 'cancelled';
+  'resolving' | 'queued' | 'running' | 'paused' | 'done' | 'failed' | 'cancelled';
 export type ItemStatus = 'pending' | 'active' | 'done' | 'failed' | 'skipped' | 'cancelled';
 export type SkipReason = 'duplicate' | 'preview-only' | 'no-relay' | 'exists';
 export type JobAction = 'pause' | 'resume' | 'cancel' | 'retry' | 'remove' | 'top' | 'up' | 'down';

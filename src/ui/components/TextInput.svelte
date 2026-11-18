@@ -60,8 +60,10 @@
         value = '';
         oninput?.('');
         onchange?.('');
-      }}><Icon name="close" /></button
+      }}
     >
+      <Icon name="close" />
+    </button>
   {/if}
 </label>
 
