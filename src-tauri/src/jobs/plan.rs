@@ -9,7 +9,38 @@ use crate::pawchive::normalize::html_to_text;
 use crate::pawchive::types::{FileCategory, Post, PostFile};
 use crate::settings::{ContentFormat, DownloadMode, PreviewOnlyAction};
 
+use super::filter::remove_words;
 use super::model::*;
+
+/// The naming context with the user's unwanted words taken out of the title
+/// and the file name (the extension stays).
+fn cleaned_context(
+    post: &Post,
+    creator: Option<&CreatorInfo>,
+    file: Option<&PostFile>,
+    options: &JobOptions,
+    now_ms: i64,
+) -> NameContext {
+    let mut ctx = name_context(post, creator, file, now_ms);
+    if options.name_remove.is_empty() {
+        return ctx;
+    }
+    ctx.post_title = remove_words(&ctx.post_title, &options.name_remove);
+    if !ctx.file_name.is_empty() {
+        let (stem, ext) = match ctx.file_name.rfind('.') {
+            Some(dot) if dot > 0 => ctx.file_name.split_at(dot),
+            _ => (ctx.file_name.as_str(), ""),
+        };
+        let stem = remove_words(stem, &options.name_remove);
+        let stem = if stem.is_empty() {
+            "file".to_string()
+        } else {
+            stem
+        };
+        ctx.file_name = format!("{stem}{ext}");
+    }
+    ctx
+}
 
 fn name_context(
     post: &Post,
@@ -158,7 +189,7 @@ fn plan_file(
             }
         }
     }
-    let ctx = name_context(post, creator, Some(&file), now_ms);
+    let ctx = cleaned_context(post, creator, Some(&file), options, now_ms);
     let path = build_file_path(&options.folder_template, &options.file_template, &ctx);
     let entry_name = build_file_path("", &options.file_template, &ctx);
     Planned {
@@ -249,11 +280,13 @@ pub fn plan_post(
             .iter()
             .filter(|f| indexes.contains(&f.index))
             .collect(),
-        None => post
-            .files
-            .iter()
-            .filter(|f| options.categories.contains(&f.category))
-            .collect(),
+        None => {
+            let matcher = options.filter.matcher();
+            post.files
+                .iter()
+                .filter(|f| options.categories.contains(&f.category) && matcher.accepts_file(f))
+                .collect()
+        }
     };
     let thumbnails = options.mode == DownloadMode::Thumbnails;
     let planned: Vec<Planned> = chosen
@@ -261,7 +294,7 @@ pub fn plan_post(
         .filter(|f| !thumbnails || f.thumbnail_url.is_some())
         .map(|f| plan_file(post, creator, f, options, known, now_ms))
         .collect();
-    let folder_ctx = name_context(post, creator, None, now_ms);
+    let folder_ctx = cleaned_context(post, creator, None, options, now_ms);
     let folder = build_folder_path(&options.folder_template, &folder_ctx);
     let in_folder = |name: &str| {
         if folder.is_empty() {
@@ -504,6 +537,24 @@ mod tests {
         assert_eq!(text.path, "Pawchive/9/1_content.txt");
         assert!(per_post_folder("x/{published:YYYY} y"));
         assert!(!per_post_folder("Pawchive/{creator} ({service})"));
+    }
+
+    #[test]
+    fn filters_files_and_cleans_names() {
+        let opts = options(|s| {
+            s.filter.skip_extensions = vec!["mp4".into()];
+            s.name_remove = vec!["T".into()];
+            s.folder_template = "{title}x".into();
+            s.file_template = "{name}.{ext}".into();
+        });
+        let items = plan_post(&post(), None, &opts, None, &HashSet::new(), 0);
+        let labels: Vec<_> = items.iter().map(|i| i.label.as_str()).collect();
+        assert_eq!(labels, ["a.png", "p.jpg", "content.txt"]);
+        // An emptied title falls back to the post id.
+        assert_eq!(items[0].path, "1x/a.png");
+        // An explicit pick of files ignores the filter.
+        let items = plan_post(&post(), None, &opts, Some(&[2]), &HashSet::new(), 0);
+        assert_eq!(items[0].label, "v.mp4");
     }
 
     #[test]

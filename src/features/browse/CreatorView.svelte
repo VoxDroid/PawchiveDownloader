@@ -357,6 +357,7 @@
     </div>
 
     <DownloadBar
+      filters="posts"
       label={selected.size
         ? t('creator.download', { count: selected.size })
         : filtered || appliedQuery

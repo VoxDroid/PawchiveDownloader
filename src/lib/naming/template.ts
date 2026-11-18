@@ -240,3 +240,39 @@ export function buildArchivePath(
     ctx.postId;
   return sanitizePath(`${folder}/${name}.zip`);
 }
+
+/**
+ * Removes words from a name, as the app's Rust `remove_words` does: plain
+ * words case-insensitively, `/.../` as a regular expression, then tidies the
+ * spaces and empty brackets left behind.
+ */
+export function removeWords(name: string, words: readonly string[]): string {
+  if (!words.length) return name;
+  let out = name;
+  for (const word of words) {
+    const isRegex = word.length > 2 && word.startsWith('/') && word.endsWith('/');
+    const source = isRegex ? word.slice(1, -1) : word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    try {
+      out = out.replace(new RegExp(source, 'gi'), '');
+    } catch {
+      // An invalid pattern removes nothing.
+    }
+  }
+  return out
+    .replace(/[[({]\s*[\])}]/g, '')
+    .replace(/\s{2,}/g, ' ')
+    .replace(/^[\s_-]+|[\s_-]+$/g, '');
+}
+
+/** The naming context with the unwanted words taken out (extension kept). */
+export function withoutWords(ctx: NameContext, words: readonly string[]): NameContext {
+  if (!words.length) return ctx;
+  const dot = ctx.fileName.lastIndexOf('.');
+  const [stem, ext] =
+    dot > 0 ? [ctx.fileName.slice(0, dot), ctx.fileName.slice(dot)] : [ctx.fileName, ''];
+  return {
+    ...ctx,
+    postTitle: removeWords(ctx.postTitle, words),
+    fileName: ctx.fileName ? `${removeWords(stem, words) || 'file'}${ext}` : '',
+  };
+}

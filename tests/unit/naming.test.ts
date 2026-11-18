@@ -168,3 +168,20 @@ describe('path builders', () => {
     );
   });
 });
+
+describe('removeWords', () => {
+  it('matches the app: plain words, /regex/ and tidy separators', async () => {
+    const { removeWords, withoutWords } = await import('../../src/lib/naming/template');
+    const words = ['[HD]', 'patreon', String.raw`/v\d+/`];
+    expect(removeWords('Cat [HD] - Patreon v2', words)).toBe('Cat');
+    expect(removeWords('(patreon) Dog_', words)).toBe('Dog');
+    expect(removeWords('a.b', ['.'])).toBe('ab');
+    expect(removeWords('keep', ['/(/'])).toBe('keep');
+    const ctx = withoutWords(
+      { postTitle: 'Pic [HD]', fileName: 'HD.png' } as Parameters<typeof withoutWords>[0],
+      ['HD'],
+    );
+    expect(ctx.postTitle).toBe('Pic');
+    expect(ctx.fileName).toBe('file.png');
+  });
+});

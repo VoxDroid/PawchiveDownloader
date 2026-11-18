@@ -4,6 +4,7 @@
 
 use serde::{Deserialize, Serialize};
 
+use super::filter::PostFilter;
 use crate::pawchive::types::{FileCategory, Post};
 use crate::settings::{ConflictAction, ContentFormat, DownloadMode, PreviewOnlyAction, Settings};
 
@@ -67,6 +68,11 @@ pub struct JobOptions {
     pub zip_videos_separately: bool,
     /// Where this job saves; fixed when the job is created.
     pub download_dir: String,
+    #[serde(default)]
+    pub filter: PostFilter,
+    /// Words taken out of post titles and file names.
+    #[serde(default)]
+    pub name_remove: Vec<String>,
 }
 
 /// Per-job changes to the settings, sent by the UI.
@@ -80,6 +86,8 @@ pub struct JobOverrides {
     pub preview_only: Option<PreviewOnlyAction>,
     pub skip_downloaded: Option<bool>,
     pub download_dir: Option<String>,
+    /// Replaces the filter from the settings.
+    pub filter: Option<PostFilter>,
 }
 
 impl JobOptions {
@@ -112,6 +120,8 @@ impl JobOptions {
             zip_max_size_mb: s.zip_max_size_mb,
             zip_videos_separately: s.zip_videos_separately,
             download_dir,
+            filter: o.filter.as_ref().unwrap_or(&s.filter).cleaned(),
+            name_remove: s.name_remove.clone(),
         }
     }
 }

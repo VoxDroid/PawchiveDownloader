@@ -1,12 +1,19 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import { pickFolder } from '../../lib/api';
-  import type { DownloadMode, JobOverrides } from '../../lib/types';
+  import {
+    isFilterEmpty,
+    type DownloadMode,
+    type JobOverrides,
+    type PostFilter,
+  } from '../../lib/types';
   import { app, t } from '../../ui/state/app.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Checkbox from '../../ui/components/Checkbox.svelte';
   import Icon from '../../ui/components/Icon.svelte';
   import Segmented from '../../ui/components/Segmented.svelte';
+  import Dialog from '../../ui/components/Dialog.svelte';
+  import FilterEditor from '../../ui/layout/FilterEditor.svelte';
 
   interface Props {
     label: string;
@@ -15,9 +22,30 @@
     summary?: string;
     ondownload: (options: JobOverrides) => void;
     extra?: Snippet;
+    /** Offer filters; `posts` adds the post rules (creator downloads). */
+    filters?: 'files' | 'posts';
   }
 
-  let { label, disabled = false, busy = false, summary, ondownload, extra }: Props = $props();
+  let {
+    label,
+    disabled = false,
+    busy = false,
+    summary,
+    ondownload,
+    extra,
+    filters,
+  }: Props = $props();
+
+  let filter = $state<PostFilter>(structuredClone($state.snapshot(app.settings.filter)));
+  let filterOpen = $state(false);
+  const activeRules = $derived(
+    filter.keywords.length +
+      filter.skipWords.length +
+      filter.fileSkipWords.length +
+      filter.extensions.length +
+      filter.skipExtensions.length +
+      (filter.maxPosts ? 1 : 0),
+  );
 
   let mode = $state<DownloadMode>(app.settings.downloadMode);
   let saveText = $state(app.settings.saveContent !== 'none');
@@ -44,6 +72,7 @@
         : 'none',
       skipDownloaded,
       ...(folder ? { downloadDir: folder } : {}),
+      ...(filters ? { filter: $state.snapshot(filter) } : {}),
     });
   }
 </script>
@@ -62,6 +91,18 @@
     />
     <Checkbox bind:checked={saveText}>{t('options.saveText')}</Checkbox>
     <Checkbox bind:checked={skipDownloaded}>{t('options.skipDownloaded')}</Checkbox>
+    {#if filters}
+      <button
+        type="button"
+        class="folder"
+        class:on={!isFilterEmpty(filter)}
+        onclick={() => (filterOpen = true)}
+        data-tip={t('filter.title')}
+      >
+        <Icon name="filter" /><span>{t('filter.button')}</span>
+        {#if activeRules}<span class="count mono-num">{activeRules}</span>{/if}
+      </button>
+    {/if}
     <button
       type="button"
       class="folder"
@@ -80,6 +121,30 @@
     </Button>
   </div>
 </footer>
+
+{#if filters}
+  <Dialog
+    open={filterOpen}
+    title={t('filter.title')}
+    width={560}
+    confirmLabel={t('common.close')}
+    onconfirm={() => (filterOpen = false)}
+    oncancel={() => (filterOpen = false)}
+  >
+    <p class="note">{t(filters === 'posts' ? 'filter.dialogHint' : 'filter.dialogHintFiles')}</p>
+    <FilterEditor posts={filters === 'posts'} value={filter} onchange={(v) => (filter = v)} />
+    <div class="reset">
+      <Button
+        size="sm"
+        variant="ghost"
+        icon="restore"
+        onclick={() => (filter = structuredClone($state.snapshot(app.settings.filter)))}
+      >
+        {t('filter.useSettings')}
+      </Button>
+    </div>
+  </Dialog>
+{/if}
 
 <style>
   .bar {
@@ -132,5 +197,26 @@
   .folder:hover {
     color: var(--text);
     border-color: var(--accent);
+  }
+  .folder.on {
+    border-style: solid;
+    border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    color: var(--text);
+  }
+  .count {
+    padding: 0 6px;
+    border-radius: 99px;
+    background: var(--accent-soft);
+    font-size: var(--fs-xs);
+  }
+  .note {
+    margin: 0 0 14px;
+    font-size: var(--fs-sm);
+    color: var(--text-dim);
+  }
+  .reset {
+    margin-top: 12px;
+    display: flex;
+    justify-content: flex-end;
   }
 </style>

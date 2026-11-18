@@ -944,3 +944,46 @@ async fn hostile_names_stay_inside_the_download_folder() {
     }
     assert!(!env.dir.path().join("escape.png").exists());
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn filters_posts_and_files_and_limits_a_scan() {
+    let env = env().await;
+    let a = Fixture::new("page1.png", 300, 70);
+    let b = Fixture::new("source.psd", 300, 71);
+    let c = Fixture::new("page2.png", 300, 72);
+    let d = Fixture::new("extra.png", 300, 73);
+    let e = Fixture::new("sketch.png", 300, 74);
+    // Newest first, as the API lists them.
+    env.mount_creator(vec![
+        post("305", "Comic chapter 3", &[&a, &b]),
+        post("304", "Comic chapter 2 WIP", &[&c]),
+        post("303", "Comic chapter 1", &[&d]),
+        post("302", "Comic chapter 0", &[&e]),
+        post("301", "Sketch dump", &[&e]),
+    ])
+    .await;
+    for f in [&a, &b, &c, &d, &e] {
+        env.serve(f).await;
+    }
+    let filter = pawchive_downloader_lib::jobs::filter::PostFilter {
+        keywords: vec!["comic".into()],
+        skip_words: vec![r"/\bwip\b/".into()],
+        skip_extensions: vec!["psd".into()],
+        max_posts: 2,
+        ..Default::default()
+    };
+    let id = env.core.engine.create(creator_request(JobOverrides {
+        filter: Some(filter),
+        ..no_text()
+    }));
+    let job = env.wait(&id).await;
+    assert_eq!(job.status, JobStatus::Done);
+    assert_eq!(job.post_count, 2);
+    let names: Vec<String> = files_under(&env.out())
+        .iter()
+        .map(|p| p.file_name().unwrap().to_string_lossy().into_owned())
+        .collect();
+    assert_eq!(names.len(), 2, "{names:?}");
+    assert!(names.iter().any(|n| n.ends_with("page1.png")));
+    assert!(names.iter().any(|n| n.ends_with("extra.png")));
+}

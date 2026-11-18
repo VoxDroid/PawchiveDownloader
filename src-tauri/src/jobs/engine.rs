@@ -790,7 +790,10 @@ impl Engine {
         options: &JobOptions,
         cancel: &CancellationToken,
     ) -> Result<Post, ApiError> {
-        let wants_text = options.save_content != ContentFormat::None || options.save_metadata;
+        let filters_text = options.filter.scope == super::filter::FilterScope::All
+            && !(options.filter.keywords.is_empty() && options.filter.skip_words.is_empty());
+        let wants_text =
+            options.save_content != ContentFormat::None || options.save_metadata || filters_text;
         if !post.incomplete && !wants_text && !post.content_html.contains("<img") {
             return Ok(post);
         }
@@ -957,6 +960,16 @@ impl Engine {
                 self.changed();
                 let mut wanted: Option<HashSet<String>> =
                     post_ids.clone().map(|v| v.into_iter().collect());
+                // A hand-picked list of posts is never filtered further.
+                let filtering = post_ids.is_none();
+                let matcher = options.filter.matcher();
+                let full_text = options.filter.scope == super::filter::FilterScope::All;
+                let limit = if filtering {
+                    options.filter.max_posts
+                } else {
+                    0
+                };
+                let mut taken = planned.len() as u32;
                 let mut offset = 0u32;
                 let mut pages = 0u32;
                 let mut seen = 0u32;
@@ -1010,7 +1023,18 @@ impl Engine {
                     });
                     self.changed();
                     for post in matched {
+                        if limit > 0 && taken >= limit {
+                            stop = true;
+                            break;
+                        }
+                        if filtering && !full_text && !matcher.accepts_post(&post) {
+                            continue;
+                        }
                         let post = self.hydrate(post, &options, cancel).await?;
+                        if filtering && full_text && !matcher.accepts_post(&post) {
+                            continue;
+                        }
+                        taken += 1;
                         let fresh = self.known_for_options(&options, [&post]);
                         known.extend(fresh);
                         self.with_job(job_id, |job| {

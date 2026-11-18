@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
+use crate::jobs::filter::{clean_terms, PostFilter};
 use crate::naming::template::{
     validate_template, DEFAULT_ARCHIVE_TEMPLATE, DEFAULT_FILE_TEMPLATE, DEFAULT_FOLDER_TEMPLATE,
 };
@@ -88,6 +89,10 @@ pub struct Settings {
     /// Split archives above this size; 0 keeps every post in one archive.
     pub zip_max_size_mb: u32,
     pub zip_videos_separately: bool,
+    // Filters
+    pub filter: PostFilter,
+    /// Words taken out of post titles and file names.
+    pub name_remove: Vec<String>,
     // Network
     pub proxy: ProxySettings,
     // Background
@@ -141,6 +146,8 @@ impl Default for Settings {
             fast_mode: false,
             zip_max_size_mb: 0,
             zip_videos_separately: false,
+            filter: PostFilter::default(),
+            name_remove: Vec::new(),
             proxy: ProxySettings {
                 mode: ProxyMode::System,
                 url: String::new(),
@@ -278,6 +285,14 @@ pub fn coerce(input: &Value) -> Settings {
         fast_mode: boolean(g("fastMode"), d.fast_mode),
         zip_max_size_mb: int_in(g("zipMaxSizeMb"), 0, 1_000_000, d.zip_max_size_mb),
         zip_videos_separately: boolean(g("zipVideosSeparately"), d.zip_videos_separately),
+        filter: g("filter")
+            .and_then(|v| serde_json::from_value::<PostFilter>(v.clone()).ok())
+            .map(|f| f.cleaned())
+            .unwrap_or_default(),
+        name_remove: g("nameRemove")
+            .and_then(|v| serde_json::from_value::<Vec<String>>(v.clone()).ok())
+            .map(|v| clean_terms(&v))
+            .unwrap_or_default(),
         proxy,
         notifications: one_of(
             g("notifications"),

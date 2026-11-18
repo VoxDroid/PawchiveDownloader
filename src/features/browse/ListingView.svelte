@@ -130,6 +130,7 @@
       </div>
     {/if}
     <DownloadBar
+      filters="files"
       label={t('selection.download', { count: selected.size })}
       disabled={selected.size === 0}
       {busy}

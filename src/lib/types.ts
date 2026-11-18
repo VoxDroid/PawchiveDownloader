@@ -104,6 +104,41 @@ export type ProxyMode = 'system' | 'none' | 'custom' | 'tor';
 export type NotificationLevel = 'all' | 'errors' | 'none';
 export type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+export type FilterScope = 'title' | 'all';
+
+/** Which posts and files a download takes; see src-tauri/src/jobs/filter.rs. */
+export interface PostFilter {
+  keywords: string[];
+  skipWords: string[];
+  scope: FilterScope;
+  fileSkipWords: string[];
+  extensions: string[];
+  skipExtensions: string[];
+  /** Newest posts a creator scan takes; 0 is no limit. */
+  maxPosts: number;
+}
+
+export const EMPTY_FILTER: Readonly<PostFilter> = Object.freeze({
+  keywords: [],
+  skipWords: [],
+  scope: 'title',
+  fileSkipWords: [],
+  extensions: [],
+  skipExtensions: [],
+  maxPosts: 0,
+} satisfies PostFilter);
+
+export function isFilterEmpty(f: PostFilter): boolean {
+  return (
+    !f.keywords.length &&
+    !f.skipWords.length &&
+    !f.fileSkipWords.length &&
+    !f.extensions.length &&
+    !f.skipExtensions.length &&
+    !f.maxPosts
+  );
+}
+
 export interface Settings {
   language: 'auto' | Locale;
   theme: Theme | 'system';
@@ -129,6 +164,9 @@ export interface Settings {
   fastMode: boolean;
   zipMaxSizeMb: number;
   zipVideosSeparately: boolean;
+  filter: PostFilter;
+  /** Words taken out of post titles and file names. */
+  nameRemove: string[];
   proxy: { mode: ProxyMode; url: string };
   notifications: NotificationLevel;
   watchIntervalMinutes: number;
@@ -170,6 +208,8 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   fastMode: false,
   zipMaxSizeMb: 0,
   zipVideosSeparately: false,
+  filter: EMPTY_FILTER,
+  nameRemove: [],
   proxy: { mode: 'system', url: '' },
   notifications: 'all',
   watchIntervalMinutes: 360,
@@ -221,6 +261,8 @@ export interface JobOverrides {
   previewOnly?: PreviewOnlyAction;
   skipDownloaded?: boolean;
   downloadDir?: string;
+  /** Replaces the filter from the settings. */
+  filter?: PostFilter;
 }
 
 export type JobRequest =

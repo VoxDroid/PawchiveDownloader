@@ -7,6 +7,7 @@
   import {
     buildArchivePath,
     buildFilePath,
+    withoutWords,
     FILE_TEMPLATE_PRESETS,
     FOLDER_TEMPLATE_PRESETS,
     type NameContext,
@@ -36,6 +37,8 @@
   import PageHeader from '../../ui/layout/PageHeader.svelte';
   import SettingRow from '../../ui/layout/SettingRow.svelte';
   import SettingSection from '../../ui/layout/SettingSection.svelte';
+  import FilterEditor from '../../ui/layout/FilterEditor.svelte';
+  import TermsInput from '../../ui/components/TermsInput.svelte';
   import TemplateField from '../../ui/layout/TemplateField.svelte';
 
   const s = $derived(app.settings);
@@ -62,10 +65,10 @@
   };
   const sep = $derived(app.info?.platform === 'windows' ? '\\' : '/');
   const example = $derived(
-    `${s.downloadDir}${sep}${buildFilePath(s.folderTemplate, s.fileTemplate, SAMPLE).replaceAll('/', sep)}`,
+    `${s.downloadDir}${sep}${buildFilePath(s.folderTemplate, s.fileTemplate, withoutWords(SAMPLE, s.nameRemove)).replaceAll('/', sep)}`,
   );
   const archiveExample = $derived(
-    `${s.downloadDir}${sep}${buildArchivePath(s.folderTemplate, s.archiveTemplate, SAMPLE).replaceAll('/', sep)}`,
+    `${s.downloadDir}${sep}${buildArchivePath(s.folderTemplate, s.archiveTemplate, withoutWords(SAMPLE, s.nameRemove)).replaceAll('/', sep)}`,
   );
 
   const GB = (n: number) =>
@@ -143,6 +146,7 @@
     ['appearance', 'palette'],
     ['downloads', 'download'],
     ['naming', 'rename'],
+    ['filters', 'filter'],
     ['zip', 'folderZip'],
     ['network', 'network'],
     ['background', 'tray'],
@@ -436,10 +440,29 @@
       onsave={(v) => set('archiveTemplate', v)}
     />
   </SettingRow>
+  <SettingRow label={t('settings.nameRemove')} description={t('settings.nameRemoveHint')} stacked>
+    <TermsInput
+      label={t('settings.nameRemove')}
+      placeholder={t('settings.nameRemovePlaceholder')}
+      value={s.nameRemove}
+      onchange={(v) => set('nameRemove', v)}
+    />
+  </SettingRow>
   <div class="example">
     <span class="faint">{t('settings.example')}</span>
     <code class="selectable">{example}</code>
     <code class="selectable">{archiveExample}</code>
+  </div>
+</SettingSection>
+
+<SettingSection
+  id="s-filters"
+  icon="filter"
+  title={t('settings.filters')}
+  description={t('settings.filtersHint')}
+>
+  <div class="filters">
+    <FilterEditor value={s.filter} onchange={(v) => set('filter', v)} />
   </div>
 </SettingSection>
 
@@ -663,6 +686,9 @@
 </Dialog>
 
 <style>
+  .filters {
+    padding: 16px 18px;
+  }
   .folder-row {
     display: flex;
     align-items: center;
