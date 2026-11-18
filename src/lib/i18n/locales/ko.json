@@ -591,5 +591,16 @@
   "settings.filtersHint": "모든 다운로드의 기본 규칙입니다. 크리에이터 다운로드마다 필터 버튼으로 바꿀 수 있습니다.",
   "settings.nameRemove": "이름에서 지울 단어",
   "settings.nameRemoveHint": "템플릿에 쓰기 전에 게시물 제목과 파일 이름에서 이 단어들을 지웁니다.",
-  "settings.nameRemovePlaceholder": "예: [HD], (Patreon)"
+  "settings.nameRemovePlaceholder": "예: [HD], (Patreon)",
+  "settings.links": "외부 링크 저장",
+  "settings.linksHint": "게시물에 Mega, Google 드라이브, Dropbox 등의 링크가 있으면 적혀 있는 압축 비밀번호와 함께 links.txt로 저장합니다.",
+  "settings.comments": "댓글 저장",
+  "settings.commentsHint": "게시물마다 댓글과 답글을 comments.txt로 저장합니다. 게시물당 요청이 한 번 더 듭니다.",
+  "settings.announcements": "공지 저장",
+  "settings.announcementsHint": "크리에이터 다운로드 시 크리에이터 폴더에 announcements.txt도 저장합니다.",
+  "post.links_other": "링크 {count}개",
+  "post.linksHint": "이 게시물이 외부 서비스에 공유한 파일과 적힌 비밀번호입니다. 다운로드할 때 links.txt에 저장됩니다.",
+  "post.copyAll": "모두 복사",
+  "post.password": "비밀번호",
+  "skip.empty": "저장할 내용 없음"
 }

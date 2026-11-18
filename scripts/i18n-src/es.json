@@ -282,5 +282,16 @@
   "settings.filtersHint": "Reglas por defecto para cada descarga. Cada descarga de creador puede cambiarlas con su botón Filtros.",
   "settings.nameRemove": "Quitar de los nombres",
   "settings.nameRemoveHint": "Estas palabras se quitan de los títulos y nombres de archivo antes de usar las plantillas.",
-  "settings.nameRemovePlaceholder": "Por ejemplo [HD], (Patreon)"
+  "settings.nameRemovePlaceholder": "Por ejemplo [HD], (Patreon)",
+  "settings.links": "Guardar enlaces externos",
+  "settings.linksHint": "Escribe links.txt cuando una publicación enlaza a Mega, Google Drive, Dropbox u otro alojamiento, con las contraseñas que mencione.",
+  "settings.comments": "Guardar comentarios",
+  "settings.commentsHint": "Escribe comments.txt con los comentarios y respuestas de cada publicación. Hace una petición más por publicación.",
+  "settings.announcements": "Guardar anuncios",
+  "settings.announcementsHint": "Las descargas de creador también escriben announcements.txt en su carpeta.",
+  "post.links": ["{count} enlace", "{count} enlaces"],
+  "post.linksHint": "Archivos que esta publicación comparte en otros servicios y contraseñas que menciona. Se guardan en links.txt al descargar.",
+  "post.copyAll": "Copiar todo",
+  "post.password": "Contraseña",
+  "skip.empty": "Nada que guardar"
 }

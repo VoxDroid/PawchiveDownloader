@@ -34,6 +34,10 @@ export interface Post {
   nextId: string | null;
   prevId: string | null;
   incomplete?: boolean;
+  /** Links to outside file hosts (Mega, Google Drive...) in the text. */
+  links?: string[];
+  /** Archive passwords found in the text. */
+  passwords?: string[];
 }
 
 export interface Creator {
@@ -159,6 +163,9 @@ export interface Settings {
   thumbnailFallback: boolean;
   saveContent: ContentFormat;
   saveMetadata: boolean;
+  saveLinks: boolean;
+  saveComments: boolean;
+  saveAnnouncements: boolean;
   categories: Record<FileCategory, boolean>;
   speedLimitKbps: number;
   fastMode: boolean;
@@ -200,6 +207,9 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   thumbnailFallback: false,
   saveContent: 'txt',
   saveMetadata: false,
+  saveLinks: true,
+  saveComments: false,
+  saveAnnouncements: false,
   categories: Object.fromEntries(FILE_CATEGORIES.map((c) => [c, true])) as Record<
     FileCategory,
     boolean
@@ -238,7 +248,7 @@ export function resolveLocale(preference: Settings['language'], uiLanguage: stri
 export type JobStatus =
   'resolving' | 'queued' | 'running' | 'paused' | 'done' | 'failed' | 'cancelled';
 export type ItemStatus = 'pending' | 'active' | 'done' | 'failed' | 'skipped' | 'cancelled';
-export type SkipReason = 'duplicate' | 'preview-only' | 'no-relay' | 'exists';
+export type SkipReason = 'duplicate' | 'preview-only' | 'no-relay' | 'exists' | 'empty';
 export type JobAction = 'pause' | 'resume' | 'cancel' | 'retry' | 'remove' | 'top' | 'up' | 'down';
 
 export interface CreatorInfo {
@@ -258,6 +268,8 @@ export interface JobOverrides {
   categories?: FileCategory[];
   saveContent?: ContentFormat;
   saveMetadata?: boolean;
+  saveComments?: boolean;
+  saveAnnouncements?: boolean;
   previewOnly?: PreviewOnlyAction;
   skipDownloaded?: boolean;
   downloadDir?: string;

@@ -242,6 +242,12 @@ pub mod api {
     pub fn profile(service: &str, creator_id: &str) -> String {
         format!("{}/profile", creator_base(service, creator_id))
     }
+    pub fn comments(service: &str, creator_id: &str, post_id: &str) -> String {
+        format!("{}/comments", post(service, creator_id, post_id))
+    }
+    pub fn announcements(service: &str, creator_id: &str) -> String {
+        format!("{}/announcements", creator_base(service, creator_id))
+    }
     pub fn creator_posts(
         service: &str,
         creator_id: &str,

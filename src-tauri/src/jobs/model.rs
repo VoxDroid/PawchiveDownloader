@@ -47,6 +47,8 @@ pub enum SkipReason {
     PreviewOnly,
     NoRelay,
     Exists,
+    /// Nothing to save (a post without comments).
+    Empty,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -56,6 +58,12 @@ pub struct JobOptions {
     pub categories: Vec<FileCategory>,
     pub save_content: ContentFormat,
     pub save_metadata: bool,
+    #[serde(default)]
+    pub save_links: bool,
+    #[serde(default)]
+    pub save_comments: bool,
+    #[serde(default)]
+    pub save_announcements: bool,
     pub preview_only: PreviewOnlyAction,
     pub skip_downloaded: bool,
     pub verify_hashes: bool,
@@ -83,6 +91,8 @@ pub struct JobOverrides {
     pub categories: Option<Vec<FileCategory>>,
     pub save_content: Option<ContentFormat>,
     pub save_metadata: Option<bool>,
+    pub save_comments: Option<bool>,
+    pub save_announcements: Option<bool>,
     pub preview_only: Option<PreviewOnlyAction>,
     pub skip_downloaded: Option<bool>,
     pub download_dir: Option<String>,
@@ -109,6 +119,9 @@ impl JobOptions {
             categories,
             save_content: o.save_content.unwrap_or(s.save_content),
             save_metadata: o.save_metadata.unwrap_or(s.save_metadata),
+            save_links: s.save_links,
+            save_comments: o.save_comments.unwrap_or(s.save_comments),
+            save_announcements: o.save_announcements.unwrap_or(s.save_announcements),
             preview_only: o.preview_only.unwrap_or(s.preview_only),
             skip_downloaded: o.skip_downloaded.unwrap_or(s.skip_downloaded),
             verify_hashes: s.verify_hashes,
@@ -200,6 +213,12 @@ pub enum ItemKind {
         #[serde(default)]
         parts: u32,
     },
+    /// The post's comments, fetched when the item runs.
+    #[serde(rename_all = "camelCase")]
+    Comments { title: String, url: String },
+    /// The creator's announcements, fetched when the item runs.
+    #[serde(rename_all = "camelCase")]
+    Announcements { name: String },
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -249,7 +268,9 @@ impl Item {
     pub fn kind_name(&self) -> &'static str {
         match self.kind {
             ItemKind::File { .. } => "file",
-            ItemKind::Text { .. } => "text",
+            ItemKind::Text { .. } | ItemKind::Comments { .. } | ItemKind::Announcements { .. } => {
+                "text"
+            }
             ItemKind::Zip { .. } => "zip",
         }
     }

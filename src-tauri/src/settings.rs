@@ -80,6 +80,11 @@ pub struct Settings {
     pub thumbnail_fallback: bool,
     pub save_content: ContentFormat,
     pub save_metadata: bool,
+    /// Save links to outside file hosts and passwords found in posts.
+    pub save_links: bool,
+    pub save_comments: bool,
+    /// Creator downloads also save the creator's announcements.
+    pub save_announcements: bool,
     pub categories: BTreeMap<FileCategory, bool>,
     /// Bytes per second over all transfers; 0 is unlimited.
     pub speed_limit_kbps: u32,
@@ -141,6 +146,9 @@ impl Default for Settings {
             thumbnail_fallback: false,
             save_content: ContentFormat::Txt,
             save_metadata: false,
+            save_links: true,
+            save_comments: false,
+            save_announcements: false,
             categories: FileCategory::ALL.iter().map(|c| (*c, true)).collect(),
             speed_limit_kbps: 0,
             fast_mode: false,
@@ -280,6 +288,9 @@ pub fn coerce(input: &Value) -> Settings {
         thumbnail_fallback: boolean(g("thumbnailFallback"), d.thumbnail_fallback),
         save_content: enum_of(g("saveContent"), d.save_content),
         save_metadata: boolean(g("saveMetadata"), d.save_metadata),
+        save_links: boolean(g("saveLinks"), d.save_links),
+        save_comments: boolean(g("saveComments"), d.save_comments),
+        save_announcements: boolean(g("saveAnnouncements"), d.save_announcements),
         categories,
         speed_limit_kbps: int_in(g("speedLimitKbps"), 0, 1_000_000, d.speed_limit_kbps),
         fast_mode: boolean(g("fastMode"), d.fast_mode),

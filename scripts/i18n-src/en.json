@@ -276,5 +276,16 @@
   "settings.filtersHint": "Default rules for every download. Each creator download can change them with its Filters button.",
   "settings.nameRemove": "Remove from names",
   "settings.nameRemoveHint": "These words are taken out of post titles and file names before the templates use them.",
-  "settings.nameRemovePlaceholder": "For example [HD], (Patreon)"
+  "settings.nameRemovePlaceholder": "For example [HD], (Patreon)",
+  "settings.links": "Save outside links",
+  "settings.linksHint": "Writes links.txt when a post links to Mega, Google Drive, Dropbox or another file host, with any archive passwords it mentions.",
+  "settings.comments": "Save comments",
+  "settings.commentsHint": "Writes comments.txt with each post's comments and replies. Takes one more request per post.",
+  "settings.announcements": "Save announcements",
+  "settings.announcementsHint": "Creator downloads also write announcements.txt in the creator's folder.",
+  "post.links": ["{count} link", "{count} links"],
+  "post.linksHint": "Files this post shares on outside hosts, and passwords it mentions. They are saved to links.txt when downloading.",
+  "post.copyAll": "Copy all",
+  "post.password": "Password",
+  "skip.empty": "Nothing to save"
 }

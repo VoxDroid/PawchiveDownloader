@@ -591,5 +591,16 @@
   "settings.filtersHint": "所有下载的默认规则。每次下载创作者时可用“筛选”按钮修改。",
   "settings.nameRemove": "从名称中删除",
   "settings.nameRemoveHint": "在模板使用之前，从帖子标题和文件名中去掉这些词。",
-  "settings.nameRemovePlaceholder": "例如 [HD]、(Patreon)"
+  "settings.nameRemovePlaceholder": "例如 [HD]、(Patreon)",
+  "settings.links": "保存外部链接",
+  "settings.linksHint": "帖子中有 Mega、Google 云端硬盘、Dropbox 等网盘链接时，连同其中提到的解压密码写入 links.txt。",
+  "settings.comments": "保存评论",
+  "settings.commentsHint": "将每个帖子的评论和回复写入 comments.txt。每个帖子多一次请求。",
+  "settings.announcements": "保存公告",
+  "settings.announcementsHint": "下载创作者时，同时在创作者文件夹中写入 announcements.txt。",
+  "post.links_other": "{count} 个链接",
+  "post.linksHint": "此帖子在外部网盘分享的文件及其中提到的密码。下载时会保存到 links.txt。",
+  "post.copyAll": "全部复制",
+  "post.password": "密码",
+  "skip.empty": "没有可保存的内容"
 }

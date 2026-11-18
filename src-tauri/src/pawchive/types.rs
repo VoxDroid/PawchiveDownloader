@@ -160,6 +160,39 @@ pub struct Post {
     /// full post has them.
     #[serde(default)]
     pub incomplete: bool,
+    /// Links to outside file hosts (Mega, Google Drive...) found in the text.
+    #[serde(default)]
+    pub links: Vec<String>,
+    /// Archive passwords found in the text.
+    #[serde(default)]
+    pub passwords: Vec<String>,
+}
+
+/// A comment under a post.
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct Comment {
+    #[serde(deserialize_with = "string_or_number")]
+    pub id: String,
+    #[serde(default, alias = "parent_id")]
+    pub parent_id: Option<serde_json::Value>,
+    #[serde(default, alias = "commenter_name")]
+    pub commenter_name: Option<String>,
+    #[serde(default)]
+    pub content: Option<String>,
+    #[serde(default)]
+    pub published: Option<String>,
+}
+
+/// A creator's announcement (community post).
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
+pub struct Announcement {
+    #[serde(default)]
+    pub content: Option<String>,
+    #[serde(default)]
+    pub added: Option<String>,
+    #[serde(default)]
+    pub published: Option<String>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

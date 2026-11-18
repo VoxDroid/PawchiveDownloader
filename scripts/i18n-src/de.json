@@ -282,5 +282,16 @@
   "settings.filtersHint": "Standardregeln für jeden Download. Jeder Download eines Creators kann sie über seine Schaltfläche Filter ändern.",
   "settings.nameRemove": "Aus Namen entfernen",
   "settings.nameRemoveHint": "Diese Wörter werden aus Beitragstiteln und Dateinamen entfernt, bevor die Vorlagen sie nutzen.",
-  "settings.nameRemovePlaceholder": "Zum Beispiel [HD], (Patreon)"
+  "settings.nameRemovePlaceholder": "Zum Beispiel [HD], (Patreon)",
+  "settings.links": "Externe Links speichern",
+  "settings.linksHint": "Schreibt links.txt, wenn ein Beitrag auf Mega, Google Drive, Dropbox oder einen anderen Dateihoster verweist, mit genannten Archivpasswörtern.",
+  "settings.comments": "Kommentare speichern",
+  "settings.commentsHint": "Schreibt comments.txt mit den Kommentaren und Antworten jedes Beitrags. Kostet eine Anfrage mehr pro Beitrag.",
+  "settings.announcements": "Ankündigungen speichern",
+  "settings.announcementsHint": "Downloads eines Creators schreiben auch announcements.txt in seinen Ordner.",
+  "post.links": ["{count} Link", "{count} Links"],
+  "post.linksHint": "Dateien, die dieser Beitrag bei anderen Hostern teilt, und genannte Passwörter. Beim Download landen sie in links.txt.",
+  "post.copyAll": "Alles kopieren",
+  "post.password": "Passwort",
+  "skip.empty": "Nichts zu speichern"
 }

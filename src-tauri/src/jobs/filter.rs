@@ -242,6 +242,8 @@ mod tests {
             next_id: None,
             prev_id: None,
             incomplete: false,
+            links: vec![],
+            passwords: vec![],
         }
     }
 

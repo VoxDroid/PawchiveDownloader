@@ -13,7 +13,7 @@ use crate::net::limiter::{is_transient_status, Cancelled, SiteLimiter};
 
 use super::normalize::{normalize_creator, normalize_post};
 use super::relay::{parse_relay_links, RelayIndex};
-use super::types::{Creator, Post, RawPost, RawProfile};
+use super::types::{Announcement, Comment, Creator, Post, RawPost, RawProfile};
 use super::urls::{api, is_site_host, page, PAGE_SIZE};
 
 #[derive(Debug, Clone, thiserror::Error, PartialEq)]
@@ -149,6 +149,39 @@ impl PawchiveClient {
             .json(&api::profile(service, creator_id), cancel)
             .await?;
         Ok(normalize_creator(raw))
+    }
+
+    /// Comments under a post, oldest first. A post without comments may
+    /// answer 404, which counts as none.
+    pub async fn get_comments(
+        &self,
+        service: &str,
+        creator_id: &str,
+        post_id: &str,
+        cancel: &CancellationToken,
+    ) -> Result<Vec<Comment>, ApiError> {
+        match self
+            .json::<Vec<Comment>>(&api::comments(service, creator_id, post_id), cancel)
+            .await
+        {
+            Err(e) if e.not_found() => Ok(Vec::new()),
+            other => other,
+        }
+    }
+
+    pub async fn get_announcements(
+        &self,
+        service: &str,
+        creator_id: &str,
+        cancel: &CancellationToken,
+    ) -> Result<Vec<Announcement>, ApiError> {
+        match self
+            .json::<Vec<Announcement>>(&api::announcements(service, creator_id), cancel)
+            .await
+        {
+            Err(e) if e.not_found() => Ok(Vec::new()),
+            other => other,
+        }
     }
 
     pub async fn get_creator_page(

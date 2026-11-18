@@ -279,5 +279,16 @@
   "settings.filtersHint": "Regras padrão para todo download. Cada download de criador pode mudá-las com o botão Filtros.",
   "settings.nameRemove": "Remover dos nomes",
   "settings.nameRemoveHint": "Estas palavras saem dos títulos e nomes de arquivo antes de os modelos usarem.",
-  "settings.nameRemovePlaceholder": "Por exemplo [HD], (Patreon)"
+  "settings.nameRemovePlaceholder": "Por exemplo [HD], (Patreon)",
+  "settings.links": "Salvar links externos",
+  "settings.linksHint": "Grava links.txt quando uma publicação aponta para Mega, Google Drive, Dropbox ou outro serviço, com as senhas que ela mencionar.",
+  "settings.comments": "Salvar comentários",
+  "settings.commentsHint": "Grava comments.txt com os comentários e respostas de cada publicação. Faz uma requisição a mais por publicação.",
+  "settings.announcements": "Salvar avisos",
+  "settings.announcementsHint": "Downloads de criador também gravam announcements.txt na pasta do criador.",
+  "post.links": ["{count} link", "{count} links"],
+  "post.linksHint": "Arquivos que esta publicação compartilha em outros serviços e senhas que ela menciona. São salvos em links.txt ao baixar.",
+  "post.copyAll": "Copiar tudo",
+  "post.password": "Senha",
+  "skip.empty": "Nada para salvar"
 }

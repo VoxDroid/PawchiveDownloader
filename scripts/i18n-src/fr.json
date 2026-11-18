@@ -282,5 +282,16 @@
   "settings.filtersHint": "Règles par défaut pour chaque téléchargement. Chaque téléchargement de créateur peut les changer avec son bouton Filtres.",
   "settings.nameRemove": "Retirer des noms",
   "settings.nameRemoveHint": "Ces mots sont retirés des titres et des noms de fichier avant que les modèles les utilisent.",
-  "settings.nameRemovePlaceholder": "Par exemple [HD], (Patreon)"
+  "settings.nameRemovePlaceholder": "Par exemple [HD], (Patreon)",
+  "settings.links": "Enregistrer les liens externes",
+  "settings.linksHint": "Écrit links.txt quand un post renvoie vers Mega, Google Drive, Dropbox ou un autre hébergeur, avec les mots de passe mentionnés.",
+  "settings.comments": "Enregistrer les commentaires",
+  "settings.commentsHint": "Écrit comments.txt avec les commentaires et réponses de chaque post. Une requête de plus par post.",
+  "settings.announcements": "Enregistrer les annonces",
+  "settings.announcementsHint": "Les téléchargements de créateur écrivent aussi announcements.txt dans son dossier.",
+  "post.links": ["{count} lien", "{count} liens"],
+  "post.linksHint": "Fichiers que ce post partage sur d'autres hébergeurs, et mots de passe mentionnés. Ils sont enregistrés dans links.txt au téléchargement.",
+  "post.copyAll": "Tout copier",
+  "post.password": "Mot de passe",
+  "skip.empty": "Rien à enregistrer"
 }

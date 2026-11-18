@@ -631,6 +631,18 @@
   "settings.nameRemove": "Retirer des noms",
   "settings.nameRemoveHint": "Ces mots sont retirés des titres et des noms de fichier avant que les modèles les utilisent.",
   "settings.nameRemovePlaceholder": "Par exemple [HD], (Patreon)",
+  "settings.links": "Enregistrer les liens externes",
+  "settings.linksHint": "Écrit links.txt quand un post renvoie vers Mega, Google Drive, Dropbox ou un autre hébergeur, avec les mots de passe mentionnés.",
+  "settings.comments": "Enregistrer les commentaires",
+  "settings.commentsHint": "Écrit comments.txt avec les commentaires et réponses de chaque post. Une requête de plus par post.",
+  "settings.announcements": "Enregistrer les annonces",
+  "settings.announcementsHint": "Les téléchargements de créateur écrivent aussi announcements.txt dans son dossier.",
+  "post.links_one": "{count} lien",
+  "post.links_other": "{count} liens",
+  "post.linksHint": "Fichiers que ce post partage sur d'autres hébergeurs, et mots de passe mentionnés. Ils sont enregistrés dans links.txt au téléchargement.",
+  "post.copyAll": "Tout copier",
+  "post.password": "Mot de passe",
+  "skip.empty": "Rien à enregistrer",
   "nav.activeJobs_many": "{count} téléchargements en cours",
   "jobs.failed_many": "{count} en échec",
   "jobs.skipped_many": "{count} ignorés",
@@ -669,5 +681,6 @@
   "favorites.addedCount_many": "{count} favoris ajoutés",
   "favorites.queued_many": "{count} téléchargements mis en file",
   "favorites.exported_many": "{count} favoris enregistrés",
-  "filter.newest_many": "{count} plus récents"
+  "filter.newest_many": "{count} plus récents",
+  "post.links_many": "{count} liens"
 }

@@ -222,7 +222,6 @@ pub fn normalize_post(raw: RawPost) -> Post {
         service: raw.service,
         creator_id: raw.user,
         title: raw.title.unwrap_or_default().trim().to_string(),
-        content_html,
         published: raw.published.filter(|s| !s.is_empty()),
         added: raw.added.filter(|s| !s.is_empty()),
         edited: raw.edited.filter(|s| !s.is_empty()),
@@ -231,6 +230,9 @@ pub fn normalize_post(raw: RawPost) -> Post {
         next_id: id_of(&raw.next),
         prev_id: id_of(&raw.prev),
         incomplete,
+        links: super::links::file_host_links(&content_html),
+        passwords: super::links::passwords(&content_html),
+        content_html,
     }
 }
 

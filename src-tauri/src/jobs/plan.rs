@@ -5,6 +5,7 @@ use std::collections::HashSet;
 use crate::naming::template::{
     build_archive_path, build_file_path, build_folder_path, NameContext,
 };
+use crate::pawchive::links::links_text;
 use crate::pawchive::normalize::html_to_text;
 use crate::pawchive::types::{FileCategory, Post, PostFile};
 use crate::settings::{ContentFormat, DownloadMode, PreviewOnlyAction};
@@ -325,6 +326,11 @@ pub fn plan_post(
     if options.save_metadata {
         texts.push(("post.json", metadata_json(post, creator)));
     }
+    if options.save_links && !already_saved {
+        if let Some(text) = links_text(&post.title, &post.url, &post.links, &post.passwords) {
+            texts.push(("links.txt", text));
+        }
+    }
     // When posts share a folder (no post-specific part in the template),
     // each post's text gets its id in the name so they do not collide.
     let shared_folder = !per_post_folder(&options.folder_template);
@@ -343,9 +349,41 @@ pub fn plan_post(
         )
     };
 
+    // Comments are fetched when the item runs; next to the archive in ZIP mode.
+    let comments = (options.save_comments && !already_saved).then(|| {
+        let path = if options.mode == DownloadMode::Zip {
+            let archive = build_archive_path(
+                &options.folder_template,
+                &options.archive_template,
+                &folder_ctx,
+            );
+            format!("{} - comments.txt", archive.trim_end_matches(".zip"))
+        } else if shared_folder {
+            in_folder(&format!("{}_comments.txt", post.id))
+        } else {
+            in_folder("comments.txt")
+        };
+        let label = path
+            .rsplit('/')
+            .next()
+            .unwrap_or("comments.txt")
+            .to_string();
+        base_item(
+            post,
+            format!("{}:comments", post.id),
+            label,
+            path,
+            ItemKind::Comments {
+                title: post.title.clone(),
+                url: post.url.clone(),
+            },
+        )
+    });
+
     if options.mode != DownloadMode::Zip {
         let mut items: Vec<Item> = planned.iter().map(|p| file_item(post, p)).collect();
         items.extend(texts.iter().map(|(n, t)| text_item(n, t)));
+        items.extend(comments);
         return items;
     }
 
@@ -419,7 +457,126 @@ pub fn plan_post(
         // Nothing binary left to archive: save the texts as plain files instead.
         items.extend(texts.iter().map(|(n, t)| text_item(n, t)));
     }
+    items.extend(comments);
     items
+}
+
+/// The folder a creator's own files go in: the folder template up to the
+/// first part that belongs to a single post.
+pub fn creator_folder(options: &JobOptions, creator: &CreatorInfo, now_ms: i64) -> String {
+    let shared: Vec<&str> = options
+        .folder_template
+        .split('/')
+        .take_while(|segment| !per_post_folder(segment))
+        .collect();
+    let ctx = NameContext {
+        service: creator.service.clone(),
+        creator_id: creator.id.clone(),
+        creator_name: creator.name.clone(),
+        now_ms: Some(now_ms),
+        ..Default::default()
+    };
+    build_folder_path(&shared.join("/"), &ctx)
+}
+
+/// The item that saves a creator's announcements.
+pub fn announcements_item(options: &JobOptions, creator: &CreatorInfo, now_ms: i64) -> Item {
+    let folder = creator_folder(options, creator, now_ms);
+    let path = if folder.is_empty() {
+        "announcements.txt".to_string()
+    } else {
+        format!("{folder}/announcements.txt")
+    };
+    Item {
+        id: "creator:announcements".into(),
+        post: PostRef {
+            service: creator.service.clone(),
+            creator_id: creator.id.clone(),
+            post_id: String::new(),
+        },
+        label: "announcements.txt".into(),
+        path,
+        target: None,
+        status: ItemStatus::Pending,
+        attempts: 0,
+        bytes: 0,
+        total_bytes: 0,
+        error: None,
+        skip_reason: None,
+        not_before: None,
+        fallback: false,
+        waits: 0,
+        kind: ItemKind::Announcements {
+            name: creator.name.clone(),
+        },
+    }
+}
+
+/// The text of a comments file, replies indented under their parent.
+pub fn comments_text(
+    title: &str,
+    url: &str,
+    comments: &[crate::pawchive::types::Comment],
+) -> String {
+    use std::collections::HashMap;
+    let id_of = |v: &Option<serde_json::Value>| match v {
+        Some(serde_json::Value::String(s)) if !s.is_empty() => Some(s.clone()),
+        Some(serde_json::Value::Number(n)) => Some(n.to_string()),
+        _ => None,
+    };
+    let mut children: HashMap<String, Vec<usize>> = HashMap::new();
+    let mut roots = Vec::new();
+    let ids: std::collections::HashSet<&str> = comments.iter().map(|c| c.id.as_str()).collect();
+    for (i, c) in comments.iter().enumerate() {
+        match id_of(&c.parent_id).filter(|p| ids.contains(p.as_str()) && *p != c.id) {
+            Some(parent) => children.entry(parent).or_default().push(i),
+            None => roots.push(i),
+        }
+    }
+    let mut out = format!("Comments on {title}\n{url}\n");
+    fn write(
+        out: &mut String,
+        comments: &[crate::pawchive::types::Comment],
+        children: &HashMap<String, Vec<usize>>,
+        i: usize,
+        depth: usize,
+    ) {
+        if depth > 20 {
+            return;
+        }
+        let c = &comments[i];
+        let pad = "    ".repeat(depth);
+        let who = c.commenter_name.as_deref().unwrap_or("Anonymous");
+        let when = c.published.as_deref().unwrap_or("").replace('T', " ");
+        out.push_str(&format!("\n{pad}{who}  {when}\n"));
+        for line in html_to_text(c.content.as_deref().unwrap_or("")).lines() {
+            out.push_str(&format!("{pad}{line}\n"));
+        }
+        for &child in children.get(&c.id).into_iter().flatten() {
+            write(out, comments, children, child, depth + 1);
+        }
+    }
+    for i in roots {
+        write(&mut out, comments, &children, i, 0);
+    }
+    out
+}
+
+/// The text of an announcements file, newest first.
+pub fn announcements_text(name: &str, list: &[crate::pawchive::types::Announcement]) -> String {
+    let mut out = format!("Announcements by {name}\n");
+    for a in list {
+        let when = a
+            .published
+            .as_deref()
+            .or(a.added.as_deref())
+            .unwrap_or("")
+            .replace('T', " ");
+        out.push_str(&format!("\n{when}\n"));
+        out.push_str(html_to_text(a.content.as_deref().unwrap_or("")).trim());
+        out.push_str("\n\n----\n");
+    }
+    out
 }
 
 /// Whether a folder template gives each post a folder of its own.
@@ -555,6 +712,61 @@ mod tests {
         // An explicit pick of files ignores the filter.
         let items = plan_post(&post(), None, &opts, Some(&[2]), &HashSet::new(), 0);
         assert_eq!(items[0].label, "v.mp4");
+    }
+
+    #[test]
+    fn saves_links_and_plans_comments() {
+        let mut p = post();
+        p.links = vec!["https://mega.nz/folder/x".into()];
+        let opts = options(|s| s.save_comments = true);
+        let items = plan_post(&p, None, &opts, None, &HashSet::new(), 0);
+        let labels: Vec<_> = items.iter().map(|i| i.label.as_str()).collect();
+        assert_eq!(&labels[3..], ["content.txt", "links.txt", "comments.txt"]);
+        let zip = options(|s| {
+            s.save_comments = true;
+            s.download_mode = DownloadMode::Zip;
+        });
+        let items = plan_post(&p, None, &zip, None, &HashSet::new(), 0);
+        let last = items.last().unwrap();
+        assert_eq!(
+            last.path,
+            "Pawchive/9 (patreon)/9 - 2026-01-02 T [1] - comments.txt"
+        );
+        let off = options(|s| s.save_links = false);
+        let items = plan_post(&p, None, &off, None, &HashSet::new(), 0);
+        assert!(items.iter().all(|i| i.label != "links.txt"));
+    }
+
+    #[test]
+    fn nests_replies_and_finds_the_creator_folder() {
+        use crate::pawchive::types::Comment;
+        let c = |id: &str, parent: Option<&str>, who: &str, text: &str| Comment {
+            id: id.into(),
+            parent_id: parent.map(|p| serde_json::json!(p)),
+            commenter_name: Some(who.into()),
+            content: Some(text.into()),
+            published: Some("2026-11-15T06:10:09".into()),
+        };
+        let text = comments_text(
+            "T",
+            "u",
+            &[
+                c("1", None, "Ann", "Nice"),
+                c("2", Some("1"), "Bo", "Agreed"),
+                c("3", Some("9"), "Cy", "Hi"),
+            ],
+        );
+        assert_eq!(
+            text,
+            "Comments on T\nu\n\nAnn  2026-11-15 06:10:09\nNice\n\n    Bo  2026-11-15 06:10:09\n    Agreed\n\nCy  2026-11-15 06:10:09\nHi\n"
+        );
+        let creator = CreatorInfo {
+            service: "fanbox".into(),
+            id: "5".into(),
+            name: "Cat".into(),
+        };
+        let item = announcements_item(&options(|_| {}), &creator, 0);
+        assert_eq!(item.path, "Pawchive/Cat (fanbox)/announcements.txt");
     }
 
     #[test]

@@ -308,5 +308,16 @@
   "settings.filtersHint": "Правила по умолчанию для всех загрузок. Для каждого автора их можно изменить кнопкой «Фильтры».",
   "settings.nameRemove": "Удалять из имён",
   "settings.nameRemoveHint": "Эти слова убираются из заголовков и имён файлов до применения шаблонов.",
-  "settings.nameRemovePlaceholder": "Например [HD], (Patreon)"
+  "settings.nameRemovePlaceholder": "Например [HD], (Patreon)",
+  "settings.links": "Сохранять внешние ссылки",
+  "settings.linksHint": "Записывает links.txt, если пост ссылается на Mega, Google Диск, Dropbox или другой файлообменник, вместе с упомянутыми паролями.",
+  "settings.comments": "Сохранять комментарии",
+  "settings.commentsHint": "Записывает comments.txt с комментариями и ответами к каждому посту. Добавляет по одному запросу на пост.",
+  "settings.announcements": "Сохранять объявления",
+  "settings.announcementsHint": "При загрузке автора в его папку также записывается announcements.txt.",
+  "post.links": ["{count} ссылка", "{count} ссылки", "{count} ссылок"],
+  "post.linksHint": "Файлы, которыми пост делится на сторонних сервисах, и упомянутые пароли. При загрузке сохраняются в links.txt.",
+  "post.copyAll": "Копировать всё",
+  "post.password": "Пароль",
+  "skip.empty": "Нечего сохранять"
 }

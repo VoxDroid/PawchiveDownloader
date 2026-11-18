@@ -987,3 +987,74 @@ async fn filters_posts_and_files_and_limits_a_scan() {
     assert!(names.iter().any(|n| n.ends_with("page1.png")));
     assert!(names.iter().any(|n| n.ends_with("extra.png")));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn saves_comments_announcements_and_outside_links() {
+    let env = env().await;
+    let a = Fixture::new("a.png", 200, 80);
+    let mut with_links = post("402", "Pack", &[&a]);
+    with_links["content"] = json!(
+        "<p>Full set <a href=\"https://mega.nz/folder/abc#k\">here</a></p><p>Password: kitty</p>"
+    );
+    env.mount_creator(vec![with_links, post("401", "Quiet", &[])])
+        .await;
+    env.serve(&a).await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/patreon/user/7/post/402/comments"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {"id": "1", "parent_id": null, "commenter_name": "Ann", "content": "Lovely", "published": "2026-05-02T10:00:00"},
+            {"id": "2", "parent_id": "1", "commenter_name": "Bo", "content": "Agreed", "published": "2026-05-02T11:00:00"}
+        ])))
+        .mount(&env.server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/patreon/user/7/post/401/comments"))
+        .respond_with(ResponseTemplate::new(404).set_body_json(json!([])))
+        .mount(&env.server)
+        .await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/patreon/user/7/announcements"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {"content": "New set on Friday", "added": "2026-05-01T00:00:00"}
+        ])))
+        .mount(&env.server)
+        .await;
+    let id = env.core.engine.create(creator_request(JobOverrides {
+        save_comments: Some(true),
+        save_announcements: Some(true),
+        ..no_text()
+    }));
+    let job = env.wait(&id).await;
+    assert_eq!(
+        job.status,
+        JobStatus::Done,
+        "{:?}",
+        env.core.engine.items(&id)
+    );
+    let items = env.core.engine.items(&id);
+    let empty = items.iter().find(|i| i.id == "401:comments").unwrap();
+    assert_eq!(empty.status, ItemStatus::Skipped);
+    let read = |suffix: &str| {
+        let file = files_under(&env.out())
+            .into_iter()
+            .find(|p| p.to_string_lossy().ends_with(suffix))
+            .unwrap_or_else(|| panic!("no {suffix}"));
+        std::fs::read_to_string(file).unwrap()
+    };
+    let comments = read("comments.txt");
+    assert!(
+        comments.contains("Ann") && comments.contains("    Agreed"),
+        "{comments}"
+    );
+    let links = read("links.txt");
+    assert!(
+        links.contains("https://mega.nz/folder/abc#k") && links.contains("kitty"),
+        "{links}"
+    );
+    assert!(read("announcements.txt").contains("New set on Friday"));
+    let folder = files_under(&env.out())
+        .into_iter()
+        .find(|p| p.ends_with("announcements.txt"))
+        .unwrap();
+    assert!(folder.parent().unwrap().ends_with("Aster Vale (patreon)"));
+}

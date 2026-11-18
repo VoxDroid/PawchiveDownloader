@@ -142,6 +142,11 @@ function makePost(creator: Creator, n: number): Post {
     url: `${ORIGIN}/${creator.service}/user/${creator.id}/post/${175580000 + n * 17 + creator.id.length}`,
     nextId: null,
     prevId: null,
+    links:
+      n % 4 === 0
+        ? ['https://mega.nz/folder/demo#k', 'https://drive.google.com/file/d/demo/view']
+        : [],
+    passwords: n % 4 === 0 ? ['forest2026'] : [],
   };
 }
 

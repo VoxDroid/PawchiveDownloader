@@ -631,6 +631,18 @@
   "settings.nameRemove": "Удалять из имён",
   "settings.nameRemoveHint": "Эти слова убираются из заголовков и имён файлов до применения шаблонов.",
   "settings.nameRemovePlaceholder": "Например [HD], (Patreon)",
+  "settings.links": "Сохранять внешние ссылки",
+  "settings.linksHint": "Записывает links.txt, если пост ссылается на Mega, Google Диск, Dropbox или другой файлообменник, вместе с упомянутыми паролями.",
+  "settings.comments": "Сохранять комментарии",
+  "settings.commentsHint": "Записывает comments.txt с комментариями и ответами к каждому посту. Добавляет по одному запросу на пост.",
+  "settings.announcements": "Сохранять объявления",
+  "settings.announcementsHint": "При загрузке автора в его папку также записывается announcements.txt.",
+  "post.links_one": "{count} ссылка",
+  "post.links_other": "{count} ссылки",
+  "post.linksHint": "Файлы, которыми пост делится на сторонних сервисах, и упомянутые пароли. При загрузке сохраняются в links.txt.",
+  "post.copyAll": "Копировать всё",
+  "post.password": "Пароль",
+  "skip.empty": "Нечего сохранять",
   "nav.activeJobs_few": "Идут {count} загрузки",
   "nav.activeJobs_many": "Идёт {count} загрузок",
   "jobs.failed_few": "{count} с ошибкой",
@@ -708,5 +720,7 @@
   "favorites.exported_few": "Сохранены {count} записи",
   "favorites.exported_many": "Сохранено {count} записей",
   "filter.newest_few": "Последние {count} поста",
-  "filter.newest_many": "Последние {count} постов"
+  "filter.newest_many": "Последние {count} постов",
+  "post.links_few": "{count} ссылки",
+  "post.links_many": "{count} ссылок"
 }

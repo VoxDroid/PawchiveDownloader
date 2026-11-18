@@ -32,7 +32,7 @@
   let selected = $state(new Set<number>());
   let filter = $state<Set<FileCategory>>(new Set());
   let hideDownloaded = $state(false);
-  let tab = $state<'files' | 'text'>('files');
+  let tab = $state<'files' | 'text' | 'links'>('files');
   let busy = $state(false);
   let favorite = $state(false);
   let lastIndex: number | null = null;
@@ -56,6 +56,27 @@
     visible.length > 0 && visible.every((f) => selected.has(f.index)),
   );
   const text = $derived(post ? htmlToText(post.contentHtml) : '');
+  const outside = $derived(post?.links ?? []);
+  const passwords = $derived(post?.passwords ?? []);
+  const hostOf = (url: string) => {
+    try {
+      return new URL(url).hostname.replace(/^www\./, '');
+    } catch {
+      return url;
+    }
+  };
+
+  async function copyAll() {
+    const lines = [...outside];
+    if (passwords.length) lines.push('', ...passwords);
+    await copyText(lines.join('\n'));
+    toast(t('common.copied'), 'success', { duration: 1400 });
+  }
+
+  async function copyOne(value: string) {
+    await copyText(value);
+    toast(t('common.copied'), 'success', { duration: 1400 });
+  }
   const previewOnly = $derived((post?.files ?? []).filter((f) => f.previewOnly).length);
   const creatorName = $derived(view?.creator?.name ?? post?.creatorId ?? '');
 
@@ -258,6 +279,15 @@
         options={[
           { value: 'files', label: t('post.files', { count: post.files.length }), icon: 'layers' },
           { value: 'text', label: t('post.text'), icon: 'text' },
+          ...(outside.length || passwords.length
+            ? [
+                {
+                  value: 'links' as const,
+                  label: t('post.links', { count: outside.length + passwords.length }),
+                  icon: 'link' as const,
+                },
+              ]
+            : []),
         ]}
       />
       {#if tab === 'files' && post.files.length}
@@ -329,6 +359,47 @@
           {/each}
         </div>
       {/if}
+    {:else if tab === 'links'}
+      <p class="notice"><Icon name="info" />{t('post.linksHint')}</p>
+      <div class="text-actions">
+        <Button size="sm" variant="ghost" icon="copy" onclick={copyAll}>{t('post.copyAll')}</Button>
+      </div>
+      <ul class="links">
+        {#each outside as url (url)}
+          <li>
+            <Icon name="link" />
+            <span class="host">{hostOf(url)}</span>
+            <span class="url truncate selectable" title={url}>{url}</span>
+            <IconButton
+              size="sm"
+              icon="copy"
+              label={t('common.copy')}
+              onclick={() => copyOne(url)}
+            />
+            <IconButton
+              size="sm"
+              icon="external"
+              label={t('browse.openSite')}
+              tipSide="left"
+              onclick={() => openUrl(url)}
+            />
+          </li>
+        {/each}
+        {#each passwords as password (password)}
+          <li>
+            <Icon name="lock" />
+            <span class="host">{t('post.password')}</span>
+            <code class="url truncate selectable">{password}</code>
+            <IconButton
+              size="sm"
+              icon="copy"
+              label={t('common.copy')}
+              tipSide="left"
+              onclick={() => copyOne(password)}
+            />
+          </li>
+        {/each}
+      </ul>
     {:else if text}
       <div class="text-actions">
         <Button size="sm" variant="ghost" icon="copy" onclick={copy}>{t('common.copy')}</Button>
@@ -411,6 +482,34 @@
   .sep {
     margin: 0 7px;
     color: var(--text-faint);
+  }
+  .links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 6px;
+  }
+  .links li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+    padding: 8px 10px;
+    border-radius: var(--radius-md);
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+  }
+  .links .host {
+    flex: none;
+    font-weight: 600;
+    font-size: var(--fs-sm);
+  }
+  .links .url {
+    flex: 1;
+    min-width: 0;
+    color: var(--text-dim);
+    font-size: var(--fs-sm);
   }
   .tags {
     display: flex;

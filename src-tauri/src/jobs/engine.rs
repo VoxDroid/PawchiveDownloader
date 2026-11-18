@@ -792,8 +792,10 @@ impl Engine {
     ) -> Result<Post, ApiError> {
         let filters_text = options.filter.scope == super::filter::FilterScope::All
             && !(options.filter.keywords.is_empty() && options.filter.skip_words.is_empty());
-        let wants_text =
-            options.save_content != ContentFormat::None || options.save_metadata || filters_text;
+        let wants_text = options.save_content != ContentFormat::None
+            || options.save_metadata
+            || options.save_links
+            || filters_text;
         if !post.incomplete && !wants_text && !post.content_html.contains("<img") {
             return Ok(post);
         }
@@ -947,11 +949,18 @@ impl Engine {
                     .map(|c| c.name.clone())
                     .unwrap_or_else(|| creator_id.clone());
                 self.with_job(job_id, |job| {
-                    job.creator = Some(CreatorInfo {
+                    let info = CreatorInfo {
                         service: service.clone(),
                         id: creator_id.clone(),
                         name: name.clone(),
-                    });
+                    };
+                    if job.options.save_announcements
+                        && !job.items.iter().any(|i| i.id == "creator:announcements")
+                    {
+                        let item = super::plan::announcements_item(&job.options, &info, now_ms());
+                        job.items.push(item);
+                    }
+                    job.creator = Some(info);
                     job.title = name.clone();
                     if let Some(q) = &query {
                         job.subtitle = format!("\"{q}\"");
@@ -1175,6 +1184,36 @@ impl Engine {
             ItemKind::Zip { entries, .. } => {
                 self.run_zip(job_id, item, entries, options, cancel, progress)
                     .await
+            }
+            ItemKind::Comments { title, url } => {
+                let p = &item.post;
+                match self
+                    .client
+                    .get_comments(&p.service, &p.creator_id, &p.post_id, cancel)
+                    .await
+                {
+                    Ok(list) if list.is_empty() => Ok(Outcome::Skipped(SkipReason::Empty)),
+                    Ok(list) => {
+                        let text = super::plan::comments_text(title, url, &list);
+                        self.run_text(job_id, item, &text, options).await
+                    }
+                    Err(e) => Err(api_to_fetch(e)),
+                }
+            }
+            ItemKind::Announcements { name } => {
+                let p = &item.post;
+                match self
+                    .client
+                    .get_announcements(&p.service, &p.creator_id, cancel)
+                    .await
+                {
+                    Ok(list) if list.is_empty() => Ok(Outcome::Skipped(SkipReason::Empty)),
+                    Ok(list) => {
+                        let text = super::plan::announcements_text(name, &list);
+                        self.run_text(job_id, item, &text, options).await
+                    }
+                    Err(e) => Err(api_to_fetch(e)),
+                }
             }
         };
         match result {
