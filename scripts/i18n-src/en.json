@@ -388,5 +388,13 @@
   "lightbox.previous": "Previous",
   "lightbox.next": "Next",
   "lightbox.failed": "This image could not be loaded",
-  "lightbox.keys": "Left and Right to move, Space to select, Esc to close"
+  "lightbox.keys": "Left and Right to move, Space to select, Esc to close",
+  "help.search.title": "Finding creators",
+  "help.search.body": "Type a creator's name (or part of it, their id or their public id) into the link bar and press Enter. The app searches the full list of creators on Pawchive, fetched at most once a day.\nResults can be limited to Patreon or Fanbox and sorted by best match, most favorited, recently updated or name. Click one to open their page.\nA creator's page shows their other accounts (for example Patreon and Fanbox) under the name.",
+  "help.filters.title": "Filters and clean names",
+  "help.filters.body": "Settings > Filters sets default rules: only posts with certain words, skip posts with others (in the title and tags, or also the text), only the newest posts, only or never certain file types, and file names to skip. Each creator download can change them with its Filters button.\nWords match regardless of letter case. Write /.../ for a regular expression, for example /ch(apter)?\\s*\\d+/.\nPost rules apply when downloading all or matching posts of a creator, and to watched creators that have their own filters; posts you pick by hand are never left out.\nSettings > File names > Remove from names takes words such as [HD] out of titles and file names.",
+  "help.schedule.title": "Download window, disk space and power",
+  "help.schedule.body": "Settings > Downloads > Download window starts downloads only between two times, for example 01:00 to 07:00. Outside it, a bar at the top says when they start again.\nKeep free on the drive makes new downloads wait (instead of failing) when the download drive is nearly full; they continue by themselves once there is room.\nKeep the computer awake stops it from sleeping while downloads run.\nOn the Downloads page, When done can quit the app, sleep or shut down once every download has finished, after a 60 second countdown that can be cancelled. Paused downloads never count as finished.",
+  "help.library.title": "Statistics and missing files",
+  "help.library.body": "The Statistics page counts everything you have downloaded: files, size, posts and creators, the last twelve months, your most downloaded creators and files by kind.\nCheck now looks for downloaded files that were deleted or moved since. Download them again fetches only those files (the rest are still known); Only forget them lets the next download of those posts fetch them.\nLinks to Mega, Google Drive and other hosts found in a post are listed on its Links tab and saved to links.txt with any archive passwords."
 }

@@ -51,30 +51,41 @@ Pawchive Downloader is a desktop app for downloading from Pawchive. Paste a link
 
 **Downloading**
 
-| Feature                    | What it does                                                                                                                                                                               |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Browse                     | Paste or drop a link to a post, a creator or a search. Posts show every file with a thumbnail; creators show their posts with banner and avatar; the recent-posts listing can be searched. |
-| File picking               | Select files or posts by click and Shift-click, filter by type (images, videos, audio, archives, documents, text), invert, hide what you already have.                                     |
-| Whole creators             | Download everything, a date range, a site search, or just the posts you tick. Large creators are scanned page by page while downloads already run.                                         |
-| Batch queue and URL import | Paste any number of links, import a `.txt` file or drag links onto the window. Each creator becomes one download; posts of the same creator are grouped.                                   |
-| Three formats              | Separate files in a folder per post, one ZIP archive per post (ZIP64, no size limit, optional parts), or thumbnails only for when the media servers are down.                              |
-| Resumable downloads        | Files are written as `.part` files and continue with HTTP Range requests after a pause, a dropped connection or a restart of the app.                                                      |
-| Checksums                  | Every finished file is checked against the SHA-256 in its Pawchive address and downloaded again if it does not match.                                                                      |
-| Preview-only files         | When Pawchive only keeps a preview, the full file is fetched through the temporary link the post page offers.                                                                              |
-| Thumbnail fallback         | If a file's media server keeps failing, its thumbnail can be saved instead of nothing.                                                                                                     |
-| Duplicate skipping         | Files are recognised by content hash, across posts and creators, and skipped when you already have them.                                                                                   |
-| Post text and metadata     | Save the description as `content.txt` and/or `content.html`, and a `post.json` with title, dates, tags and files.                                                                          |
-| Fast mode                  | One switch: every file type, your saved options, no per-download choices.                                                                                                                  |
+| Feature                     | What it does                                                                                                                                                                               |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Browse                      | Paste or drop a link to a post, a creator or a search. Posts show every file with a thumbnail; creators show their posts with banner and avatar; the recent-posts listing can be searched. |
+| Creator search              | Type a name instead of a link to search all of Pawchive's creators (about 100,000), by service, popularity, update date or name. Creator pages show the creator's other accounts.          |
+| Image viewer                | Look at a post's images full size with the arrow keys and pick them while you look.                                                                                                        |
+| File picking                | Select files or posts by click and Shift-click, filter by type (images, videos, audio, archives, documents, text), invert, hide what you already have.                                     |
+| Whole creators              | Download everything, a date range, a site search, or just the posts you tick. Large creators are scanned page by page while downloads already run.                                         |
+| Filters                     | Only posts with certain words, skip posts or files with others (plain or `/regex/`), the newest N posts, file types to keep or skip. Defaults in Settings, changeable for each download.   |
+| Batch queue and URL import  | Paste any number of links, import a `.txt` file or drag links onto the window. Each creator becomes one download; posts of the same creator are grouped.                                   |
+| Three formats               | Separate files in a folder per post, one ZIP archive per post (ZIP64, no size limit, optional parts), or thumbnails only for when the media servers are down.                              |
+| Resumable downloads         | Files are written as `.part` files and continue with HTTP Range requests after a pause, a dropped connection or a restart of the app.                                                      |
+| Checksums                   | Every finished file is checked against the SHA-256 in its Pawchive address and downloaded again if it does not match.                                                                      |
+| Preview-only files          | When Pawchive only keeps a preview, the full file is fetched through the temporary link the post page offers.                                                                              |
+| Thumbnail fallback          | If a file's media server keeps failing, its thumbnail can be saved instead of nothing.                                                                                                     |
+| Duplicate skipping          | Files are recognised by content hash, across posts and creators, and skipped when you already have them.                                                                                   |
+| Post text and metadata      | Save the description as `content.txt` and/or `content.html`, and a `post.json` with title, dates, tags and files.                                                                          |
+| Outside links and passwords | Links to Mega, Google Drive, Dropbox and other hosts in a post, plus any archive passwords, are listed on its Links tab and saved to `links.txt`.                                          |
+| Comments and announcements  | Save each post's comments with their replies, and a creator's announcements.                                                                                                               |
+| Clean names                 | Remove words such as `[HD]` from titles and file names.                                                                                                                                    |
+| Fast mode                   | One switch: every file type, your saved options, no per-download choices.                                                                                                                  |
 
 **Managing**
 
 | Feature             | What it does                                                                                                                                                               |
 | ------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Download queue      | Pause, resume, cancel, retry and reorder downloads; follow speed, progress and every item, retry single files, open folders.                                               |
+| Download window     | Start downloads only at chosen times (for example at night); the computer is kept awake while they run.                                                                    |
+| Disk space guard    | New downloads wait instead of failing when the drive is nearly full, and go on by themselves.                                                                              |
+| When done           | Quit, sleep or shut down after the queue finishes, with a cancellable countdown. Retry every failed file at once or export the list.                                       |
 | Crash-safe          | The queue is saved continuously to a local SQLite library and picks up where it stopped.                                                                                   |
 | History             | Every finished download with its files, size, duration and errors. Show it in the folder (or the nearest folder that still exists), download it again, export CSV or JSON. |
 | Watchlist           | Follow creators. They are checked on a schedule; new posts raise a badge and a notification and can be downloaded automatically.                                           |
+| Per-creator options | Each watched creator can have its own folder, format and filters.                                                                                                          |
 | Favorites           | Bookmark posts and creators with notes, download them again in one click, import and export the list as text.                                                              |
+| Statistics          | Lifetime totals, the last twelve months, most downloaded creators, files by kind, and a check that finds deleted or moved files and downloads just those again.            |
 | Tray and background | Closing the window keeps the app in the tray; progress shows on the tray tooltip and the taskbar button. Optional start at sign-in.                                        |
 | Notifications       | Finished downloads, problems and new posts, in your language.                                                                                                              |
 | Logs                | A live, searchable activity log with levels, copy and export, also written to a rotating log file.                                                                         |
@@ -92,14 +103,17 @@ Pawchive Downloader is a desktop app for downloading from Pawchive. Paste a link
 | Keyboard       | Ctrl+L link bar, Ctrl+Shift+B batch, Ctrl+1 to Ctrl+9 pages, Ctrl+, settings.                                              |
 | Network        | System proxy, no proxy, a custom HTTP, HTTPS or SOCKS5 proxy, or Tor; a total speed limit.                                 |
 
+How it compares with other Pawchive and Kemono downloaders: [docs/COMPARISON.md](docs/COMPARISON.md).
+
 ## Screenshots
 
-|                                              |                                                               |
-| -------------------------------------------- | ------------------------------------------------------------- |
-| ![Start page](docs/screenshots/browse.png)   | ![A post with its files](docs/screenshots/post.png)           |
-| ![Downloads](docs/screenshots/downloads.png) | ![Watchlist](docs/screenshots/watchlist.png)                  |
-| ![Favorites](docs/screenshots/favorites.png) | ![History](docs/screenshots/history.png)                      |
-| ![Settings](docs/screenshots/settings.png)   | ![Batch queue, light theme](docs/screenshots/batch-light.png) |
+|                                                |                                                               |
+| ---------------------------------------------- | ------------------------------------------------------------- |
+| ![Start page](docs/screenshots/browse.png)     | ![A post with its files](docs/screenshots/post.png)           |
+| ![Downloads](docs/screenshots/downloads.png)   | ![Watchlist](docs/screenshots/watchlist.png)                  |
+| ![Favorites](docs/screenshots/favorites.png)   | ![History](docs/screenshots/history.png)                      |
+| ![Statistics](docs/screenshots/statistics.png) | ![Creator search](docs/screenshots/search.png)                |
+| ![Settings](docs/screenshots/settings.png)     | ![Batch queue, light theme](docs/screenshots/batch-light.png) |
 
 The screenshots use the app's demo data.
 

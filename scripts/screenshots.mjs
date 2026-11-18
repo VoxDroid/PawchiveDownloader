@@ -90,6 +90,16 @@ await shot('favorites');
 await nav('History');
 await shot('history');
 
+await nav('Statistics');
+await page.getByRole('button', { name: 'Check now' }).click();
+await page.getByText(/files are missing/).waitFor();
+await shot('statistics');
+
+await nav('Browse');
+await open('aster');
+await page.getByRole('heading', { name: /Creators matching/ }).waitFor();
+await shot('search');
+
 await nav('Settings');
 await shot('settings');
 

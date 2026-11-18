@@ -391,5 +391,13 @@
   "lightbox.previous": "Anterior",
   "lightbox.next": "Próximo",
   "lightbox.failed": "Não foi possível carregar a imagem",
-  "lightbox.keys": "Esquerda e Direita para mover, Espaço para selecionar, Esc para fechar"
+  "lightbox.keys": "Esquerda e Direita para mover, Espaço para selecionar, Esc para fechar",
+  "help.search.title": "Encontrar criadores",
+  "help.search.body": "Digite o nome de um criador (ou parte dele, o id ou o id público) na barra de links e pressione Enter. O app pesquisa a lista completa de criadores do Pawchive, baixada no máximo uma vez por dia.\nOs resultados podem ser limitados a Patreon ou Fanbox e ordenados por correspondência, favoritos, atualização ou nome. Clique em um para abrir a página.\nA página de um criador mostra suas outras contas (por exemplo Patreon e Fanbox) abaixo do nome.",
+  "help.filters.title": "Filtros e nomes limpos",
+  "help.filters.body": "Configurações > Filtros define as regras padrão: só publicações com certas palavras, pular as que têm outras (no título e nas tags, ou também no texto), só as mais recentes, só ou nunca certos tipos de arquivo, e nomes de arquivo a pular. Cada download de criador pode mudá-las com o botão Filtros.\nNão diferencia maiúsculas. Escreva /.../ para uma expressão regular, por exemplo /ch(apter)?\\s*\\d+/.\nAs regras de publicações valem ao baixar todas ou as correspondentes de um criador, e para criadores seguidos com filtros próprios; as que você escolhe à mão nunca ficam de fora.\nConfigurações > Nomes de arquivo > Remover dos nomes tira palavras como [HD] de títulos e nomes de arquivo.",
+  "help.schedule.title": "Janela, espaço e energia",
+  "help.schedule.body": "Configurações > Downloads > Janela de download só inicia downloads entre dois horários, por exemplo das 01:00 às 07:00. Fora dela, uma barra no topo diz quando voltam.\nEspaço livre a manter faz novos downloads esperarem (em vez de falhar) quando o disco está quase cheio; eles continuam sozinhos quando há espaço.\nManter o computador acordado impede a suspensão enquanto há downloads.\nNa página Downloads, Ao terminar pode fechar o app, suspender ou desligar quando tudo terminar, após uma contagem de 60 segundos que pode ser cancelada. Downloads pausados nunca contam como concluídos.",
+  "help.library.title": "Estatísticas e arquivos sumidos",
+  "help.library.body": "A página Estatísticas conta tudo o que você baixou: arquivos, tamanho, publicações e criadores, os últimos doze meses, os criadores mais baixados e arquivos por tipo.\nVerificar agora procura arquivos baixados que foram apagados ou movidos. Baixar de novo traz só esses arquivos (o resto continua conhecido); Só esquecer deixa o próximo download dessas publicações trazê-los.\nLinks para Mega, Google Drive e outros serviços em uma publicação aparecem na aba Links e são salvos em links.txt com as senhas."
 }

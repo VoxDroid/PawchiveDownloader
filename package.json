@@ -1,7 +1,7 @@
 {
   "name": "pawchive-downloader",
   "description": "Desktop app for downloading posts, attachments and whole creators from Pawchive.",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "license": "MIT",

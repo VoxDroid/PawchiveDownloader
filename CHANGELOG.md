@@ -6,6 +6,39 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-18
+
+### Added
+
+- Creator search: type a name in the link bar to search every creator on
+  Pawchive (fetched at most once a day), filtered by service and sorted by
+  match, favorites, update date or name. Creator pages show linked accounts.
+- Filters: only posts with chosen words, skip posts or files with others
+  (title and tags, or also the text; plain words or `/regex/`), the newest
+  N posts, and file types to keep or skip. Defaults in Settings > Filters,
+  changeable per download with the new Filters button.
+- Remove words such as `[HD]` from titles and file names.
+- Links to Mega, Google Drive, Dropbox and other file hosts, and archive
+  passwords, are listed on a post's new Links tab and saved to `links.txt`.
+- Save comments (with nested replies) and a creator's announcements.
+- Download window: start downloads only between two times.
+- Downloads wait when the drive is nearly full instead of failing.
+- The computer is kept awake while downloads run.
+- When done: quit, sleep or shut down after the queue finishes, after a
+  cancellable 60 second countdown.
+- Retry all failed files at once and export the failed list.
+- Statistics page with lifetime totals, monthly chart, top creators and
+  files by kind, plus a check that finds deleted or moved files and
+  downloads only those again.
+- Per-creator watchlist options: folder, format and filters.
+- Image viewer in the post view, with arrow keys and selection.
+- Help topics for all of the above, and docs/COMPARISON.md.
+
+### Fixed
+
+- Typing in the link bar right after returning to Browse could be replaced
+  by the previous link once its lookup finished.
+
 ## [1.0.2] - 2026-11-18
 
 ### Fixed
@@ -101,7 +134,8 @@ Downloader browser extension.
   and component tests, Playwright interface tests; CI on Windows, macOS and
   Linux.
 
-[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/VoxDroid/PawchiveDownloader/releases/tag/v1.0.0

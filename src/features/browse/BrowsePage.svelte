@@ -24,13 +24,19 @@
   let recent = $state<RecentLink[]>(loadRecent());
   const progress = $derived(overallProgress(app.jobs));
 
+  // Only the newest lookup counts, so a slow one cannot replace what was
+  // typed after it.
+  let openRun = 0;
+
   async function open(text = input) {
+    const run = ++openRun;
     const value = text.trim();
     if (!value) {
       current = null;
       return;
     }
     const links = await api.parseLinks(value).catch(() => []);
+    if (run !== openRun) return;
     if (links.length > 1) {
       batch.show(value);
       return;
