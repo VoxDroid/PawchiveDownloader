@@ -3,6 +3,9 @@ import type {
   BatchResult,
   CheckReport,
   Counts,
+  Creator,
+  CreatorSearchResult,
+  CreatorSort,
   CreatorView,
   Favorite,
   HistoryEntry,
@@ -93,6 +96,24 @@ export const api = {
     call<PostView>('get_post', { service, creatorId, postId }),
   getCreator: (service: string, creatorId: string) =>
     call<CreatorView>('get_creator', { service, creatorId }),
+  linkedAccounts: (service: string, creatorId: string) =>
+    call<Creator[]>('get_linked_accounts', { service, creatorId }),
+  searchCreators: (
+    query: string,
+    options: {
+      service?: string | null;
+      sort?: CreatorSort;
+      limit?: number;
+      refresh?: boolean;
+    } = {},
+  ) =>
+    call<CreatorSearchResult>('search_creators', {
+      query,
+      service: options.service ?? null,
+      sort: options.sort ?? null,
+      limit: options.limit ?? null,
+      refresh: options.refresh ?? null,
+    }),
   getCreatorPosts: (service: string, creatorId: string, offset: number, query: string | null) =>
     call<PostPage>('get_creator_posts', { service, creatorId, offset, query }),
   getRecentPosts: (offset: number, query: string | null) =>

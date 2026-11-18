@@ -1,4 +1,5 @@
 pub mod client;
+pub mod directory;
 pub mod links;
 pub mod normalize;
 pub mod relay;

@@ -14,6 +14,7 @@ use crate::net::http::build_client;
 use crate::net::limiter::{RateLimitPolicy, SiteLimiter};
 use crate::net::throttle::Throttle;
 use crate::pawchive::client::PawchiveClient;
+use crate::pawchive::directory::Directory;
 use crate::settings::{self, Settings, MAX_CONCURRENCY};
 use crate::store::Store;
 use crate::watch::Watcher;
@@ -26,6 +27,7 @@ pub struct Core {
     pub throttle: Arc<Throttle>,
     pub engine: Arc<Engine>,
     pub watcher: Arc<Watcher>,
+    pub directory: Arc<Directory>,
     pub data_dir: PathBuf,
     pub cancel: CancellationToken,
     fast_timing: bool,
@@ -123,6 +125,7 @@ impl Core {
             throttle,
             engine,
             watcher,
+            directory: Arc::new(Directory::new(options.data_dir.clone())),
             data_dir: options.data_dir,
             cancel: CancellationToken::new(),
             fast_timing: options.fast_timing,

@@ -126,3 +126,22 @@ test('favorites can be edited', async ({ page }) => {
   await dialog.getByRole('button', { name: 'Save' }).click();
   await expect(page.getByRole('button', { name: 'Brushes' })).toBeVisible();
 });
+
+test('plain words search creators and open the one picked', async ({ page }) => {
+  await openLink(page, 'moss');
+  await expect(page.getByRole('heading', { name: 'Creators matching "moss"' })).toBeVisible();
+  await page.getByRole('button', { name: /Moss and Marrow/ }).click();
+  await expect(page.getByRole('heading', { name: 'Moss and Marrow' })).toBeVisible();
+});
+
+test('a creator download can carry its own filters', async ({ page }) => {
+  await openLink(page, CREATOR);
+  await page.getByRole('button', { name: 'Filters' }).click();
+  const dialog = page.getByRole('dialog');
+  const skip = dialog.getByRole('textbox', { name: 'Skip posts with' });
+  await skip.fill('wip');
+  await skip.press('Enter');
+  await expect(dialog.getByRole('button', { name: 'Remove wip' })).toBeVisible();
+  await dialog.getByRole('button', { name: 'Close' }).last().click();
+  await expect(page.getByRole('button', { name: /Filters\s*1/ })).toBeVisible();
+});

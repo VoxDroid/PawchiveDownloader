@@ -40,6 +40,28 @@ export interface Post {
   passwords?: string[];
 }
 
+/** One creator in the site-wide creator search. */
+export interface CreatorHit {
+  id: string;
+  name: string;
+  service: string;
+  publicId: string | null;
+  favorited: number;
+  /** Epoch ms of the newest import, 0 when unknown. */
+  updated: number;
+  url: string;
+  iconUrl: string;
+}
+
+export type CreatorSort = 'relevance' | 'favorited' | 'updated' | 'name';
+
+export interface CreatorSearchResult {
+  creators: CreatorHit[];
+  total: number;
+  size: number;
+  fetchedAt: number;
+}
+
 export interface Creator {
   id: string;
   service: string;

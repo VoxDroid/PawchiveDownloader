@@ -169,6 +169,35 @@ impl PawchiveClient {
         }
     }
 
+    /// Every creator on the site (a large list; see `directory`).
+    pub async fn get_creator_list(
+        &self,
+        cancel: &CancellationToken,
+    ) -> Result<Vec<super::directory::Entry>, ApiError> {
+        self.json(&api::creators(), cancel).await
+    }
+
+    /// Other accounts of the same creator (Patreon and Fanbox, for example).
+    pub async fn get_linked(
+        &self,
+        service: &str,
+        creator_id: &str,
+        cancel: &CancellationToken,
+    ) -> Result<Vec<Creator>, ApiError> {
+        match self
+            .json::<Vec<RawProfile>>(&api::linked(service, creator_id), cancel)
+            .await
+        {
+            Ok(list) => Ok(list
+                .into_iter()
+                .filter(|c| !(c.service == service && c.id == creator_id))
+                .map(normalize_creator)
+                .collect()),
+            Err(e) if e.not_found() => Ok(Vec::new()),
+            Err(e) => Err(e),
+        }
+    }
+
     pub async fn get_announcements(
         &self,
         service: &str,

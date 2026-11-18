@@ -10,13 +10,15 @@
   import Icon from '../../ui/components/Icon.svelte';
   import IconButton from '../../ui/components/IconButton.svelte';
   import Logo from '../../ui/components/Logo.svelte';
+  import CreatorSearch from './CreatorSearch.svelte';
   import CreatorView from './CreatorView.svelte';
   import ListingView from './ListingView.svelte';
   import PostView from './PostView.svelte';
   import { batch, clearRecent, loadRecent, type RecentLink } from './batch.svelte';
 
   let input = $state(browse.input);
-  let current = $state<PageRef | null>(null);
+  type Current = PageRef | { kind: 'search'; query: string };
+  let current = $state<Current | null>(null);
   let invalid = $state(false);
   let field = $state<HTMLInputElement>();
   let recent = $state<RecentLink[]>(loadRecent());
@@ -35,8 +37,14 @@
     }
     const ref = links[0]?.ref;
     if (!ref || ref.kind === 'other') {
-      invalid = true;
-      toast(t('browse.invalid'), 'warning');
+      // Plain words search creators by name; other web addresses are wrong.
+      if (/^(https?:\/\/|www\.)|\.[a-z]{2,}\//i.test(value) || value.length > 120) {
+        invalid = true;
+        toast(t('browse.invalid'), 'warning');
+        return;
+      }
+      invalid = false;
+      current = { kind: 'search', query: value };
       return;
     }
     invalid = false;
@@ -165,6 +173,8 @@
     {/key}
   {:else if current?.kind === 'listing'}
     <ListingView initialQuery={current.query} />
+  {:else if current?.kind === 'search'}
+    <CreatorSearch query={current.query} />
   {:else}
     <section class="welcome" in:fade={{ duration: 200 }}>
       <div class="hello">
@@ -180,6 +190,11 @@
           <Icon name="web" size={22} />
           <strong>{t('browse.recentPosts')}</strong>
           <span>{t('browse.recentPostsBody')}</span>
+        </button>
+        <button class="card" onclick={() => (current = { kind: 'search', query: '' })}>
+          <Icon name="search" size={22} />
+          <strong>{t('browse.findCreators')}</strong>
+          <span>{t('browse.findCreatorsBody')}</span>
         </button>
         <button class="card" onclick={() => batch.show('')}>
           <Icon name="playlistPlus" size={22} />

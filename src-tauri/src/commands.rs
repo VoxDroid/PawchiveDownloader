@@ -308,6 +308,45 @@ pub async fn get_creator(
     })
 }
 
+/// Other accounts of the same creator.
+#[tauri::command]
+pub async fn get_linked_accounts(
+    core: State<'_, Core_>,
+    service: String,
+    creator_id: String,
+) -> R<Vec<Creator>> {
+    let cancel = CancellationToken::new();
+    core.client
+        .get_linked(&service, &creator_id, &cancel)
+        .await
+        .map_err(api)
+}
+
+/// Searches every creator on Pawchive by name, id or public id. The first
+/// search of the day fetches the site's creator list.
+#[tauri::command]
+pub async fn search_creators(
+    core: State<'_, Core_>,
+    query: String,
+    service: Option<String>,
+    sort: Option<crate::pawchive::directory::Sort>,
+    limit: Option<u32>,
+    refresh: Option<bool>,
+) -> R<crate::pawchive::directory::SearchResult> {
+    let cancel = CancellationToken::new();
+    core.directory
+        .ensure(&core.client, now_ms(), refresh.unwrap_or(false), &cancel)
+        .await
+        .map_err(api)?;
+    let query: String = query.chars().take(200).collect();
+    Ok(core.directory.search(
+        &query,
+        service.as_deref().filter(|s| !s.is_empty()),
+        sort.unwrap_or_default(),
+        limit.unwrap_or(60) as usize,
+    ))
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PostPage {

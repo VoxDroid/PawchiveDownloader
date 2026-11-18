@@ -496,6 +496,30 @@ export function createMockBackend(): Backend {
         favorite: favorites.some((f) => f.key === `c:${creator.service}:${creator.id}`),
       };
     },
+    get_linked_accounts: ({ creatorId }) =>
+      creatorId === CREATORS[0]?.id ? CREATORS.slice(1, 2) : [],
+    search_creators: ({ query, service, sort }) => {
+      const q = String(query ?? '')
+        .toLowerCase()
+        .replace(/\s+/g, '');
+      const all = CREATORS.map((c, i) => ({
+        id: c.id,
+        name: c.name,
+        service: c.service,
+        publicId: c.publicId,
+        favorited: [3729, 1204, 860, 412, 95][i] ?? 10,
+        updated: Date.parse(`${c.updated ?? '2026-11-01T00:00:00'}Z`),
+        url: c.url,
+        iconUrl: c.iconUrl,
+      }));
+      const hits = all
+        .filter((c) => !service || c.service === service)
+        .filter((c) => !q || c.name.toLowerCase().replace(/\s+/g, '').includes(q) || c.id === q);
+      if (sort === 'updated') hits.sort((a, b) => b.updated - a.updated);
+      else if (sort === 'name') hits.sort((a, b) => a.name.localeCompare(b.name));
+      else hits.sort((a, b) => b.favorited - a.favorited);
+      return { creators: hits, total: hits.length, size: 99304, fetchedAt: Date.now() - 3_600_000 };
+    },
     get_creator_posts: ({ creatorId, offset, query }) => {
       const list = posts(String(creatorId)).filter(
         (p) => !query || p.title.toLowerCase().includes(String(query).toLowerCase()),

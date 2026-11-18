@@ -2,9 +2,10 @@
   import { describeError } from '../../ui/state/errors';
   import { fade } from 'svelte/transition';
   import { api, openUrl } from '../../lib/api';
-  import type { CreatorView, JobOverrides, Post } from '../../lib/types';
+  import type { Creator, CreatorView, JobOverrides, Post } from '../../lib/types';
   import { fmt, t } from '../../ui/state/app.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
+  import { openLink } from '../../ui/state/router.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Chip from '../../ui/components/Chip.svelte';
   import Empty from '../../ui/components/Empty.svelte';
@@ -44,6 +45,7 @@
   let onlyFiles = $state(false);
   let hideDownloaded = $state(false);
   let busy = $state(false);
+  let linked = $state<Creator[]>([]);
 
   const shown = $derived(
     posts.filter((p) => {
@@ -71,6 +73,7 @@
     offset = 0;
     end = false;
     selected = new Set();
+    linked = [];
     query = initialQuery ?? '';
     appliedQuery = initialQuery;
     try {
@@ -82,6 +85,14 @@
         at: Date.now(),
       });
       await loadMore();
+      // Other accounts of the same creator; quietly absent when unavailable.
+      const forId = creatorId;
+      void api
+        .linkedAccounts(service, creatorId)
+        .then((list) => {
+          if (forId === creatorId) linked = list;
+        })
+        .catch(() => {});
     } catch (e) {
       error = describeError(e);
     }
@@ -240,6 +251,18 @@
                 count: creator.postCount,
               })}{/if}
           </p>
+          {#if linked.length}
+            <div class="linked">
+              <span class="faint">{t('creator.alsoOn')}</span>
+              {#each linked as other (`${other.service}:${other.id}`)}
+                <button class="link-chip" onclick={() => openLink(other.url)} title={other.url}>
+                  <img src={other.iconUrl} alt="" loading="lazy" />
+                  <span class="truncate">{other.name}</span>
+                  <span class="faint">{other.service}</span>
+                </button>
+              {/each}
+            </div>
+          {/if}
         </div>
         <div class="hero-actions">
           <Button
@@ -374,6 +397,37 @@
 {/if}
 
 <style>
+  .linked {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 6px;
+    font-size: var(--fs-sm);
+  }
+  .link-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    max-width: 240px;
+    height: 26px;
+    padding: 0 10px 0 3px;
+    border-radius: 99px;
+    border: 1px solid var(--border);
+    background: var(--bg-elev-2);
+    color: var(--text);
+    font-size: var(--fs-sm);
+    transition: border-color var(--dur-fast) var(--ease);
+  }
+  .link-chip:hover {
+    border-color: var(--accent);
+  }
+  .link-chip img {
+    width: 20px;
+    height: 20px;
+    border-radius: 99px;
+    object-fit: cover;
+  }
   .loading {
     display: flex;
     align-items: center;

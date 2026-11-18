@@ -1058,3 +1058,39 @@ async fn saves_comments_announcements_and_outside_links() {
         .unwrap();
     assert!(folder.parent().unwrap().ends_with("Aster Vale (patreon)"));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn searches_the_creator_list_and_keeps_it_on_disk() {
+    use pawchive_downloader_lib::pawchive::directory::Sort;
+    let env = env().await;
+    Mock::given(method("GET"))
+        .and(path("/api/v1/creators"))
+        .respond_with(ResponseTemplate::new(200).set_body_json(json!([
+            {"id": "7", "name": "Aster Vale", "service": "patreon", "favorited": 40, "updated": 1794960000},
+            {"id": "8", "name": "Vale Studio", "service": "fanbox", "favorited": 90, "updated": 1794000000}
+        ])))
+        .expect(1)
+        .mount(&env.server)
+        .await;
+    let cancel = tokio_util::sync::CancellationToken::new();
+    let dir = &env.core.directory;
+    dir.ensure(&env.core.client, 1_000, false, &cancel)
+        .await
+        .unwrap();
+    // Fresh for a day: no second request.
+    dir.ensure(&env.core.client, 2_000, false, &cancel)
+        .await
+        .unwrap();
+    let found = dir.search("vale", None, Sort::Relevance, 10);
+    assert_eq!(found.total, 2);
+    assert_eq!(found.creators[0].name, "Vale Studio");
+    assert_eq!(found.creators[1].updated, 1_794_960_000_000);
+    // A new app start reads the saved list instead of the site.
+    let again =
+        pawchive_downloader_lib::pawchive::directory::Directory::new(env.dir.path().join("data"));
+    again
+        .ensure(&env.core.client, 3_000, false, &cancel)
+        .await
+        .unwrap();
+    assert_eq!(again.search("aster", None, Sort::Relevance, 10).total, 1);
+}

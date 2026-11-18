@@ -134,6 +134,8 @@ pub fn run() {
             commands::parse_links,
             commands::get_post,
             commands::get_creator,
+            commands::get_linked_accounts,
+            commands::search_creators,
             commands::get_creator_posts,
             commands::get_recent_posts,
             commands::create_job,
