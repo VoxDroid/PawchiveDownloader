@@ -125,6 +125,40 @@ impl Store {
         tx.commit().map_err(err)
     }
 
+    /// Writes only the jobs that changed, keeps the order and drops the
+    /// jobs no longer in the queue, in one transaction.
+    pub fn sync_jobs(&self, order: &[String], changed: &[(String, String)]) -> Result<()> {
+        let mut conn = self.conn.lock();
+        let tx = conn.transaction().map_err(err)?;
+        {
+            let mut upsert = tx
+                .prepare_cached(
+                    "INSERT INTO jobs (id, position, data) VALUES (?1, 0, ?2) ON CONFLICT(id) DO UPDATE SET data = excluded.data",
+                )
+                .map_err(err)?;
+            for (id, json) in changed {
+                upsert.execute(params![id, json]).map_err(err)?;
+            }
+            let mut position = tx
+                .prepare_cached("UPDATE jobs SET position = ?2 WHERE id = ?1")
+                .map_err(err)?;
+            for (i, id) in order.iter().enumerate() {
+                position.execute(params![id, i as i64]).map_err(err)?;
+            }
+            let existing: Vec<String> = {
+                let mut stmt = tx.prepare("SELECT id FROM jobs").map_err(err)?;
+                let rows = stmt.query_map([], |r| r.get::<_, String>(0)).map_err(err)?;
+                rows.filter_map(|r| r.ok()).collect()
+            };
+            let keep: HashSet<&String> = order.iter().collect();
+            for id in existing.iter().filter(|id| !keep.contains(id)) {
+                tx.execute("DELETE FROM jobs WHERE id = ?1", [id])
+                    .map_err(err)?;
+            }
+        }
+        tx.commit().map_err(err)
+    }
+
     // ------------------------------------------------------- known files
 
     pub fn known_hashes(&self, hashes: &[String]) -> HashSet<String> {

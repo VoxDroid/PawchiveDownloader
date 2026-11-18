@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { api, errorText } from '../../lib/api';
+  import { api } from '../../lib/api';
   import { SUPPORT_PROMPT_AFTER } from '../../lib/links';
   import type { ItemView, JobAction } from '../../lib/types';
   import type { IconName } from '../../ui/icons.generated';
@@ -101,7 +102,7 @@
   }
 
   async function act(jobId: string, action: JobAction) {
-    await api.jobAction(jobId, action).catch((e) => toast(errorText(e), 'error'));
+    await api.jobAction(jobId, action).catch((e) => toast(describeError(e), 'error'));
   }
 
   async function showFile(path: string | null) {
@@ -285,7 +286,9 @@
                             <span class="truncate" title={item.path}>{item.label}</span>
                             {#if item.error || item.skipReason}
                               <span class="item-note truncate" title={item.error}>
-                                {item.skipReason ? t(`skip.${item.skipReason}`) : item.error}
+                                {item.skipReason
+                                  ? t(`skip.${item.skipReason}`)
+                                  : describeError(item.error)}
                               </span>
                             {/if}
                           </div>
@@ -304,6 +307,9 @@
                                 : fmt.bytes(item.bytes)
                               : ''}
                           </span>
+                          {#if item.building}<span class="tag building">
+                              {t('downloads.building')}
+                            </span>{/if}
                           {#if item.fallback}<span
                               class="tag"
                               data-tip={t('downloads.fallbackHint')}
@@ -466,6 +472,11 @@
     transform-origin: left;
     transform: scaleX(var(--p));
     transition: transform 600ms var(--ease-out);
+  }
+  .tag.building {
+    color: var(--accent-strong);
+    background: var(--accent-soft);
+    animation: pdl-pulse 1.4s var(--ease) infinite;
   }
   .tag {
     font-size: var(--fs-xs);

@@ -39,6 +39,9 @@ struct Words {
     new_posts: &'static str,
     tray_title: &'static str,
     tray_body: &'static str,
+    all_done: &'static str,
+    batch_body: &'static str,
+    batch_failed: &'static str,
 }
 
 fn words(lang: &str) -> Words {
@@ -55,6 +58,9 @@ fn words(lang: &str) -> Words {
             new_posts: "件の新しい投稿",
             tray_title: "バックグラウンドで実行中",
             tray_body: "トレイアイコンから再度開けます。",
+            all_done: "すべてのダウンロードが完了",
+            batch_body: "{jobs} 件のダウンロード、{files} 個のファイルを保存",
+            batch_failed: "{failed} 個のファイルをダウンロードできませんでした",
         },
         "ko" => Words {
             show: "창 표시",
@@ -68,6 +74,9 @@ fn words(lang: &str) -> Words {
             new_posts: "개의 새 게시물",
             tray_title: "백그라운드에서 실행 중",
             tray_body: "트레이 아이콘에서 다시 열 수 있습니다.",
+            all_done: "모든 다운로드 완료",
+            batch_body: "다운로드 {jobs}개, 파일 {files}개 저장",
+            batch_failed: "파일 {failed}개를 다운로드하지 못했습니다",
         },
         "zh_CN" => Words {
             show: "显示窗口",
@@ -81,6 +90,9 @@ fn words(lang: &str) -> Words {
             new_posts: "个新帖子",
             tray_title: "正在后台运行",
             tray_body: "可从托盘图标重新打开。",
+            all_done: "全部下载完成",
+            batch_body: "{jobs} 个下载，已保存 {files} 个文件",
+            batch_failed: "{failed} 个文件无法下载",
         },
         "es" => Words {
             show: "Mostrar ventana",
@@ -94,6 +106,9 @@ fn words(lang: &str) -> Words {
             new_posts: "publicaciones nuevas",
             tray_title: "Sigue en segundo plano",
             tray_body: "Vuelve a abrirlo desde el icono de la bandeja.",
+            all_done: "Todas las descargas terminaron",
+            batch_body: "{jobs} descargas, {files} archivos guardados",
+            batch_failed: "{failed} archivos no se pudieron descargar",
         },
         "pt_BR" => Words {
             show: "Mostrar janela",
@@ -107,6 +122,9 @@ fn words(lang: &str) -> Words {
             new_posts: "novas publicações",
             tray_title: "Rodando em segundo plano",
             tray_body: "Abra de novo pelo ícone da bandeja.",
+            all_done: "Todos os downloads concluídos",
+            batch_body: "{jobs} downloads, {files} arquivos salvos",
+            batch_failed: "{failed} arquivos não puderam ser baixados",
         },
         "ru" => Words {
             show: "Показать окно",
@@ -120,6 +138,9 @@ fn words(lang: &str) -> Words {
             new_posts: "новых публикаций",
             tray_title: "Работает в фоне",
             tray_body: "Откройте снова через значок в трее.",
+            all_done: "Все загрузки завершены",
+            batch_body: "Загрузок: {jobs}, сохранено файлов: {files}",
+            batch_failed: "Не удалось скачать файлов: {failed}",
         },
         "de" => Words {
             show: "Fenster anzeigen",
@@ -133,6 +154,9 @@ fn words(lang: &str) -> Words {
             new_posts: "neue Beiträge",
             tray_title: "Läuft im Hintergrund",
             tray_body: "Über das Symbol im Infobereich wieder öffnen.",
+            all_done: "Alle Downloads fertig",
+            batch_body: "{jobs} Downloads, {files} Dateien gespeichert",
+            batch_failed: "{failed} Dateien konnten nicht geladen werden",
         },
         "fr" => Words {
             show: "Afficher la fenêtre",
@@ -146,6 +170,9 @@ fn words(lang: &str) -> Words {
             new_posts: "nouvelles publications",
             tray_title: "Toujours en arrière-plan",
             tray_body: "Rouvrez-le depuis l'icône de la barre d'état.",
+            all_done: "Tous les téléchargements sont terminés",
+            batch_body: "{jobs} téléchargements, {files} fichiers enregistrés",
+            batch_failed: "{failed} fichiers n'ont pas pu être téléchargés",
         },
         _ => Words {
             show: "Show window",
@@ -159,6 +186,9 @@ fn words(lang: &str) -> Words {
             new_posts: "new posts",
             tray_title: "Still running in the background",
             tray_body: "Open it again from the tray icon.",
+            all_done: "All downloads finished",
+            batch_body: "{jobs} downloads, {files} files saved",
+            batch_failed: "{failed} files could not be downloaded",
         },
     }
 }
@@ -333,27 +363,79 @@ pub fn on_window_event(window: &tauri::Window, event: &WindowEvent) {
 
 pub struct AppHooks {
     pub app: AppHandle,
+    /// Jobs finished since the queue was last idle, for one summary.
+    pub batch: parking_lot::Mutex<Batch>,
+}
+
+#[derive(Default)]
+pub struct Batch {
+    jobs: u32,
+    files: u32,
+    failed: u32,
+}
+
+impl AppHooks {
+    pub fn new(app: AppHandle) -> Self {
+        Self {
+            app,
+            batch: parking_lot::Mutex::new(Batch::default()),
+        }
+    }
 }
 
 impl Hooks for AppHooks {
-    fn job_finished(&self, job: &Job, entry: &HistoryEntry) {
+    /// One notification per batch: while other downloads are still running,
+    /// finished jobs are counted, and the summary comes when the queue is idle.
+    /// Called with the engine locked, so the notification is shown from a
+    /// separate task.
+    fn job_finished(&self, job: &Job, entry: &HistoryEntry, still_running: usize) {
         let Some(core) = self.app.try_state::<Arc<Core>>() else {
             return;
         };
         let level = core.settings().notifications;
-        let failed = job.status == JobStatus::Failed;
-        if job.status == JobStatus::Cancelled || level == "none" || (level == "errors" && !failed) {
+        if level == "none" {
+            return;
+        }
+        let (jobs, files, failed) = {
+            let mut batch = self.batch.lock();
+            if job.status != JobStatus::Cancelled {
+                batch.jobs += 1;
+                batch.files += entry.files.done;
+                batch.failed += entry.files.failed;
+            }
+            if still_running > 0 {
+                return;
+            }
+            let totals = (batch.jobs, batch.files, batch.failed);
+            *batch = Batch::default();
+            totals
+        };
+        if jobs == 0 || (level == "errors" && failed == 0) {
             return;
         }
         let w = words(&language(&core));
-        let title = if failed { w.failed } else { w.finished };
-        let body = format!(
-            "{} ({}/{})",
-            job.title,
-            entry.files.done,
-            entry.files.done + entry.files.failed + entry.files.skipped
-        );
-        notify(&self.app, title, &body);
+        let (title, body) = if jobs == 1 {
+            let title = if failed > 0 { w.failed } else { w.finished };
+            let body = format!(
+                "{} ({}/{})",
+                job.title,
+                entry.files.done,
+                entry.files.done + entry.files.failed + entry.files.skipped
+            );
+            (title.to_string(), body)
+        } else {
+            let mut body = w
+                .batch_body
+                .replace("{jobs}", &jobs.to_string())
+                .replace("{files}", &files.to_string());
+            if failed > 0 {
+                body.push('\n');
+                body.push_str(&w.batch_failed.replace("{failed}", &failed.to_string()));
+            }
+            (w.all_done.to_string(), body)
+        };
+        let app = self.app.clone();
+        tauri::async_runtime::spawn(async move { notify(&app, &title, &body) });
     }
 }
 

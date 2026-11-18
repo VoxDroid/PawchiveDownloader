@@ -145,14 +145,29 @@ describe('JobCard', () => {
   });
 
   it('shows scanning progress and friendly errors', () => {
+    const empty = { ...job().stats, total: 0, done: 0, failed: 0, skipped: 0, active: 0 };
     render(JobCard, {
       job: job({
         status: 'resolving',
+        stats: empty,
         scan: { pages: 2, posts: 100, matched: 0 },
         error: 'nothing-found',
       }),
     });
     expect(screen.getByText('2 pages, 100 posts found')).toBeInTheDocument();
     expect(screen.getByText('No posts matched, so nothing was downloaded.')).toBeInTheDocument();
+  });
+
+  it('shows downloads while a creator is still being scanned', () => {
+    render(JobCard, {
+      job: job({ status: 'resolving', scan: { pages: 3, posts: 150, matched: 40 } }),
+    });
+    expect(screen.getByText('1 of 4 done')).toBeInTheDocument();
+    expect(screen.getByText(/still looking up posts, 150 so far/)).toBeInTheDocument();
+  });
+
+  it('describes backend errors in words', () => {
+    render(JobCard, { job: job({ status: 'failed', error: 'HTTP 404' }) });
+    expect(screen.getByText('Not on the server (HTTP 404)')).toBeInTheDocument();
   });
 });

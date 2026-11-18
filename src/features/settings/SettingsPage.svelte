@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
-  import { api, errorText, inTauri, pickFolder } from '../../lib/api';
+  import { api, inTauri, pickFolder } from '../../lib/api';
   import { openTextFile, saveTextFile, stamp } from '../../lib/files';
   import { LANGUAGE_NAMES } from '../../lib/i18n';
   import {
@@ -85,7 +86,7 @@
   function set<K extends keyof Settings>(key: K, value: Settings[K]) {
     void updateSettings({ [key]: value } as Partial<Settings>)
       .then(() => toast(t('settings.saved'), 'success', { duration: 1400 }))
-      .catch((e) => toast(errorText(e), 'error'));
+      .catch((e) => toast(describeError(e), 'error'));
   }
 
   async function chooseFolder() {
@@ -257,7 +258,7 @@
         icon="openFolder"
         onclick={async () => {
           await api.ensureDir(s.downloadDir).catch(() => undefined);
-          await api.openPath(s.downloadDir).catch((e) => toast(errorText(e), 'error'));
+          await api.openPath(s.downloadDir).catch((e) => toast(describeError(e), 'error'));
         }}
       >
         {t('settings.open')}

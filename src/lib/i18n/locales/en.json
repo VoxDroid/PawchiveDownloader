@@ -584,5 +584,22 @@
   "about.channelOfficial": "Official build",
   "about.channelSource": "Built from source",
   "about.buildSource": "Build it yourself",
-  "support.body": "The source code is free to build yourself. Ready-made builds for Windows, macOS and Linux are on Ko-fi, and they keep the project going."
+  "support.body": "The source code is free to build yourself. Ready-made builds for Windows, macOS and Linux are on Ko-fi, and they keep the project going.",
+  "crash.notice": "Pawchive Downloader closed unexpectedly last time. A crash report was saved.",
+  "crash.show": "Show report",
+  "toast.alreadyQueued": "This download is already in the queue.",
+  "jobs.stillScanning": "still looking up posts, {posts} so far",
+  "downloads.building": "Building archive",
+  "error.folderUnwritable": "The download folder cannot be written to. Choose another one in Settings.",
+  "error.offline": "No connection, waiting for the network",
+  "error.notAFile": "The server sent a web page instead of the file",
+  "error.checksum": "The file did not match its checksum",
+  "error.internal": "Internal error. Please report it with the logs.",
+  "error.timeout": "The server took too long to answer",
+  "error.connection": "The connection was interrupted",
+  "error.http404": "Not on the server (HTTP {status})",
+  "error.http403": "Access denied by the server (HTTP {status})",
+  "error.http429": "The server asked to slow down (HTTP {status})",
+  "error.http5xx": "The server had a problem (HTTP {status})",
+  "error.http": "The server answered HTTP {status}"
 }

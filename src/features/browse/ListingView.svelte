@@ -1,16 +1,16 @@
 <script lang="ts">
+  import { describeError } from '../../ui/state/errors';
   import { fade } from 'svelte/transition';
-  import { api, errorText } from '../../lib/api';
+  import { api } from '../../lib/api';
   import type { JobOverrides, Post } from '../../lib/types';
   import { t } from '../../ui/state/app.svelte';
-  import { go } from '../../ui/state/router.svelte';
-  import { toast } from '../../ui/state/toasts.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Empty from '../../ui/components/Empty.svelte';
   import IconButton from '../../ui/components/IconButton.svelte';
   import Spinner from '../../ui/components/Spinner.svelte';
   import TextInput from '../../ui/components/TextInput.svelte';
   import DownloadBar from './DownloadBar.svelte';
+  import { queueJob } from './queue';
   import PostList from './PostList.svelte';
 
   let { initialQuery }: { initialQuery: string | null } = $props();
@@ -39,7 +39,7 @@
       offset += PAGE;
       if (page.posts.length < PAGE) end = true;
     } catch (e) {
-      error = errorText(e);
+      error = describeError(e);
     } finally {
       loading = false;
     }
@@ -64,22 +64,12 @@
     const refs = posts
       .filter((p) => selected.has(p.id))
       .map((p) => ({ service: p.service, creatorId: p.creatorId, postId: p.id }));
-    try {
-      await api.createJob({
-        kind: 'refs',
-        title: t('selection.jobTitle', { count: refs.length }),
-        refs,
-        options,
-      });
-      toast(t('toast.queuedPosts', { count: refs.length }), 'success', {
-        action: { label: t('nav.downloads'), run: () => go('downloads') },
-      });
-      selected = new Set();
-    } catch (e) {
-      toast(t('toast.queueFailed', { error: errorText(e) }), 'error');
-    } finally {
-      busy = false;
-    }
+    const queued = await queueJob(
+      { kind: 'refs', title: t('selection.jobTitle', { count: refs.length }), refs, options },
+      t('toast.queuedPosts', { count: refs.length }),
+    );
+    if (queued) selected = new Set();
+    busy = false;
   }
 </script>
 

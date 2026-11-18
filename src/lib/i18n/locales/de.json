@@ -584,5 +584,22 @@
   "about.channelOfficial": "Offizieller Build",
   "about.channelSource": "Aus dem Quellcode gebaut",
   "about.buildSource": "Selbst bauen",
-  "support.body": "Den Quellcode kannst du frei selbst bauen. Fertige Builds für Windows, macOS und Linux gibt es auf Ko-fi, und sie halten das Projekt am Leben."
+  "support.body": "Den Quellcode kannst du frei selbst bauen. Fertige Builds für Windows, macOS und Linux gibt es auf Ko-fi, und sie halten das Projekt am Leben.",
+  "crash.notice": "Pawchive Downloader wurde beim letzten Mal unerwartet beendet. Ein Absturzbericht wurde gespeichert.",
+  "crash.show": "Bericht anzeigen",
+  "toast.alreadyQueued": "Dieser Download ist schon in der Warteschlange.",
+  "jobs.stillScanning": "sucht noch Beiträge, bisher {posts}",
+  "downloads.building": "Archiv wird erstellt",
+  "error.folderUnwritable": "In den Download-Ordner kann nicht geschrieben werden. Wähle in den Einstellungen einen anderen.",
+  "error.offline": "Keine Verbindung, warte auf das Netzwerk",
+  "error.notAFile": "Der Server hat eine Webseite statt der Datei geschickt",
+  "error.checksum": "Die Datei passt nicht zu ihrer Prüfsumme",
+  "error.internal": "Interner Fehler. Bitte mit den Protokollen melden.",
+  "error.timeout": "Der Server hat zu lange nicht geantwortet",
+  "error.connection": "Die Verbindung wurde unterbrochen",
+  "error.http404": "Nicht auf dem Server (HTTP {status})",
+  "error.http403": "Der Server verweigert den Zugriff (HTTP {status})",
+  "error.http429": "Der Server bittet um langsamere Anfragen (HTTP {status})",
+  "error.http5xx": "Fehler auf dem Server (HTTP {status})",
+  "error.http": "Der Server antwortete mit HTTP {status}"
 }

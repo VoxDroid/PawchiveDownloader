@@ -27,6 +27,8 @@
   import HelpPage from './features/help/HelpPage.svelte';
   import AboutPage from './features/about/AboutPage.svelte';
   import { batch } from './features/browse/batch.svelte';
+  import { api } from './lib/api';
+  import { toast } from './ui/state/toasts.svelte';
 
   themeDocument();
 
@@ -42,6 +44,14 @@
         const links = app.info?.args.filter((a) => a.includes('pawchive.pw')) ?? [];
         if (links.length === 1) openLink(links[0] as string);
         else if (links.length > 1) batch.show(links.join('\n'));
+        const crash = app.info?.lastCrash;
+        if (crash) {
+          toast(t('crash.notice'), 'warning', {
+            duration: 0,
+            action: { label: t('crash.show'), run: () => void api.revealPath(crash) },
+          });
+          void api.ackCrash().catch(() => undefined);
+        }
       })
       .catch((e) => (failedToStart = String(e)));
     const off = onOpenLinks((text) => {

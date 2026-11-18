@@ -396,6 +396,9 @@ export function createMockBackend(): Backend {
     },
   ];
 
+  /** Queued requests, to answer a second identical request like the app does. */
+  const queued = new Map<string, string>();
+
   // Running jobs move along so the interface looks alive.
   setInterval(() => {
     let changed = false;
@@ -429,6 +432,7 @@ export function createMockBackend(): Backend {
       userAgent: 'PawchiveDownloader/1.0.0 (+mailto:izeno.contact@gmail.com)',
       args: [],
       channel: 'official',
+      lastCrash: null,
     }),
     ui_ready: () => undefined,
     quit_app: () => undefined,
@@ -499,8 +503,16 @@ export function createMockBackend(): Backend {
       return { posts: all.slice(Number(offset), Number(offset) + 50), downloaded: [] };
     },
     create_job: ({ request }) => {
+      const signature = JSON.stringify(request);
+      const same = queued.get(signature);
+      if (
+        same &&
+        jobs.some((j) => j.id === same && !['done', 'failed', 'cancelled'].includes(j.status))
+      )
+        return { jobId: same, duplicate: true };
       const r = request as JobRequest;
       const id = `j${Date.now()}`;
+      queued.set(signature, id);
       const title =
         r.kind === 'posts'
           ? (r.title ?? 'Post')
@@ -530,13 +542,13 @@ export function createMockBackend(): Backend {
         }),
       ];
       emit('jobs', jobs);
-      return id;
+      return { jobId: id, duplicate: false };
     },
     queue_links: ({ text }) =>
       String(text)
         .split(/\s+/)
         .filter((l) => l.includes('pawchive.pw'))
-        .map((url, i) => ({ url, jobId: `b${i}`, error: null })),
+        .map((url, i) => ({ url, jobId: `b${i}`, error: null, duplicate: false })),
     list_jobs: () => jobs,
     job_items: ({ jobId }) => {
       const job = jobs.find((j) => j.id === jobId);
@@ -560,6 +572,7 @@ export function createMockBackend(): Backend {
         error: i >= (job?.stats.total ?? 0) - (job?.stats.failed ?? 0) ? 'HTTP 503' : null,
         skipReason: null,
         fallback: false,
+        building: false,
         postId: '1',
       }));
     },
@@ -676,6 +689,7 @@ export function createMockBackend(): Backend {
     ensure_dir: () => undefined,
     read_text_file: () => '',
     write_text_file: () => undefined,
+    ack_crash: () => undefined,
     check_updates: () => ({
       current: '1.0.0',
       latest: '1.0.0',

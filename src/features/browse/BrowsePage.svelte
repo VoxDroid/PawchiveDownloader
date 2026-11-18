@@ -76,9 +76,23 @@
 
   onMount(() => {
     const focus = () => field?.focus();
+    // Ctrl+V anywhere on the page (outside text fields) opens the pasted link.
+    const onPaste = (event: ClipboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (target?.closest('input, textarea, [contenteditable]')) return;
+      const text = event.clipboardData?.getData('text')?.trim() ?? '';
+      if (!text.includes('pawchive.pw')) return;
+      event.preventDefault();
+      input = text;
+      void open(text);
+    };
     window.addEventListener('pdl:focus-link', focus);
+    window.addEventListener('paste', onPaste);
     if (!current) field?.focus();
-    return () => window.removeEventListener('pdl:focus-link', focus);
+    return () => {
+      window.removeEventListener('pdl:focus-link', focus);
+      window.removeEventListener('paste', onPaste);
+    };
   });
 
   const kindIcon = { post: 'document', creator: 'account', listing: 'list' } as const;

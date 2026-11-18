@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { api, errorText } from '../../lib/api';
+  import { api } from '../../lib/api';
   import { openTextFile, saveTextFile, stamp } from '../../lib/files';
   import type { WatchEntry } from '../../lib/types';
   import { pageUrls } from '../../lib/urls';
@@ -104,7 +105,7 @@
     try {
       text = await openTextFile(t('common.import'));
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     }
     if (!text) return;
     const added = await addLinks(text);

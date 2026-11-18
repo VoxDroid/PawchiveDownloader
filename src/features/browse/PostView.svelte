@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { describeError } from '../../ui/state/errors';
   import { fade } from 'svelte/transition';
-  import { api, copyText, errorText, openUrl } from '../../lib/api';
+  import { api, copyText, openUrl } from '../../lib/api';
   import { htmlToText } from '../../lib/text';
   import {
     FILE_CATEGORIES,
@@ -9,7 +10,7 @@
     type PostView,
   } from '../../lib/types';
   import { app, fmt, t } from '../../ui/state/app.svelte';
-  import { go, openLink } from '../../ui/state/router.svelte';
+  import { openLink } from '../../ui/state/router.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Chip from '../../ui/components/Chip.svelte';
@@ -19,6 +20,7 @@
   import Segmented from '../../ui/components/Segmented.svelte';
   import Spinner from '../../ui/components/Spinner.svelte';
   import DownloadBar from './DownloadBar.svelte';
+  import { queueJob } from './queue';
   import FileTile from './FileTile.svelte';
   import { rememberRecent } from './batch.svelte';
 
@@ -77,7 +79,7 @@
         at: Date.now(),
       });
     } catch (e) {
-      error = errorText(e);
+      error = describeError(e);
     }
   }
 
@@ -129,26 +131,19 @@
     if (!post) return;
     busy = true;
     const fileIndexes = [...selected].sort((a, b) => a - b);
-    try {
-      await api.createJob({
+    await queueJob(
+      {
         kind: 'posts',
         title: post.title || post.id,
         creator: { service: post.service, id: post.creatorId, name: creatorName },
         posts: [{ post, fileIndexes }],
         options,
-      });
-      toast(
-        fileIndexes.length
-          ? t('toast.queuedFiles', { count: fileIndexes.length })
-          : t('toast.queuedPost'),
-        'success',
-        { action: { label: t('nav.downloads'), run: () => go('downloads') } },
-      );
-    } catch (e) {
-      toast(t('toast.queueFailed', { error: errorText(e) }), 'error');
-    } finally {
-      busy = false;
-    }
+      },
+      fileIndexes.length
+        ? t('toast.queuedFiles', { count: fileIndexes.length })
+        : t('toast.queuedPost'),
+    );
+    busy = false;
   }
 
   async function toggleFavorite() {
@@ -170,7 +165,7 @@
         toast(t('favorites.added'), 'success');
       }
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     }
   }
 

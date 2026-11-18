@@ -294,12 +294,14 @@ export interface ItemView {
   skipReason: SkipReason | null;
   fallback: boolean;
   postId: string;
+  building: boolean;
 }
 
 export interface BatchResult {
   url: string;
   jobId: string | null;
   error: string | null;
+  duplicate: boolean;
 }
 
 // ------------------------------------------------------------------- library
@@ -391,6 +393,8 @@ export interface AppInfo {
   userAgent: string;
   args: string[];
   channel: 'official' | 'source';
+  /** A crash report from an earlier run that has not been shown yet. */
+  lastCrash: string | null;
 }
 
 export interface TemplatePreview {

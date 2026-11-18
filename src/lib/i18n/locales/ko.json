@@ -546,5 +546,22 @@
   "about.channelOfficial": "공식 빌드",
   "about.channelSource": "소스에서 빌드",
   "about.buildSource": "직접 빌드하기",
-  "support.body": "소스 코드는 누구나 직접 빌드할 수 있습니다. Windows, macOS, Linux용 완성된 빌드는 Ko-fi에 있으며, 프로젝트를 계속 이어 가는 힘이 됩니다."
+  "support.body": "소스 코드는 누구나 직접 빌드할 수 있습니다. Windows, macOS, Linux용 완성된 빌드는 Ko-fi에 있으며, 프로젝트를 계속 이어 가는 힘이 됩니다.",
+  "crash.notice": "지난번에 Pawchive Downloader가 예기치 않게 종료되었습니다. 충돌 보고서를 저장했습니다.",
+  "crash.show": "보고서 보기",
+  "toast.alreadyQueued": "이 다운로드는 이미 대기열에 있습니다.",
+  "jobs.stillScanning": "게시물을 찾는 중, 지금까지 {posts}개",
+  "downloads.building": "압축 파일 만드는 중",
+  "error.folderUnwritable": "다운로드 폴더에 쓸 수 없습니다. 설정에서 다른 폴더를 고르세요.",
+  "error.offline": "연결 없음, 네트워크를 기다리는 중",
+  "error.notAFile": "서버가 파일 대신 웹 페이지를 보냈습니다",
+  "error.checksum": "파일이 체크섬과 일치하지 않습니다",
+  "error.internal": "내부 오류입니다. 로그와 함께 보고해 주세요.",
+  "error.timeout": "서버 응답이 너무 오래 걸렸습니다",
+  "error.connection": "연결이 끊어졌습니다",
+  "error.http404": "서버에 없습니다 (HTTP {status})",
+  "error.http403": "서버가 접근을 거부했습니다 (HTTP {status})",
+  "error.http429": "서버가 속도를 줄이라고 요청했습니다 (HTTP {status})",
+  "error.http5xx": "서버에 문제가 있습니다 (HTTP {status})",
+  "error.http": "서버 응답: HTTP {status}"
 }

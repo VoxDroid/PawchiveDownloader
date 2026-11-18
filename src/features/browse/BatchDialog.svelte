@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { api, errorText, pickFile } from '../../lib/api';
+  import { describeError } from '../../ui/state/errors';
+  import { api, pickFile } from '../../lib/api';
   import type { DownloadMode, ParsedLink } from '../../lib/types';
   import { app, t } from '../../ui/state/app.svelte';
   import { go } from '../../ui/state/router.svelte';
@@ -50,7 +51,7 @@
       const text = await api.readTextFile(path);
       batch.text = batch.text.trim() ? `${batch.text.trim()}\n${text}` : text;
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     }
   }
 
@@ -58,14 +59,16 @@
     busy = true;
     try {
       const results = await api.queueLinks(batch.text, { mode });
-      const jobs = new Set(results.filter((r) => r.jobId).map((r) => r.jobId)).size;
-      toast(t('batch.queued', { count: jobs }), 'success', {
-        action: { label: t('nav.downloads'), run: () => go('downloads') },
-      });
+      const added = new Set(results.filter((r) => r.jobId && !r.duplicate).map((r) => r.jobId));
+      const already = results.some((r) => r.duplicate);
+      const showQueue = { label: t('nav.downloads'), run: () => go('downloads') };
+      if (added.size)
+        toast(t('batch.queued', { count: added.size }), 'success', { action: showQueue });
+      if (already) toast(t('toast.alreadyQueued'), 'info', { action: showQueue });
       batch.close();
       batch.text = '';
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     } finally {
       busy = false;
     }

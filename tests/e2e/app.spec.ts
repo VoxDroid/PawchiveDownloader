@@ -66,6 +66,17 @@ test('a post shows its files and text', async ({ page }) => {
   await expect(page.getByText('Thank you all for the support this month!')).toBeVisible();
 });
 
+test('the same download is not queued twice', async ({ page }) => {
+  await openLink(page, CREATOR);
+  await page.getByRole('option').first().dblclick();
+  await page.getByRole('listbox', { name: 'Files in this post' }).waitFor();
+  const download = page.getByRole('button', { name: /^Download \d+ files?$/ });
+  await download.click();
+  await expect(page.getByText(/^Added \d+ files? to the queue$/)).toBeVisible();
+  await download.click();
+  await expect(page.getByText('This download is already in the queue.')).toBeVisible();
+});
+
 test('the batch dialog counts links', async ({ page }) => {
   await page.keyboard.press('Control+Shift+B');
   const dialog = page.getByRole('dialog', { name: 'Queue many links' });

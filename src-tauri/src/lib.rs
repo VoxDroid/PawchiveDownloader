@@ -52,6 +52,7 @@ pub fn run() {
                 .path()
                 .app_log_dir()
                 .unwrap_or_else(|_| data_dir.join("logs"));
+            install_crash_reporter(log_dir.clone());
             let core = Core::new(CoreOptions {
                 data_dir,
                 log_file: Some(core::log_file_in(&log_dir)),
@@ -67,9 +68,8 @@ pub fn run() {
             let log = Arc::clone(&core.log);
             let emit_handle = handle.clone();
             log.set_sink(Arc::new(move |entry| app::emit(&emit_handle, "log", entry)));
-            core.engine.set_hooks(Arc::new(app::AppHooks {
-                app: handle.clone(),
-            }));
+            core.engine
+                .set_hooks(Arc::new(app::AppHooks::new(handle.clone())));
             let watch_handle = handle.clone();
             core.watcher.set_on_change(Arc::new(move |count| {
                 let checking = watch_handle
@@ -93,6 +93,11 @@ pub fn run() {
                     app::notify(&notify_handle, &title, &body);
                 }
             }));
+            // Tasks can be started from any thread (menus, commands), so the
+            // engine gets the runtime up front.
+            let tauri::async_runtime::RuntimeHandle::Tokio(runtime) =
+                tauri::async_runtime::handle();
+            core.engine.attach_runtime(runtime);
             app.manage(Arc::clone(&core));
             {
                 let core = Arc::clone(&core);
@@ -170,6 +175,7 @@ pub fn run() {
             commands::read_text_file,
             commands::write_text_file,
             commands::check_updates,
+            commands::ack_crash,
             ui_ready,
             quit_app,
         ])
@@ -182,6 +188,38 @@ pub fn run() {
                 }
             }
         });
+}
+
+/// Writes a report for any panic to `crash-<time>.txt` in the log folder.
+/// Background tasks survive panics (they are caught and reported as failed
+/// downloads); the report is what lets a bug be found and fixed.
+fn install_crash_reporter(dir: std::path::PathBuf) {
+    let default_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let now = chrono::Local::now();
+        let text = format!(
+            "Pawchive Downloader {} ({}, {} {})
+{}
+
+{}
+
+{}
+",
+            env!("CARGO_PKG_VERSION"),
+            updates::channel(),
+            std::env::consts::OS,
+            std::env::consts::ARCH,
+            now.to_rfc3339(),
+            info,
+            std::backtrace::Backtrace::force_capture()
+        );
+        let _ = std::fs::create_dir_all(&dir);
+        let _ = std::fs::write(
+            dir.join(format!("crash-{}.txt", now.format("%Y%m%d-%H%M%S"))),
+            text,
+        );
+        default_hook(info);
+    }));
 }
 
 /// Called by the interface after its first paint: shows the window (unless

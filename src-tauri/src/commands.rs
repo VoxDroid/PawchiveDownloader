@@ -49,9 +49,11 @@ pub struct AppInfo {
     args: Vec<String>,
     /// "official" for Ko-fi builds, "source" for builds made from the code.
     channel: &'static str,
+    /// A crash report from a previous run that has not been shown yet.
+    last_crash: Option<String>,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn app_info(core: State<'_, Core_>) -> AppInfo {
     AppInfo {
         version: env!("CARGO_PKG_VERSION").into(),
@@ -68,17 +70,46 @@ pub fn app_info(core: State<'_, Core_>) -> AppInfo {
             .filter(|a| !a.starts_with("--"))
             .collect(),
         channel: crate::updates::channel(),
+        last_crash: unseen_crash(&core),
     }
+}
+
+/// The newest crash report written after the last one the user saw.
+fn unseen_crash(core: &Core) -> Option<String> {
+    let dir = core.log.file_path()?.parent()?.to_path_buf();
+    let seen: i64 = core.store.get("crash.seen").unwrap_or(0);
+    std::fs::read_dir(dir)
+        .ok()?
+        .flatten()
+        .filter(|e| {
+            let name = e.file_name().to_string_lossy().into_owned();
+            name.starts_with("crash-") && name.ends_with(".txt")
+        })
+        .filter_map(|e| {
+            let modified = e.metadata().ok()?.modified().ok()?;
+            let ms = modified
+                .duration_since(std::time::UNIX_EPOCH)
+                .ok()?
+                .as_millis() as i64;
+            (ms > seen).then(|| (ms, e.path()))
+        })
+        .max_by_key(|(ms, _)| *ms)
+        .map(|(_, p)| p.to_string_lossy().into_owned())
+}
+
+#[tauri::command(async)]
+pub fn ack_crash(core: State<'_, Core_>) -> R<()> {
+    core.store.set("crash.seen", &now_ms())
 }
 
 // ------------------------------------------------------------------ settings
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_settings(core: State<'_, Core_>) -> Settings {
     core.settings()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn update_settings(app: AppHandle, core: State<'_, Core_>, patch: Value) -> R<Settings> {
     let previous = core.settings();
     let next = core.apply_settings(settings::merge(&previous, &patch))?;
@@ -92,7 +123,7 @@ pub fn update_settings(app: AppHandle, core: State<'_, Core_>, patch: Value) -> 
     Ok(next)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn reset_settings(app: AppHandle, core: State<'_, Core_>) -> R<Settings> {
     let previous = core.settings();
     // Keep the things a reset would be annoying to lose.
@@ -106,13 +137,13 @@ pub fn reset_settings(app: AppHandle, core: State<'_, Core_>) -> R<Settings> {
     Ok(next)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_settings(core: State<'_, Core_>, path: String) -> R<()> {
     let text = serde_json::to_string_pretty(&core.settings()).map_err(|e| e.to_string())?;
     std::fs::write(path, text).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_settings(app: AppHandle, core: State<'_, Core_>, path: String) -> R<Settings> {
     let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
     let value: Value = serde_json::from_str(&text).map_err(|_| "invalid-file".to_string())?;
@@ -132,7 +163,7 @@ pub struct TemplatePreview {
 }
 
 /// Shows what the templates produce for a sample post.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn preview_templates(
     folder: String,
     file: String,
@@ -164,7 +195,7 @@ pub fn preview_templates(
     }
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn check_proxy_url(url: String) -> Option<String> {
     validate_proxy_url(&url).err()
 }
@@ -179,7 +210,7 @@ pub struct ParsedLink {
     page: PageRef,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn parse_links(text: String) -> Vec<ParsedLink> {
     let mut links: Vec<ParsedLink> = extract_links(&text)
         .into_iter()
@@ -339,9 +370,48 @@ pub async fn get_recent_posts(
 
 // --------------------------------------------------------------------- jobs
 
-#[tauri::command]
-pub fn create_job(core: State<'_, Core_>, request: JobRequest) -> String {
-    core.engine.create(request)
+/// Makes sure a download folder exists and can be written, so a bad folder
+/// fails once with a clear message instead of once per file.
+fn check_folder(dir: &str) -> R<()> {
+    let path = Path::new(dir);
+    let fail = |e: std::io::Error| format!("folder-unwritable: {e}");
+    std::fs::create_dir_all(path).map_err(fail)?;
+    let probe = path.join(format!(".pawchive-write-test-{}", std::process::id()));
+    std::fs::write(&probe, b"").map_err(fail)?;
+    let _ = std::fs::remove_file(probe);
+    Ok(())
+}
+
+/// The folder a request will save to.
+fn folder_of(core: &Core, options: &JobOverrides) -> String {
+    options
+        .download_dir
+        .clone()
+        .filter(|d| Path::new(d).is_absolute())
+        .unwrap_or_else(|| core.settings().download_dir)
+}
+
+fn overrides_of(request: &JobRequest) -> &JobOverrides {
+    match request {
+        JobRequest::Posts { options, .. }
+        | JobRequest::Refs { options, .. }
+        | JobRequest::Creator { options, .. } => options,
+    }
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CreatedJob {
+    job_id: String,
+    /// The same download was already queued; nothing new was added.
+    duplicate: bool,
+}
+
+#[tauri::command(async)]
+pub fn create_job(core: State<'_, Core_>, request: JobRequest) -> R<CreatedJob> {
+    check_folder(&folder_of(&core, overrides_of(&request)))?;
+    let (job_id, duplicate) = core.engine.create_checked(request);
+    Ok(CreatedJob { job_id, duplicate })
 }
 
 #[derive(Serialize)]
@@ -350,17 +420,20 @@ pub struct BatchResult {
     url: String,
     job_id: Option<String>,
     error: Option<String>,
+    /// Already in the queue; nothing new was added for this link.
+    duplicate: bool,
 }
 
 /// Queues every Pawchive link in a block of text: posts of the same creator
 /// become one job, each creator link its own job.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn queue_links(
     core: State<'_, Core_>,
     text: String,
     options: Option<JobOverrides>,
-) -> Vec<BatchResult> {
+) -> R<Vec<BatchResult>> {
     let options = options.unwrap_or_default();
+    check_folder(&folder_of(&core, &options))?;
     let mut results = Vec::new();
     let mut posts: Vec<(String, PostRef)> = Vec::new();
     for (url, page) in extract_links(&text) {
@@ -383,7 +456,7 @@ pub fn queue_links(
                 query,
                 ..
             } => {
-                let id = core.engine.create(JobRequest::Creator {
+                let (id, duplicate) = core.engine.create_checked(JobRequest::Creator {
                     service,
                     creator_id,
                     query,
@@ -396,12 +469,14 @@ pub fn queue_links(
                     url,
                     job_id: Some(id),
                     error: None,
+                    duplicate,
                 });
             }
             _ => results.push(BatchResult {
                 url,
                 job_id: None,
                 error: Some("unsupported".into()),
+                duplicate: false,
             }),
         }
     }
@@ -415,7 +490,7 @@ pub fn queue_links(
     }
     for (_, list) in groups {
         let refs: Vec<PostRef> = list.iter().map(|(_, r)| r.clone()).collect();
-        let id = core.engine.create(JobRequest::Refs {
+        let (id, duplicate) = core.engine.create_checked(JobRequest::Refs {
             title: None,
             creator: None,
             refs,
@@ -426,67 +501,69 @@ pub fn queue_links(
                 url,
                 job_id: Some(id.clone()),
                 error: None,
+                duplicate,
             });
         }
     }
-    results
+    Ok(results)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_jobs(core: State<'_, Core_>) -> Vec<JobSummary> {
     core.engine.summaries()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn job_items(core: State<'_, Core_>, job_id: String) -> Vec<ItemView> {
     core.engine.items(&job_id)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn job_action(core: State<'_, Core_>, job_id: String, action: JobAction) {
     core.engine.act(&job_id, action);
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn jobs_action_all(core: State<'_, Core_>, action: JobAction) {
     core.engine.act_all(action);
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn clear_finished(core: State<'_, Core_>) {
     core.engine.clear_finished();
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn retry_item(core: State<'_, Core_>, job_id: String, item_id: String) {
     core.engine.retry_item(&job_id, &item_id);
 }
 
 // ------------------------------------------------------------------ history
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_history(core: State<'_, Core_>) -> Vec<HistoryEntry> {
     core.store.list_history()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn remove_history(core: State<'_, Core_>, ids: Vec<String>) -> R<()> {
     core.store.remove_history(&ids)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn clear_history(core: State<'_, Core_>, also_known_files: bool) -> R<()> {
     core.store.clear_history(also_known_files)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_history_csv(core: State<'_, Core_>, path: String) -> R<()> {
     std::fs::write(path, history_to_csv(&core.store.list_history())).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn redownload(core: State<'_, Core_>, id: String) -> R<String> {
     let entry = core.store.get_history(&id).ok_or("not-found")?;
+    check_folder(&core.settings().download_dir)?;
     if entry.refs.is_empty() {
         return Err("nothing-to-download".into());
     }
@@ -502,24 +579,24 @@ pub fn redownload(core: State<'_, Core_>, id: String) -> R<String> {
     }))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn library_counts(core: State<'_, Core_>) -> Counts {
     core.store.counts()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn forget_known(core: State<'_, Core_>) -> R<()> {
     core.store.forget_known()
 }
 
 // ---------------------------------------------------------------- watchlist
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_watch(core: State<'_, Core_>) -> Vec<WatchEntry> {
     core.watcher.list()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn add_watch(
     core: State<'_, Core_>,
     service: String,
@@ -529,13 +606,13 @@ pub fn add_watch(
     core.watcher.add(&service, &creator_id, &name)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn remove_watch(core: State<'_, Core_>, keys: Vec<String>) -> R<()> {
     core.watcher
         .update(|entries| entries.retain(|e| !keys.contains(&e.key)))
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn set_watch_auto(core: State<'_, Core_>, key: String, on: bool) -> R<()> {
     core.watcher.update(|entries| {
         if let Some(e) = entries.iter_mut().find(|e| e.key == key) {
@@ -544,7 +621,7 @@ pub fn set_watch_auto(core: State<'_, Core_>, key: String, on: bool) -> R<()> {
     })
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn mark_watch_seen(
     core: State<'_, Core_>,
     key: Option<String>,
@@ -567,7 +644,7 @@ pub async fn check_watch(core: State<'_, Core_>, keys: Option<Vec<String>>) -> R
 }
 
 /// Queues the new posts of one watched creator (or the given ones).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn queue_watch_new(
     core: State<'_, Core_>,
     key: String,
@@ -579,6 +656,7 @@ pub fn queue_watch_new(
         .into_iter()
         .find(|e| e.key == key)
         .ok_or("not-found")?;
+    check_folder(&core.settings().download_dir)?;
     let ids = ids.unwrap_or_else(|| entry.new_posts.iter().map(|p| p.id.clone()).collect());
     let job = core.watcher.queue(&entry, ids.clone());
     core.watcher.update(|entries| {
@@ -601,12 +679,12 @@ pub struct FavoriteInput {
     creator_name: Option<String>,
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn list_favorites(core: State<'_, Core_>) -> Vec<Favorite> {
     core.store.list_favorites()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn add_favorite(core: State<'_, Core_>, input: FavoriteInput) -> R<Favorite> {
     let fav = match &input.post_id {
         Some(post_id) => Favorite::post(
@@ -631,7 +709,7 @@ pub fn add_favorite(core: State<'_, Core_>, input: FavoriteInput) -> R<Favorite>
     Ok(fav)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn update_favorite(core: State<'_, Core_>, key: String, title: String, note: String) -> R<()> {
     let mut fav = core
         .store
@@ -644,13 +722,14 @@ pub fn update_favorite(core: State<'_, Core_>, key: String, title: String, note:
     core.store.put_favorite(&fav)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn remove_favorites(core: State<'_, Core_>, keys: Vec<String>) -> R<()> {
     core.store.remove_favorites(&keys)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn queue_favorites(core: State<'_, Core_>, keys: Vec<String>) -> R<Vec<String>> {
+    check_folder(&core.settings().download_dir)?;
     let favorites = core.store.list_favorites();
     let mut jobs = Vec::new();
     for mut fav in favorites.into_iter().filter(|f| keys.contains(&f.key)) {
@@ -687,7 +766,7 @@ pub fn queue_favorites(core: State<'_, Core_>, keys: Vec<String>) -> R<Vec<Strin
 }
 
 /// One link per line, with the title after a tab (KemonoDownloader's format).
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_favorites(core: State<'_, Core_>, path: String) -> R<u32> {
     let favorites = core.store.list_favorites();
     let text: String = favorites
@@ -698,7 +777,7 @@ pub fn export_favorites(core: State<'_, Core_>, path: String) -> R<u32> {
     Ok(favorites.len() as u32)
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn import_favorites(core: State<'_, Core_>, path: String) -> R<u32> {
     let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
     let existing: Vec<String> = core
@@ -748,28 +827,33 @@ pub fn import_favorites(core: State<'_, Core_>, path: String) -> R<u32> {
 
 // --------------------------------------------------------------------- logs
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn get_logs(core: State<'_, Core_>) -> Vec<LogEntry> {
     core.log.entries()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn clear_logs(core: State<'_, Core_>) {
     core.log.clear();
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn export_logs(core: State<'_, Core_>, path: String) -> R<()> {
     std::fs::write(path, core.log.export_text()).map_err(|e| e.to_string())
 }
 
 // -------------------------------------------------------------------- files
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn open_path(app: AppHandle, path: String) -> R<()> {
     let p = PathBuf::from(&path);
     if !p.exists() {
         return Err("missing".into());
+    }
+    // Only folders: opening a file would run it, and the interface never
+    // needs that (files are shown in their folder instead).
+    if !p.is_dir() {
+        return Err("not-a-folder".into());
     }
     app.opener()
         .open_path(path, None::<&str>)
@@ -778,7 +862,7 @@ pub fn open_path(app: AppHandle, path: String) -> R<()> {
 
 /// Shows a file in the file manager; falls back to the nearest folder that
 /// still exists when it was moved or deleted.
-#[tauri::command]
+#[tauri::command(async)]
 pub fn reveal_path(app: AppHandle, path: String) -> R<bool> {
     let p = PathBuf::from(&path);
     if p.exists() {
@@ -801,23 +885,38 @@ pub fn reveal_path(app: AppHandle, path: String) -> R<bool> {
     Err("missing".into())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn path_exists(path: String) -> bool {
     Path::new(&path).exists()
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn ensure_dir(path: String) -> R<()> {
     std::fs::create_dir_all(path).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+#[tauri::command(async)]
 pub fn write_text_file(path: String, text: String) -> R<()> {
+    // Exports only: never anything that could be run.
+    has_extension(&path, &["csv", "json", "txt", "log"])?;
     std::fs::write(path, text).map_err(|e| e.to_string())
 }
 
-#[tauri::command]
+fn has_extension(path: &str, allowed: &[&str]) -> R<()> {
+    let ext = Path::new(path)
+        .extension()
+        .map(|e| e.to_string_lossy().to_ascii_lowercase())
+        .unwrap_or_default();
+    if allowed.contains(&ext.as_str()) {
+        Ok(())
+    } else {
+        Err("file-type".into())
+    }
+}
+
+#[tauri::command(async)]
 pub fn read_text_file(path: String) -> R<String> {
+    has_extension(&path, &["txt", "csv", "md", "html", "htm", "json", "log"])?;
     let meta = std::fs::metadata(&path).map_err(|e| e.to_string())?;
     if meta.len() > 8 * 1024 * 1024 {
         return Err("too-large".into());

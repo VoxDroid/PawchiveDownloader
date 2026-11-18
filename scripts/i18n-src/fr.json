@@ -237,5 +237,22 @@
   "about.channelOfficial": "Version officielle",
   "about.channelSource": "Compilé depuis les sources",
   "about.buildSource": "Le compiler soi-même",
-  "support.body": "Le code source est libre à compiler vous-même. Les versions prêtes pour Windows, macOS et Linux sont sur Ko-fi et font vivre le projet."
+  "support.body": "Le code source est libre à compiler vous-même. Les versions prêtes pour Windows, macOS et Linux sont sur Ko-fi et font vivre le projet.",
+  "crash.notice": "Pawchive Downloader s'est fermé de façon inattendue la dernière fois. Un rapport de plantage a été enregistré.",
+  "crash.show": "Afficher le rapport",
+  "toast.alreadyQueued": "Ce téléchargement est déjà dans la file.",
+  "jobs.stillScanning": "recherche des publications en cours, {posts} pour l'instant",
+  "downloads.building": "Création de l'archive",
+  "error.folderUnwritable": "Impossible d'écrire dans le dossier de téléchargement. Choisissez-en un autre dans les paramètres.",
+  "error.offline": "Pas de connexion, en attente du réseau",
+  "error.notAFile": "Le serveur a envoyé une page web au lieu du fichier",
+  "error.checksum": "Le fichier ne correspond pas à sa somme de contrôle",
+  "error.internal": "Erreur interne. Merci de la signaler avec les journaux.",
+  "error.timeout": "Le serveur a mis trop de temps à répondre",
+  "error.connection": "La connexion a été interrompue",
+  "error.http404": "Absent du serveur (HTTP {status})",
+  "error.http403": "Accès refusé par le serveur (HTTP {status})",
+  "error.http429": "Le serveur demande de ralentir (HTTP {status})",
+  "error.http5xx": "Le serveur a rencontré un problème (HTTP {status})",
+  "error.http": "Le serveur a répondu HTTP {status}"
 }

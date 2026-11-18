@@ -231,5 +231,22 @@
   "about.channelOfficial": "官方构建",
   "about.channelSource": "从源码构建",
   "about.buildSource": "自行构建",
-  "support.body": "源代码可以免费自行构建。适用于 Windows、macOS 和 Linux 的现成构建在 Ko-fi 上提供，也支持着这个项目继续发展。"
+  "support.body": "源代码可以免费自行构建。适用于 Windows、macOS 和 Linux 的现成构建在 Ko-fi 上提供，也支持着这个项目继续发展。",
+  "crash.notice": "Pawchive Downloader 上次意外关闭，已保存崩溃报告。",
+  "crash.show": "查看报告",
+  "toast.alreadyQueued": "这个下载已经在队列中。",
+  "jobs.stillScanning": "仍在查找帖子，已找到 {posts} 个",
+  "downloads.building": "正在生成压缩包",
+  "error.folderUnwritable": "无法写入下载文件夹。请在设置中选择其他文件夹。",
+  "error.offline": "没有网络连接，正在等待网络",
+  "error.notAFile": "服务器返回了网页而不是文件",
+  "error.checksum": "文件与校验值不一致",
+  "error.internal": "内部错误。请连同日志一起报告。",
+  "error.timeout": "服务器响应时间过长",
+  "error.connection": "连接中断",
+  "error.http404": "服务器上没有这个文件（HTTP {status}）",
+  "error.http403": "服务器拒绝访问（HTTP {status}）",
+  "error.http429": "服务器要求降低速度（HTTP {status}）",
+  "error.http5xx": "服务器出现问题（HTTP {status}）",
+  "error.http": "服务器返回 HTTP {status}"
 }

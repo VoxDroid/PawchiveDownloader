@@ -219,6 +219,9 @@ pub struct Item {
     /// Saved as a thumbnail because the full file was not available.
     #[serde(default)]
     pub fallback: bool,
+    /// Times this item waited for the network to come back.
+    #[serde(default)]
+    pub waits: u32,
     #[serde(flatten)]
     pub kind: ItemKind,
 }
@@ -342,6 +345,9 @@ pub struct Job {
     pub error: Option<String>,
     /// Posts to re-create this job later from history ("download again").
     pub refs: Vec<PostRef>,
+    /// What was asked for, to notice the same download queued twice.
+    #[serde(default)]
+    pub signature: Option<String>,
 }
 
 /// The light version of a job sent to the UI several times a second.
@@ -385,6 +391,8 @@ pub struct ItemView {
     pub skip_reason: Option<SkipReason>,
     pub fallback: bool,
     pub post_id: String,
+    /// The fetched files are being written into the archive.
+    pub building: bool,
 }
 
 pub fn compute_stats(items: &[Item]) -> JobStats {

@@ -98,7 +98,8 @@ export const api = {
   getRecentPosts: (offset: number, query: string | null) =>
     call<PostPage>('get_recent_posts', { offset, query }),
 
-  createJob: (request: JobRequest) => call<string>('create_job', { request }),
+  createJob: (request: JobRequest) =>
+    call<{ jobId: string; duplicate: boolean }>('create_job', { request }),
   queueLinks: (text: string, options?: JobOverrides) =>
     call<BatchResult[]>('queue_links', { text, options: options ?? null }),
   listJobs: () => call<JobSummary[]>('list_jobs'),
@@ -153,6 +154,7 @@ export const api = {
   readTextFile: (path: string) => call<string>('read_text_file', { path }),
 
   checkUpdates: () => call<UpdateInfo>('check_updates'),
+  ackCrash: () => call<void>('ack_crash'),
 };
 
 // --------------------------------------------------------------- native bits

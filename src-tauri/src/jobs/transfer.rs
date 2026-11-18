@@ -34,13 +34,24 @@ pub enum FetchError {
     Disk(String),
     #[error("the file does not match its checksum")]
     Checksum,
+    /// A bug in the app; never retried, always reported.
+    #[error("{0}")]
+    Internal(String),
+    /// No connection at all (DNS, refused, unreachable): wait for the
+    /// network without using up the item's attempts.
+    #[error("no connection")]
+    Offline,
+    /// The server answered with a web page instead of the file (an error
+    /// page, a login wall or a captive portal).
+    #[error("got a web page instead of the file")]
+    NotAFile,
 }
 
 impl FetchError {
     /// Whether another attempt may succeed.
     pub fn retryable(&self) -> bool {
         match self {
-            FetchError::Cancelled | FetchError::Disk(_) => false,
+            FetchError::Cancelled | FetchError::Disk(_) | FetchError::Internal(_) => false,
             FetchError::Status(s) => is_transient_status(*s),
             _ => true,
         }
@@ -59,6 +70,8 @@ pub struct Progress {
     pub total: AtomicU64,
     /// Bytes of earlier pieces (archive entries already fetched).
     pub base: AtomicU64,
+    /// All pieces are fetched and the archive is being written.
+    pub building: std::sync::atomic::AtomicBool,
 }
 
 impl Progress {
@@ -112,7 +125,10 @@ pub fn choose_target(
         return Some(wanted.to_path_buf());
     }
     match conflict {
-        ConflictAction::Overwrite => Some(wanted.to_path_buf()),
+        // Replacing a file on disk is fine, but never one another running
+        // transfer of this app is writing: that would mix two files.
+        ConflictAction::Overwrite if !taken(wanted) => Some(wanted.to_path_buf()),
+        ConflictAction::Overwrite => (1..10_000).map(|n| numbered(wanted, n)).find(|p| !busy(p)),
         ConflictAction::Skip => None,
         ConflictAction::Uniquify => (1..10_000).map(|n| numbered(wanted, n)).find(|p| !busy(p)),
     }
@@ -171,6 +187,8 @@ impl Fetcher {
         &self,
         url: &str,
         part: &Path,
+        // The file's real name, to tell an HTML file from an error page.
+        name: &str,
         progress: &Progress,
         cancel: &CancellationToken,
     ) -> Result<u64, FetchError> {
@@ -185,12 +203,16 @@ impl Fetcher {
             .client
             .http()
             .get(self.client.target(url))
-            .header("Accept", "*/*");
+            .header("Accept", "*/*")
+            // Byte ranges must refer to the file itself, never a compressed copy.
+            .header("Accept-Encoding", "identity");
         if existing > 0 {
             request = request.header("Range", format!("bytes={existing}-"));
         }
         let response = tokio::select! {
-            r = request.send() => r.map_err(|e| FetchError::Network(describe(&e)))?,
+            r = request.send() => r.map_err(|e| {
+                if e.is_connect() { FetchError::Offline } else { FetchError::Network(describe(&e)) }
+            })?,
             _ = cancel.cancelled() => return Err(FetchError::Cancelled),
         };
         let status = response.status().as_u16();
@@ -207,6 +229,15 @@ impl Fetcher {
                 .note(url, status, header("retry-after").as_deref())
         {
             return Err(FetchError::RateLimited(cooldown));
+        }
+        // Media servers never send HTML for a file; when one does it is an
+        // error page or a login wall, which must not be saved as the file.
+        let html =
+            header("content-type").is_some_and(|t| t.to_ascii_lowercase().starts_with("text/html"));
+        let lower = name.to_ascii_lowercase();
+        let wants_html = lower.ends_with(".html") || lower.ends_with(".htm");
+        if html && !wants_html && (200..300).contains(&status) {
+            return Err(FetchError::NotAFile);
         }
         let mut append = false;
         match status {
@@ -382,6 +413,32 @@ mod tests {
         assert!(FetchError::Checksum.retryable());
         assert_eq!(content_range_start("bytes 100-199/200"), Some(100));
         assert_eq!(content_range_total("bytes */200"), Some(200));
+    }
+
+    #[tokio::test]
+    async fn an_unreachable_server_is_offline_not_a_failure() {
+        let client = PawchiveClient::new(
+            reqwest::Client::new(),
+            crate::net::limiter::SiteLimiter::new(5, Duration::ZERO),
+        );
+        let fetcher = Fetcher {
+            client: Arc::new(client),
+            throttle: Arc::new(Throttle::new(0)),
+        };
+        let dir = tempfile::tempdir().unwrap();
+        let result = fetcher
+            .fetch(
+                "http://127.0.0.1:9/file.bin",
+                &dir.path().join("f.part"),
+                "file.bin",
+                &Progress::default(),
+                &CancellationToken::new(),
+            )
+            .await;
+        assert_eq!(result, Err(FetchError::Offline));
+        assert!(FetchError::Offline.retryable());
+        assert!(FetchError::NotAFile.retryable());
+        assert!(!FetchError::Internal("x".into()).retryable());
     }
 
     #[tokio::test]

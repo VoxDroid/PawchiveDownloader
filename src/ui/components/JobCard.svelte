@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
   import type { JobAction, JobSummary } from '../../lib/types';
-  import { api, errorText } from '../../lib/api';
+  import { api } from '../../lib/api';
+  import { describeError } from '../state/errors';
   import { fmt, t } from '../state/app.svelte';
   import { toast } from '../state/toasts.svelte';
   import type { IconName } from '../icons.generated';
@@ -70,7 +71,7 @@
     try {
       await api.jobAction(job.id, action);
     } catch (error) {
-      toast(errorText(error), 'error');
+      toast(describeError(error), 'error');
     }
   }
 </script>
@@ -132,7 +133,8 @@
   {#if !finished || !compact}
     <Progress
       value={progress}
-      indeterminate={job.status === 'resolving' || (job.status === 'queued' && settled === 0)}
+      indeterminate={(job.status === 'resolving' && s.total === 0) ||
+        (job.status === 'queued' && settled === 0)}
       tone={tone === 'accent' ? 'accent' : tone}
       height={compact ? 4 : 6}
       label={job.title}
@@ -140,21 +142,26 @@
   {/if}
 
   <div class="meta mono-num">
-    {#if job.status === 'resolving' && job.scan}
+    {#if job.status === 'resolving' && job.scan && s.total === 0}
       <span>{t('jobs.scanning', { pages: job.scan.pages, posts: job.scan.posts })}</span>
     {:else}
       <span>{t('jobs.progress', { done: s.done, total: s.total })}</span>
+      {#if job.status === 'resolving' && job.scan}<span class="scan">
+          {t('jobs.stillScanning', { posts: job.scan.posts })}
+        </span>{/if}
       {#if s.failed}<span class="bad">{t('jobs.failed', { count: s.failed })}</span>{/if}
       {#if s.skipped}<span>{t('jobs.skipped', { count: s.skipped })}</span>{/if}
       {#if s.bytes > 0}<span>{fmt.bytes(s.bytes)}</span>{/if}
-      {#if job.status === 'running' && job.speed > 0}<span class="speed">
+      {#if (job.status === 'running' || job.status === 'resolving') && job.speed > 0}<span
+          class="speed"
+        >
           {fmt.bytes(job.speed)}/s
         </span>{/if}
       {#if eta > 0 && !compact}<span>{t('jobs.eta', { time: fmt.duration(eta) })}</span>{/if}
     {/if}
   </div>
   {#if job.error && job.error !== 'nothing-found'}
-    <p class="error">{job.error}</p>
+    <p class="error">{describeError(job.error)}</p>
   {:else if job.error === 'nothing-found'}
     <p class="error">{t('error.nothingFound')}</p>
   {/if}
@@ -265,6 +272,9 @@
   }
   .bad {
     color: var(--danger);
+  }
+  .scan {
+    color: var(--text-faint);
   }
   .speed {
     color: var(--accent-strong);

@@ -550,3 +550,393 @@ async fn the_watchlist_finds_new_posts() {
     assert_eq!(env.core.watcher.new_count(), 1);
     assert_eq!(env.core.watcher.list()[0].new_posts[0].id, "109");
 }
+
+// ------------------------------------------------------------- hardening
+
+fn creator_request(options: JobOverrides) -> JobRequest {
+    JobRequest::Creator {
+        service: "patreon".into(),
+        creator_id: "7".into(),
+        query: None,
+        post_ids: None,
+        since: None,
+        until: None,
+        options,
+    }
+}
+
+fn refs_request(post_id: &str, options: JobOverrides) -> JobRequest {
+    JobRequest::Refs {
+        title: None,
+        creator: None,
+        refs: vec![PostRef {
+            service: "patreon".into(),
+            creator_id: "7".into(),
+            post_id: post_id.into(),
+        }],
+        options,
+    }
+}
+
+fn no_text() -> JobOverrides {
+    JobOverrides {
+        save_content: Some(ContentFormat::None),
+        ..Default::default()
+    }
+}
+
+/// Regression: Tauri runs synchronous commands (and tray menu events) on the
+/// main thread, which has no Tokio runtime. Creating or resuming a job that
+/// needs a lookup there used to panic and close the app.
+#[tokio::test(flavor = "multi_thread")]
+async fn creates_and_resumes_jobs_from_threads_without_a_runtime() {
+    let env = env().await;
+    let a = Fixture::new("a.png", 500, 21);
+    env.mount_creator(vec![post("201", "One", &[&a])]).await;
+    env.serve(&a).await;
+    let engine = Arc::clone(&env.core.engine);
+    let id = std::thread::spawn(move || {
+        assert!(tokio::runtime::Handle::try_current().is_err());
+        let id = engine.create(creator_request(JobOverrides::default()));
+        engine.act(&id, JobAction::Pause);
+        engine.act(&id, JobAction::Resume);
+        engine.act_all(JobAction::Pause);
+        engine.act_all(JobAction::Resume);
+        id
+    })
+    .join()
+    .expect("no panic outside the runtime");
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn does_not_queue_the_same_download_twice() {
+    let env = env().await;
+    let a = Fixture::new("a.png", 500, 22);
+    env.mount_creator(vec![post("202", "Twice", &[&a])]).await;
+    Mock::given(method("GET"))
+        .and(path(a.data_path()))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_delay(Duration::from_millis(300))
+                .set_body_bytes(a.bytes.clone()),
+        )
+        .mount(&env.server)
+        .await;
+    let (first, dup1) = env
+        .core
+        .engine
+        .create_checked(creator_request(JobOverrides::default()));
+    let (second, dup2) = env
+        .core
+        .engine
+        .create_checked(creator_request(JobOverrides::default()));
+    assert!(!dup1 && dup2);
+    assert_eq!(first, second);
+    // Different options are a different download.
+    let (zip, dup3) = env
+        .core
+        .engine
+        .create_checked(creator_request(JobOverrides {
+            mode: Some(DownloadMode::Zip),
+            ..Default::default()
+        }));
+    assert!(!dup3);
+    env.wait(&first).await;
+    env.wait(&zip).await;
+    // Once finished, the same request may be queued again.
+    let (_, dup4) = env
+        .core
+        .engine
+        .create_checked(creator_request(JobOverrides::default()));
+    assert!(!dup4);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn files_with_the_same_name_never_share_a_target() {
+    let env = env().await;
+    let files: Vec<Fixture> = (0..6)
+        .map(|i| Fixture::new("same.bin", 3000 + i * 10, 30 + i as u8))
+        .collect();
+    let refs: Vec<&Fixture> = files.iter().collect();
+    env.mount_creator(vec![post("203", "Same", &refs)]).await;
+    for f in &files {
+        Mock::given(method("GET"))
+            .and(path(f.data_path()))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_delay(Duration::from_millis(100))
+                    .set_body_bytes(f.bytes.clone()),
+            )
+            .mount(&env.server)
+            .await;
+    }
+    {
+        let mut s = env.core.settings.write();
+        s.file_template = "{filename}".into();
+        s.conflict_action = pawchive_downloader_lib::settings::ConflictAction::Overwrite;
+        s.concurrency = 5;
+        s.skip_downloaded = false;
+    }
+    let id = env.core.engine.create(refs_request("203", no_text()));
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    // Six different files with one name, written at the same time: with
+    // "replace" none may overwrite another that is still being written.
+    let saved = files_under(&env.out());
+    let mut contents: Vec<Vec<u8>> = saved.iter().map(|p| std::fs::read(p).unwrap()).collect();
+    contents.sort();
+    contents.dedup();
+    for f in &files {
+        assert!(contents.contains(&f.bytes) || saved.len() < 6);
+    }
+    for p in &saved {
+        let bytes = std::fs::read(p).unwrap();
+        assert!(files.iter().any(|f| f.bytes == bytes), "mixed file {p:?}");
+    }
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn never_saves_an_error_page_as_a_file() {
+    let env = env().await;
+    let page = Fixture::new("page.html", 200, 40);
+    let no_hash = json!({ "name": "nohash.jpg", "path": "/aa/bb/nohash.jpg", "server": "https://n1.pawchive.pw" });
+    let raw = json!({
+        "id": "204", "user": "7", "service": "patreon", "title": "Pages",
+        "file": page.api(), "attachments": [no_hash]
+    });
+    env.mount_creator(vec![raw]).await;
+    // A real HTML attachment is fine...
+    Mock::given(method("GET"))
+        .and(path(page.data_path()))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .insert_header("content-type", "text/html; charset=utf-8")
+                .set_body_bytes(page.bytes.clone()),
+        )
+        .mount(&env.server)
+        .await;
+    // ...but an image answered with a web page is not.
+    Mock::given(method("GET"))
+        .and(path("/data/aa/bb/nohash.jpg"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_raw("<html>Please sign in</html>", "text/html; charset=utf-8"),
+        )
+        .mount(&env.server)
+        .await;
+    let id = env.core.engine.create(refs_request("204", no_text()));
+    let job = env.wait(&id).await;
+    assert_eq!((job.stats.done, job.stats.failed), (1, 1));
+    let items = env.core.engine.items(&id);
+    let failed = items
+        .iter()
+        .find(|i| i.status == ItemStatus::Failed)
+        .unwrap();
+    assert!(failed.error.as_deref().unwrap().contains("web page"));
+    let saved = files_under(&env.out());
+    assert_eq!(saved.len(), 1);
+    assert!(saved[0].to_string_lossy().ends_with("page.html"));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn stress_a_large_creator_with_flaky_servers() {
+    let env = env().await;
+    // 120 posts on three pages, three files each, every file failing once.
+    let mut posts = Vec::new();
+    let mut fixtures = Vec::new();
+    for n in 0..120u32 {
+        let files: Vec<Fixture> = (0..3u32)
+            .map(|i| {
+                Fixture::new(
+                    &format!("f{i}.bin"),
+                    400 + ((n * 7 + i) % 300) as usize,
+                    (n * 3 + i) as u8,
+                )
+            })
+            .collect();
+        posts.push(post(
+            &format!("3{n:03}"),
+            &format!("Post {n}"),
+            &files.iter().collect::<Vec<_>>(),
+        ));
+        fixtures.extend(files);
+    }
+    Mock::given(method("GET"))
+        .and(path("/api/v1/patreon/user/7/profile"))
+        .respond_with(
+            ResponseTemplate::new(200)
+                .set_body_json(json!({"id": "7", "name": "Aster Vale", "service": "patreon"})),
+        )
+        .mount(&env.server)
+        .await;
+    for (page, chunk) in posts.chunks(50).enumerate() {
+        Mock::given(method("GET"))
+            .and(path("/api/v1/patreon/user/7/posts"))
+            .and(query_param("o", (page * 50).to_string()))
+            .respond_with(ResponseTemplate::new(200).set_body_json(Value::Array(chunk.to_vec())))
+            .mount(&env.server)
+            .await;
+    }
+    let mut seen = std::collections::HashSet::new();
+    for f in &fixtures {
+        if !seen.insert(f.hash.clone()) {
+            continue;
+        }
+        Mock::given(method("GET"))
+            .and(path(f.data_path()))
+            .respond_with(ResponseTemplate::new(503))
+            .up_to_n_times(1)
+            .mount(&env.server)
+            .await;
+        env.serve(f).await;
+    }
+    {
+        let mut s = env.core.settings.write();
+        s.concurrency = 5;
+        s.save_content = ContentFormat::None;
+    }
+    let id = env
+        .core
+        .engine
+        .create(creator_request(JobOverrides::default()));
+    let mut job = None;
+    for _ in 0..2400 {
+        let j = env
+            .core
+            .engine
+            .summaries()
+            .into_iter()
+            .find(|j| j.id == id)
+            .unwrap();
+        if j.status.finished() {
+            job = Some(j);
+            break;
+        }
+        // The queue is saved while it runs.
+        env.core.engine.save();
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    let job = job.expect("finished");
+    assert_eq!(job.status, JobStatus::Done, "{:?}", job.stats);
+    assert_eq!(job.post_count, 120);
+    assert_eq!(job.stats.done + job.stats.skipped, 360);
+    assert_eq!(files_under(&env.out()).len(), seen.len());
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_restarted_app_finishes_the_queue() {
+    let probe = env().await;
+    let data = probe.dir.path().join("lib");
+    let out = probe.dir.path().join("restart-out");
+    let make = || {
+        let core = Core::new(CoreOptions {
+            data_dir: data.clone(),
+            log_file: None,
+            origin_override: Some(probe.server.uri()),
+            in_memory: false,
+            fast_timing: true,
+        })
+        .unwrap();
+        {
+            let mut s = core.settings.write();
+            s.download_dir = out.to_string_lossy().into_owned();
+            s.save_content = ContentFormat::None;
+            s.concurrency = 1;
+        }
+        core
+    };
+    let files: Vec<Fixture> = (0..4u8)
+        .map(|i| Fixture::new(&format!("r{i}.bin"), 2000, 50 + i))
+        .collect();
+    probe
+        .mount_creator(vec![post(
+            "205",
+            "Restart",
+            &files.iter().collect::<Vec<_>>(),
+        )])
+        .await;
+    for f in &files {
+        Mock::given(method("GET"))
+            .and(path(f.data_path()))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_delay(Duration::from_millis(250))
+                    .set_body_bytes(f.bytes.clone()),
+            )
+            .mount(&probe.server)
+            .await;
+    }
+    let first = make();
+    first.start();
+    let id = first
+        .engine
+        .create(creator_request(JobOverrides::default()));
+    tokio::time::sleep(Duration::from_millis(600)).await;
+    // The app closes in the middle of the job.
+    first.shutdown();
+    let done_before = first
+        .engine
+        .items(&id)
+        .iter()
+        .filter(|i| i.status == ItemStatus::Done)
+        .count();
+    assert!(done_before < 4, "the job should still be running");
+    // A new start picks the queue up and finishes it.
+    let second = make();
+    second.start();
+    let mut finished = false;
+    for _ in 0..400 {
+        if let Some(j) = second.engine.summaries().into_iter().find(|j| j.id == id) {
+            if j.status == JobStatus::Done {
+                finished = true;
+                break;
+            }
+        }
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    assert!(finished, "{:?}", second.engine.summaries());
+    let saved = files_under(&out);
+    assert_eq!(saved.len(), 4, "{saved:?}");
+    assert!(saved
+        .iter()
+        .all(|p| !p.to_string_lossy().ends_with(".part")));
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn hostile_names_stay_inside_the_download_folder() {
+    let env = env().await;
+    let a = Fixture::new("../../escape.png", 100, 60);
+    let b = Fixture::new("CON.txt", 100, 61);
+    let c = Fixture::new("evil\u{202e}gnp.exe", 100, 62);
+    let d = Fixture::new(&format!("{}.jpg", "\u{540d}".repeat(300)), 100, 63);
+    let title = format!("..\\..\\{}<>:\"|?*", "\u{9577}".repeat(200));
+    let raw = json!({
+        "id": "206", "user": "7", "service": "patreon", "title": title,
+        "file": a.api(), "attachments": [b.api(), c.api(), d.api()]
+    });
+    env.mount_creator(vec![raw]).await;
+    for f in [&a, &b, &c, &d] {
+        env.serve(f).await;
+    }
+    let id = env
+        .core
+        .engine
+        .create(refs_request("206", JobOverrides::default()));
+    assert_eq!(
+        env.wait(&id).await.status,
+        JobStatus::Done,
+        "{:?}",
+        env.core.engine.items(&id)
+    );
+    let out = env.out();
+    let saved = files_under(&out);
+    assert_eq!(saved.len(), 4);
+    for p in saved {
+        assert!(p.starts_with(&out), "{p:?}");
+        let name = p.file_name().unwrap().to_string_lossy().into_owned();
+        assert!(!name.contains('\u{202e}'));
+        assert!(!name.eq_ignore_ascii_case("CON.txt"));
+        assert!(name.chars().count() <= 120, "{name}");
+    }
+    assert!(!env.dir.path().join("escape.png").exists());
+}

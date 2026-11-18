@@ -1,6 +1,6 @@
 [package]
 name = "pawchive-downloader"
-version = "1.0.0"
+version = "1.0.1"
 description = "Desktop app for downloading from Pawchive"
 authors = ["VoxDroid"]
 license = "MIT"
@@ -54,5 +54,6 @@ tokio = { version = "1", features = ["test-util"] }
 codegen-units = 1
 lto = true
 opt-level = "s"
-panic = "abort"
+# Unwind, so a bug in one download task is caught instead of closing the app.
+panic = "unwind"
 strip = true

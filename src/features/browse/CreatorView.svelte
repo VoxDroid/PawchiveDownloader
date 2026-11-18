@@ -1,9 +1,9 @@
 <script lang="ts">
+  import { describeError } from '../../ui/state/errors';
   import { fade } from 'svelte/transition';
-  import { api, errorText, openUrl } from '../../lib/api';
+  import { api, openUrl } from '../../lib/api';
   import type { CreatorView, JobOverrides, Post } from '../../lib/types';
   import { fmt, t } from '../../ui/state/app.svelte';
-  import { go } from '../../ui/state/router.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Chip from '../../ui/components/Chip.svelte';
@@ -13,6 +13,7 @@
   import Spinner from '../../ui/components/Spinner.svelte';
   import TextInput from '../../ui/components/TextInput.svelte';
   import DownloadBar from './DownloadBar.svelte';
+  import { queueJob } from './queue';
   import PostList from './PostList.svelte';
   import { rememberRecent } from './batch.svelte';
 
@@ -82,7 +83,7 @@
       });
       await loadMore();
     } catch (e) {
-      error = errorText(e);
+      error = describeError(e);
     }
   }
 
@@ -103,7 +104,7 @@
       if (page.posts.length < PAGE) end = true;
       return true;
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
       return false;
     } finally {
       loading = false;
@@ -151,7 +152,7 @@
         toast(t('watch.added', { name: view.creator.name }), 'success');
       }
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     }
   }
 
@@ -168,7 +169,7 @@
         toast(t('favorites.added'), 'success');
       }
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     }
   }
 
@@ -186,8 +187,8 @@
       toast(t('creator.noMatches'), 'warning');
       return;
     }
-    try {
-      await api.createJob({
+    const queued = await queueJob(
+      {
         kind: 'creator',
         service,
         creatorId,
@@ -196,20 +197,13 @@
         since: !ids && from ? `${from}T00:00:00` : null,
         until: !ids && to ? `${to}T23:59:59` : null,
         options,
-      });
-      toast(
-        ids
-          ? t('toast.queuedPosts', { count: ids.length })
-          : t('toast.queuedCreator', { name: view.creator.name }),
-        'success',
-        { action: { label: t('nav.downloads'), run: () => go('downloads') } },
-      );
-      selected = new Set();
-    } catch (e) {
-      toast(t('toast.queueFailed', { error: errorText(e) }), 'error');
-    } finally {
-      busy = false;
-    }
+      },
+      ids
+        ? t('toast.queuedPosts', { count: ids.length })
+        : t('toast.queuedCreator', { name: view.creator.name }),
+    );
+    if (queued) selected = new Set();
+    busy = false;
   }
 </script>
 

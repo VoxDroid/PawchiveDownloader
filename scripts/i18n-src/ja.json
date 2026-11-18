@@ -231,5 +231,22 @@
   "about.channelOfficial": "公式ビルド",
   "about.channelSource": "ソースからビルド",
   "about.buildSource": "自分でビルド",
-  "support.body": "ソースコードは自由にビルドできます。Windows、macOS、Linux 向けのビルド済み版は Ko-fi で入手でき、プロジェクトの継続を支えます。"
+  "support.body": "ソースコードは自由にビルドできます。Windows、macOS、Linux 向けのビルド済み版は Ko-fi で入手でき、プロジェクトの継続を支えます。",
+  "crash.notice": "前回 Pawchive Downloader が予期せず終了しました。クラッシュレポートを保存しました。",
+  "crash.show": "レポートを表示",
+  "toast.alreadyQueued": "このダウンロードはすでにキューにあります。",
+  "jobs.stillScanning": "投稿を検索中（現在 {posts} 件）",
+  "downloads.building": "アーカイブを作成中",
+  "error.folderUnwritable": "ダウンロードフォルダーに書き込めません。設定で別のフォルダーを選んでください。",
+  "error.offline": "接続がありません。ネットワークを待っています",
+  "error.notAFile": "サーバーがファイルの代わりにウェブページを返しました",
+  "error.checksum": "ファイルがチェックサムと一致しませんでした",
+  "error.internal": "内部エラーです。ログと一緒に報告してください。",
+  "error.timeout": "サーバーの応答に時間がかかりすぎました",
+  "error.connection": "接続が途切れました",
+  "error.http404": "サーバーにありません（HTTP {status}）",
+  "error.http403": "サーバーにアクセスを拒否されました（HTTP {status}）",
+  "error.http429": "サーバーから速度を落とすよう求められました（HTTP {status}）",
+  "error.http5xx": "サーバーで問題が発生しました（HTTP {status}）",
+  "error.http": "サーバーの応答: HTTP {status}"
 }

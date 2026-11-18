@@ -1,9 +1,10 @@
 <script lang="ts">
+  import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
   import { fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { api, errorText, pickFile, pickSavePath } from '../../lib/api';
+  import { api, pickFile, pickSavePath } from '../../lib/api';
   import { stamp } from '../../lib/files';
   import type { Favorite } from '../../lib/types';
   import { pageUrls } from '../../lib/urls';
@@ -76,7 +77,7 @@
         await load();
       } else toast(t('favorites.invalid'), 'warning');
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     } finally {
       adding = false;
     }
@@ -91,7 +92,7 @@
       selected = new Set();
       await load();
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     }
   }
 
@@ -131,7 +132,7 @@
       toast(t('favorites.addedCount', { count }), count ? 'success' : 'info');
       await load();
     } catch (e) {
-      toast(errorText(e), 'error');
+      toast(describeError(e), 'error');
     }
   }
 

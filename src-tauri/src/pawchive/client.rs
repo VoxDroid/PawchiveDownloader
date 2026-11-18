@@ -51,6 +51,10 @@ pub struct ScanProgress {
     pub offset: u32,
 }
 
+/// How long and how often to wait for a lost connection to come back.
+const OFFLINE_WAIT: Duration = Duration::from_secs(15);
+const OFFLINE_WAITS: u32 = 240;
+
 pub type RetryHook = Arc<dyn Fn(&str, u32, Duration, &str) + Send + Sync>;
 
 pub struct PawchiveClient {
@@ -298,6 +302,7 @@ impl PawchiveClient {
     ) -> Result<String, ApiError> {
         let mut failures = 0u32;
         let mut rate_limits = 0u32;
+        let mut offline = 0u32;
         let max_retries = *self.max_retries.lock();
         loop {
             if cancel.is_cancelled() {
@@ -317,6 +322,15 @@ impl PawchiveClient {
             let response = match response {
                 Ok(r) => r,
                 Err(error) => {
+                    // No connection at all: wait for the network (up to about
+                    // an hour) instead of failing the whole scan.
+                    if error.is_connect() && offline < OFFLINE_WAITS {
+                        offline += 1;
+                        let delay = self.limiter.policy.backoff_cap.min(OFFLINE_WAIT);
+                        self.retried(url, offline, delay, "no connection");
+                        self.backoff_sleep(delay, cancel).await?;
+                        continue;
+                    }
                     if failures >= max_retries {
                         return Err(ApiError::Network {
                             message: describe(&error),

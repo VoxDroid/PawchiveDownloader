@@ -36,12 +36,41 @@ pub fn now_ms() -> i64 {
 
 /// Notified when a job ends (for notifications and the watchlist).
 pub trait Hooks: Send + Sync {
-    fn job_finished(&self, job: &Job, entry: &HistoryEntry);
+    /// `still_running` counts the jobs that have not finished yet, so the
+    /// app can wait for the whole batch before it notifies.
+    fn job_finished(&self, job: &Job, entry: &HistoryEntry, still_running: usize);
 }
 
 pub struct NoHooks;
 impl Hooks for NoHooks {
-    fn job_finished(&self, _: &Job, _: &HistoryEntry) {}
+    fn job_finished(&self, _: &Job, _: &HistoryEntry, _: usize) {}
+}
+
+/// Waits for the network when there is none: 15 s apart, for up to an hour.
+const OFFLINE_RETRY_MS: i64 = 15_000;
+const OFFLINE_WAITS: u32 = 240;
+
+/// Targets compare like the file system does: case-insensitively on Windows
+/// and macOS, where `A.png` and `a.png` are the same file.
+fn fold(path: &Path) -> String {
+    let text = path.to_string_lossy();
+    if cfg!(any(windows, target_os = "macos")) {
+        text.to_lowercase()
+    } else {
+        text.into_owned()
+    }
+}
+
+/// What a request downloads, to notice the same download queued twice.
+fn signature(request: &JobRequest) -> String {
+    let value = match request {
+        JobRequest::Posts { posts, options, .. } => serde_json::json!({
+            "posts": posts.iter().map(|p| (&p.post.service, &p.post.creator_id, &p.post.id, &p.file_indexes)).collect::<Vec<_>>(),
+            "options": options,
+        }),
+        other => serde_json::to_value(other).unwrap_or_default(),
+    };
+    value.to_string()
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,8 +94,10 @@ struct State {
     /// Keyed by `job_id/item_id`.
     active: HashMap<String, Active>,
     resolving: HashMap<String, CancellationToken>,
-    /// Targets claimed by running transfers.
-    reserved: HashSet<PathBuf>,
+    /// Targets claimed by running transfers (folded, see `fold`).
+    reserved: HashSet<String>,
+    /// Hash of each job as last saved, so unchanged jobs are not rewritten.
+    saved: HashMap<String, u64>,
     speed: HashMap<String, VecDeque<(Instant, u64)>>,
 }
 
@@ -158,6 +189,18 @@ pub struct Engine {
     version: AtomicU64,
     relays: Mutex<HashMap<String, RelaySlot>>,
     shutdown: CancellationToken,
+    /// The runtime tasks run on. Commands and menu events arrive on threads
+    /// without one (Tauri runs synchronous commands on the main thread), so
+    /// the engine keeps its own handle instead of relying on the caller's.
+    runtime: std::sync::OnceLock<tokio::runtime::Handle>,
+}
+
+/// The message of a caught panic, for the log and the item's error.
+fn panic_message(error: &tokio::task::JoinError) -> String {
+    if !error.is_panic() {
+        return "stopped".into();
+    }
+    format!("internal error ({error})")
 }
 
 impl Engine {
@@ -183,7 +226,35 @@ impl Engine {
             version: AtomicU64::new(1),
             relays: Mutex::new(HashMap::new()),
             shutdown: CancellationToken::new(),
+            runtime: tokio::runtime::Handle::try_current()
+                .map(std::sync::OnceLock::from)
+                .unwrap_or_default(),
         })
+    }
+
+    /// Gives the engine the runtime to spawn its tasks on.
+    pub fn attach_runtime(&self, handle: tokio::runtime::Handle) {
+        let _ = self.runtime.set(handle);
+    }
+
+    /// Spawns a task from any thread. Returns None, and logs it, only if no
+    /// runtime is known at all, which would be a wiring mistake.
+    fn spawn<F>(&self, task: F) -> Option<tokio::task::JoinHandle<F::Output>>
+    where
+        F: std::future::Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        let handle = tokio::runtime::Handle::try_current()
+            .ok()
+            .or_else(|| self.runtime.get().cloned());
+        match handle {
+            Some(h) => Some(h.spawn(task)),
+            None => {
+                self.log
+                    .error("Could not start a background task: no runtime", None);
+                None
+            }
+        }
     }
 
     pub fn set_hooks(&self, hooks: Arc<dyn Hooks>) {
@@ -230,8 +301,11 @@ impl Engine {
 
     /// Runs the scheduler and the autosave until shutdown.
     pub async fn run(self: Arc<Self>) {
+        if let Ok(handle) = tokio::runtime::Handle::try_current() {
+            self.attach_runtime(handle);
+        }
         let saver = Arc::clone(&self);
-        tokio::spawn(async move {
+        self.spawn(async move {
             let mut saved = 0;
             let mut tick = tokio::time::interval(Duration::from_secs(2));
             loop {
@@ -260,12 +334,18 @@ impl Engine {
         }
     }
 
-    /// Saves the queue with the live byte counts of running items.
+    /// Saves the queue with the live byte counts of running items. Only jobs
+    /// that changed since the last save are written, so a huge creator does
+    /// not rewrite megabytes every few seconds.
     pub fn save(&self) {
-        let jobs = {
-            let state = self.state.lock();
-            let mut jobs = state.jobs.clone();
-            for job in &mut jobs {
+        use std::hash::{Hash, Hasher};
+        let (order, changed) = {
+            let mut state = self.state.lock();
+            let state = &mut *state;
+            let mut changed = Vec::new();
+            let mut hashes = HashMap::new();
+            for job in &state.jobs {
+                let mut job = job.clone();
                 for item in &mut job.items {
                     if let Some(a) = state.active.get(&key(&job.id, &item.id)) {
                         let (bytes, total) = a.progress.get();
@@ -273,10 +353,23 @@ impl Engine {
                         item.total_bytes = total;
                     }
                 }
+                let Ok(json) = serde_json::to_string(&job) else {
+                    continue;
+                };
+                let mut hasher = std::collections::hash_map::DefaultHasher::new();
+                json.hash(&mut hasher);
+                let hash = hasher.finish();
+                if state.saved.get(&job.id) != Some(&hash) {
+                    changed.push((job.id.clone(), json));
+                }
+                hashes.insert(job.id.clone(), hash);
             }
-            jobs
+            state.saved = hashes;
+            let order: Vec<String> = state.jobs.iter().map(|j| j.id.clone()).collect();
+            (order, changed)
         };
-        if let Err(e) = self.store.save_jobs(&jobs) {
+        if let Err(e) = self.store.sync_jobs(&order, &changed) {
+            self.state.lock().saved.clear();
             self.log.error("Could not save the download queue", Some(e));
         }
     }
@@ -408,6 +501,10 @@ impl Engine {
                     skip_reason: item.skip_reason,
                     fallback: item.fallback,
                     post_id: item.post.post_id.clone(),
+                    building: state
+                        .active
+                        .get(&key(job_id, &item.id))
+                        .is_some_and(|a| a.progress.building.load(Ordering::Relaxed)),
                 }
             })
             .collect()
@@ -435,6 +532,22 @@ impl Engine {
     // ------------------------------------------------------------- create
 
     pub fn create(self: &Arc<Self>, request: JobRequest) -> String {
+        self.create_checked(request).0
+    }
+
+    /// Queues a request, or returns the job already doing exactly the same
+    /// (true) so a double click does not download everything twice.
+    pub fn create_checked(self: &Arc<Self>, request: JobRequest) -> (String, bool) {
+        let sig = signature(&request);
+        if let Some(existing) = self
+            .state
+            .lock()
+            .jobs
+            .iter()
+            .find(|j| !j.status.finished() && j.signature.as_deref() == Some(sig.as_str()))
+        {
+            return (existing.id.clone(), true);
+        }
         let settings = self.settings.read().clone();
         let overrides = match &request {
             JobRequest::Posts { options, .. }
@@ -458,6 +571,7 @@ impl Engine {
             items: vec![],
             error: None,
             refs: vec![],
+            signature: Some(sig),
         };
         let mut resolve = false;
         match &request {
@@ -543,7 +657,8 @@ impl Engine {
             self.spawn_resolve(id.clone());
         }
         self.changed();
-        id
+        self.save();
+        (id, false)
     }
 
     fn known_for<'a>(
@@ -596,14 +711,32 @@ impl Engine {
     // ------------------------------------------------------------ resolve
 
     fn spawn_resolve(self: &Arc<Self>, job_id: String) {
+        let spawned_id = job_id.clone();
         let cancel = self.shutdown.child_token();
         self.state
             .lock()
             .resolving
             .insert(job_id.clone(), cancel.clone());
         let engine = Arc::clone(self);
-        tokio::spawn(async move {
-            let result = engine.resolve(&job_id, &cancel).await;
+        let spawned = self.spawn(async move {
+            // The lookup runs in its own task so a panic in it is caught here
+            // and fails the job instead of leaving it looking up forever.
+            let worker = Arc::clone(&engine);
+            let (id, token) = (job_id.clone(), cancel.clone());
+            let result = match tokio::spawn(async move { worker.resolve(&id, &token).await }).await
+            {
+                Ok(result) => result,
+                Err(error) => {
+                    engine.log.error(
+                        "Looking up posts stopped unexpectedly",
+                        Some(panic_message(&error)),
+                    );
+                    Err(ApiError::Network {
+                        message: panic_message(&error),
+                        url: String::new(),
+                    })
+                }
+            };
             let mut state = engine.state.lock();
             state.resolving.remove(&job_id);
             let Some(job) = state.jobs.iter_mut().find(|j| j.id == job_id) else {
@@ -640,6 +773,9 @@ impl Engine {
             drop(state);
             engine.changed();
         });
+        if spawned.is_none() {
+            self.state.lock().resolving.remove(&spawned_id);
+        }
     }
 
     fn with_job<R>(&self, job_id: &str, f: impl FnOnce(&mut Job) -> R) -> Option<R> {
@@ -939,6 +1075,7 @@ impl Engine {
                 running += 1;
             }
         }
+        let mut unstarted = Vec::new();
         for (job_id, item, options) in starts {
             let progress = Progress::new();
             progress.bytes.store(item.bytes, Ordering::Relaxed);
@@ -955,14 +1092,37 @@ impl Engine {
                 },
             );
             let engine = Arc::clone(self);
-            tokio::spawn(async move {
-                let outcome = engine
-                    .run_item(&job_id, &item, &options, &cancel, &progress)
-                    .await;
-                engine.settle(&job_id, &item.id, outcome);
+            let (failed_job, failed_item) = (job_id.clone(), item.id.clone());
+            let spawned = self.spawn(async move {
+                // Run the transfer in its own task: if it panics, the item
+                // fails with a message instead of staying active forever.
+                let worker = Arc::clone(&engine);
+                let item_id = item.id.clone();
+                let task_job = job_id.clone();
+                let outcome = match tokio::spawn(async move {
+                    worker
+                        .run_item(&task_job, &item, &options, &cancel, &progress)
+                        .await
+                })
+                .await
+                {
+                    Ok(outcome) => outcome,
+                    Err(error) => Outcome::Failed(FetchError::Internal(panic_message(&error))),
+                };
+                engine.settle(&job_id, &item_id, outcome);
             });
+            if spawned.is_none() {
+                unstarted.push((failed_job, failed_item));
+            }
         }
         drop(state);
+        for (job_id, item_id) in unstarted {
+            self.settle(
+                &job_id,
+                &item_id,
+                Outcome::Failed(FetchError::Internal("could not start".into())),
+            );
+        }
         self.version.fetch_add(1, Ordering::Relaxed);
     }
 
@@ -1010,13 +1170,15 @@ impl Engine {
             .and_then(|i| i.target.clone());
         if let Some(t) = current {
             let t = PathBuf::from(t);
-            state.reserved.insert(t.clone());
+            state.reserved.insert(fold(&t));
             return Some(t);
         }
         let wanted = Path::new(&options.download_dir).join(&item.path);
         let reserved = state.reserved.clone();
-        let target = choose_target(&wanted, options.conflict_action, |p| reserved.contains(p))?;
-        state.reserved.insert(target.clone());
+        let target = choose_target(&wanted, options.conflict_action, |p| {
+            reserved.contains(&fold(p))
+        })?;
+        state.reserved.insert(fold(&target));
         if let Some(i) = state
             .jobs
             .iter_mut()
@@ -1082,6 +1244,17 @@ impl Engine {
         cancel: &CancellationToken,
         progress: &Arc<Progress>,
     ) -> Result<Outcome, FetchError> {
+        // Another job may have saved the same file since this one was planned.
+        if options.skip_downloaded && !item.fallback {
+            if let Some(h) = hash {
+                if !self.store.known_hashes(&[h.to_string()]).is_empty() {
+                    if let Some(t) = &item.target {
+                        let _ = tokio::fs::remove_file(part_path(Path::new(t))).await;
+                    }
+                    return Ok(Outcome::Skipped(SkipReason::Duplicate));
+                }
+            }
+        }
         let Some(target) = self.ensure_target(job_id, item, options) else {
             return Ok(Outcome::Skipped(SkipReason::Exists));
         };
@@ -1095,7 +1268,10 @@ impl Engine {
             return Ok(Outcome::Skipped(SkipReason::NoRelay));
         };
         let _permit = self.client.limiter.acquire(&url, cancel).await?;
-        let bytes = self.fetcher.fetch(&url, &part, progress, cancel).await?;
+        let bytes = self
+            .fetcher
+            .fetch(&url, &part, &source.name, progress, cancel)
+            .await?;
         if options.verify_hashes && !item.fallback {
             verify(&part, hash).await?;
         }
@@ -1170,6 +1346,7 @@ impl Engine {
             }
             progress.base.store(fetched_bytes, Ordering::Relaxed);
             let mut attempt = 0;
+            let mut offline_waits = 0u32;
             let ok = loop {
                 let url = match self.source_url(&item.post, source, cancel).await {
                     Ok(Some(u)) => u,
@@ -1189,7 +1366,10 @@ impl Engine {
                 }
                 let part = staging.join(format!("{i}.part"));
                 let result = async {
-                    let size = self.fetcher.fetch(&url, &part, progress, cancel).await?;
+                    let size = self
+                        .fetcher
+                        .fetch(&url, &part, &source.name, progress, cancel)
+                        .await?;
                     if options.verify_hashes {
                         verify(&part, entry.hash.as_deref()).await?;
                     }
@@ -1204,6 +1384,11 @@ impl Engine {
                     }
                     Err(FetchError::Cancelled) => return Err(FetchError::Cancelled),
                     Err(FetchError::RateLimited(d)) => sleep_cancel(d, cancel).await?,
+                    Err(FetchError::Offline) if offline_waits < OFFLINE_WAITS => {
+                        offline_waits += 1;
+                        sleep_cancel(Duration::from_millis(OFFLINE_RETRY_MS as u64), cancel)
+                            .await?;
+                    }
                     Err(e @ FetchError::Disk(_)) => return Err(e),
                     Err(e) if e.retryable() && attempt < max_retries => {
                         attempt += 1;
@@ -1261,6 +1446,7 @@ impl Engine {
                 "no file of this post could be fetched".into(),
             ));
         }
+        progress.building.store(true, Ordering::Relaxed);
         let max_part = u64::from(options.zip_max_size_mb) * 1024 * 1024;
         let target_for_build = target.clone();
         let built = tokio::task::spawn_blocking(move || {
@@ -1322,7 +1508,7 @@ impl Engine {
             return;
         };
         if let Some(t) = state.jobs[job_index].items[item_index].target.clone() {
-            state.reserved.remove(Path::new(&t));
+            state.reserved.remove(&fold(Path::new(&t)));
         }
         let limiter = Arc::clone(&self.client.limiter);
         let mut record: Option<(String, String, String)> = None;
@@ -1335,6 +1521,7 @@ impl Engine {
             match outcome {
                 Outcome::Done { target, bytes } => {
                     item.status = ItemStatus::Done;
+                    item.waits = 0;
                     item.bytes = bytes;
                     item.total_bytes = bytes;
                     item.not_before = None;
@@ -1378,6 +1565,19 @@ impl Engine {
                 Outcome::Failed(FetchError::RateLimited(wait)) => {
                     item.status = ItemStatus::Pending;
                     item.not_before = Some(now_ms() + wait.as_millis() as i64);
+                }
+                Outcome::Failed(FetchError::Offline) if item.waits < OFFLINE_WAITS => {
+                    // No network: wait for it without using up the attempts.
+                    if item.waits == 0 {
+                        self.log.warn(
+                            format!("No connection for {}, waiting for the network", item.label),
+                            None,
+                        );
+                    }
+                    item.waits += 1;
+                    item.status = ItemStatus::Pending;
+                    item.error = Some(FetchError::Offline.to_string());
+                    item.not_before = Some(now_ms() + OFFLINE_RETRY_MS);
                 }
                 Outcome::Failed(error) => {
                     let can_fallback = options.thumbnail_fallback
@@ -1531,7 +1731,13 @@ impl Engine {
             let _ = std::fs::remove_dir_all(&staging);
         }
         let hooks = self.hooks.read().clone();
-        hooks.job_finished(job, &entry);
+        let job = job.clone();
+        let still_running = state
+            .jobs
+            .iter()
+            .filter(|j| !j.status.finished() && j.status != JobStatus::Paused)
+            .count();
+        hooks.job_finished(&job, &entry, still_running);
     }
 
     // ------------------------------------------------------------- actions
@@ -1644,6 +1850,12 @@ impl Engine {
                 }
                 stop_active(&mut state, job_id, Stop::Remove);
                 let job = state.jobs.remove(index);
+                // Its running transfers will not be settled (the job is gone),
+                // so release the names they claimed here.
+                for target in job.items.iter().filter_map(|i| i.target.as_deref()) {
+                    state.reserved.remove(&fold(Path::new(target)));
+                }
+                state.saved.remove(job_id);
                 if !job.status.finished() {
                     for item in job.items.iter().filter(|i| i.is_open()) {
                         remove_partial(&job.options, job_id, item);
@@ -1664,6 +1876,9 @@ impl Engine {
         }
         drop(state);
         self.changed();
+        // Saved right away, so even a hard kill does not bring a removed or
+        // cancelled job back. Saves are incremental, so this is cheap.
+        self.save();
     }
 
     pub fn act_all(self: &Arc<Self>, action: JobAction) {
@@ -1682,6 +1897,7 @@ impl Engine {
     pub fn clear_finished(&self) {
         self.state.lock().jobs.retain(|j| !j.status.finished());
         self.changed();
+        self.save();
     }
 
     /// Retries one item (from the job details).

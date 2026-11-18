@@ -191,6 +191,7 @@ fn base_item(post: &Post, id: String, label: String, path: String, kind: ItemKin
         skip_reason: None,
         not_before: None,
         fallback: false,
+        waits: 0,
         kind,
     }
 }
@@ -291,12 +292,20 @@ pub fn plan_post(
     if options.save_metadata {
         texts.push(("post.json", metadata_json(post, creator)));
     }
+    // When posts share a folder (no post-specific part in the template),
+    // each post's text gets its id in the name so they do not collide.
+    let shared_folder = !per_post_folder(&options.folder_template);
     let text_item = |name: &str, text: &String| {
+        let file = if shared_folder {
+            format!("{}_{name}", post.id)
+        } else {
+            name.to_string()
+        };
         base_item(
             post,
             format!("{}:{name}", post.id),
-            name.to_string(),
-            in_folder(name),
+            file.clone(),
+            in_folder(&file),
             ItemKind::Text { text: text.clone() },
         )
     };
@@ -378,6 +387,14 @@ pub fn plan_post(
         items.extend(texts.iter().map(|(n, t)| text_item(n, t)));
     }
     items
+}
+
+/// Whether a folder template gives each post a folder of its own.
+pub fn per_post_folder(template: &str) -> bool {
+    static POST: std::sync::LazyLock<regex::Regex> = std::sync::LazyLock::new(|| {
+        regex::Regex::new(r"(?i)\{(post_id|title|published|added)").unwrap()
+    });
+    POST.is_match(template)
 }
 
 /// Hashes of every file a set of posts would download (for duplicate checks).
@@ -477,6 +494,16 @@ mod tests {
             _ => panic!(),
         }
         assert_eq!(items[1].label, "v.mp4");
+    }
+
+    #[test]
+    fn names_text_files_by_post_when_posts_share_a_folder() {
+        let opts = options(|s| s.folder_template = "Pawchive/{creator}".into());
+        let items = plan_post(&post(), None, &opts, None, &HashSet::new(), 0);
+        let text = items.iter().find(|i| i.kind_name() == "text").unwrap();
+        assert_eq!(text.path, "Pawchive/9/1_content.txt");
+        assert!(per_post_folder("x/{published:YYYY} y"));
+        assert!(!per_post_folder("Pawchive/{creator} ({service})"));
     }
 
     #[test]

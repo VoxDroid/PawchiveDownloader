@@ -1,7 +1,8 @@
 <script lang="ts">
+  import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { api, errorText } from '../../lib/api';
+  import { api } from '../../lib/api';
   import { saveTextFile, stamp } from '../../lib/files';
   import type { HistoryEntry } from '../../lib/types';
   import { pageUrls } from '../../lib/urls';
@@ -122,7 +123,7 @@
 
   async function clearAll() {
     clearing = true;
-    await api.clearHistory(forgetFiles).catch((e) => toast(errorText(e), 'error'));
+    await api.clearHistory(forgetFiles).catch((e) => toast(describeError(e), 'error'));
     clearing = false;
     clearOpen = false;
     forgetFiles = false;

@@ -82,6 +82,12 @@ impl Core {
         let retry_log = Arc::clone(&log);
         let mut client = PawchiveClient::new(http, limiter).with_retry_hook(Arc::new(
             move |url, attempt, delay, reason| {
+                if reason == "no connection" && attempt == 1 {
+                    retry_log.warn(
+                        "No connection to Pawchive, waiting for the network",
+                        Some(url.to_string()),
+                    );
+                }
                 retry_log.debug(format!(
                     "Retry {attempt} in {:.1}s ({reason}): {url}",
                     delay.as_secs_f64()
@@ -124,7 +130,10 @@ impl Core {
     }
 
     /// Restores the queue and starts the scheduler and the watchlist timer.
+    /// Must be called inside the async runtime.
     pub fn start(self: &Arc<Self>) {
+        self.engine
+            .attach_runtime(tokio::runtime::Handle::current());
         self.engine.restore();
         tokio::spawn(Arc::clone(&self.engine).run());
         tokio::spawn(Arc::clone(&self.watcher).run(self.cancel.clone()));
