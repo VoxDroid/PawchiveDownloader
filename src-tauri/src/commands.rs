@@ -347,6 +347,23 @@ pub async fn search_creators(
     ))
 }
 
+#[tauri::command(async)]
+pub fn queue_status(core: State<'_, Core_>) -> crate::core::QueueStatus {
+    core.queue_status()
+}
+
+/// What happens once every download has finished: nothing, quit, sleep or
+/// shut down. Applies to this session only.
+#[tauri::command(async)]
+pub fn set_when_done(core: State<'_, Core_>, action: crate::power::WhenDone) {
+    core.set_when_done(action);
+}
+
+#[tauri::command(async)]
+pub fn cancel_when_done(core: State<'_, Core_>) {
+    core.cancel_when_done();
+}
+
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct PostPage {

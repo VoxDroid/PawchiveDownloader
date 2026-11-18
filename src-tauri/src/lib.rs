@@ -8,6 +8,7 @@ pub mod logs;
 pub mod naming;
 pub mod net;
 pub mod pawchive;
+pub mod power;
 pub mod settings;
 pub mod store;
 pub mod updates;
@@ -86,6 +87,12 @@ pub fn run() {
                     &serde_json::json!({ "newCount": count, "checking": checking }),
                 );
             }));
+            let queue_handle = handle.clone();
+            core.set_on_queue(Arc::new(move |status| {
+                app::emit(&queue_handle, "queue", &status);
+            }));
+            let quit_handle = handle.clone();
+            core.set_on_quit(Arc::new(move || app::quit(&quit_handle)));
             let notify_handle = handle.clone();
             core.watcher.set_notify(Arc::new(move |count, names| {
                 if let Some(core) = notify_handle.try_state::<Arc<Core>>() {
@@ -136,6 +143,9 @@ pub fn run() {
             commands::get_creator,
             commands::get_linked_accounts,
             commands::search_creators,
+            commands::queue_status,
+            commands::set_when_done,
+            commands::cancel_when_done,
             commands::get_creator_posts,
             commands::get_recent_posts,
             commands::create_job,

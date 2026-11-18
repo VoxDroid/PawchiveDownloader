@@ -190,6 +190,13 @@ export interface Settings {
   saveAnnouncements: boolean;
   categories: Record<FileCategory, boolean>;
   speedLimitKbps: number;
+  keepAwake: boolean;
+  /** Hold new downloads below this much free space (MB); 0 is off. */
+  minFreeSpaceMb: number;
+  scheduleEnabled: boolean;
+  /** `HH:MM`, local time. */
+  scheduleStart: string;
+  scheduleEnd: string;
   fastMode: boolean;
   zipMaxSizeMb: number;
   zipVideosSeparately: boolean;
@@ -237,6 +244,11 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
     boolean
   >,
   speedLimitKbps: 0,
+  keepAwake: true,
+  minFreeSpaceMb: 1024,
+  scheduleEnabled: false,
+  scheduleStart: '01:00',
+  scheduleEnd: '07:00',
   fastMode: false,
   zipMaxSizeMb: 0,
   zipVideosSeparately: false,
@@ -272,6 +284,21 @@ export type JobStatus =
 export type ItemStatus = 'pending' | 'active' | 'done' | 'failed' | 'skipped' | 'cancelled';
 export type SkipReason = 'duplicate' | 'preview-only' | 'no-relay' | 'exists' | 'empty';
 export type JobAction = 'pause' | 'resume' | 'cancel' | 'retry' | 'remove' | 'top' | 'up' | 'down';
+
+export type WhenDone = 'nothing' | 'quit' | 'sleep' | 'shutdown';
+
+/** Why new transfers do not start although downloads are queued. */
+export type Hold =
+  | { kind: 'schedule'; opensAt: number }
+  | { kind: 'disk'; free: number; need: number; folder: string };
+
+export interface QueueStatus {
+  hold: Hold | null;
+  whenDone: WhenDone;
+  /** When the when-done action fires (epoch ms), during its countdown. */
+  actionAt: number | null;
+  awake: boolean;
+}
 
 export interface CreatorInfo {
   service: string;

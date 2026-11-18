@@ -317,5 +317,32 @@
     "{count} coincidencia más; escribe más del nombre para acotar",
     "{count} coincidencias más; escribe más del nombre para acotar"
   ],
-  "creator.alsoOn": "También en"
+  "creator.alsoOn": "También en",
+  "settings.off": "Desactivado",
+  "settings.schedule": "Horario de descarga",
+  "settings.scheduleHint": "Solo empieza descargas entre estas horas, por ejemplo de noche. Las que están en curso siguen.",
+  "settings.scheduleStart": "Inicio",
+  "settings.scheduleEnd": "Fin",
+  "settings.keepAwake": "Mantener el equipo despierto",
+  "settings.keepAwakeHint": "Mientras haya descargas, el equipo no entra en suspensión. La pantalla puede apagarse.",
+  "settings.minFreeSpace": "Espacio libre a conservar",
+  "settings.minFreeSpaceHint": "Si la unidad tiene menos espacio libre, las nuevas descargas esperan en vez de fallar y siguen solas cuando hay sitio.",
+  "downloads.retryFailed": ["Reintentar {count} fallido", "Reintentar {count} fallidos"],
+  "downloads.exportFailed": "Exportar fallidos",
+  "downloads.exportedFailed": [
+    "Se guardó {count} archivo fallido",
+    "Se guardaron {count} archivos fallidos"
+  ],
+  "whenDone.label": "Al terminar",
+  "whenDone.nothing": "No hacer nada",
+  "whenDone.quit": "Cerrar la app",
+  "whenDone.sleep": "Suspender",
+  "whenDone.shutdown": "Apagar",
+  "whenDone.countdown.nothing": "Descargas terminadas",
+  "whenDone.countdown.quit": "Descargas terminadas. La app se cierra en {seconds} s.",
+  "whenDone.countdown.sleep": "Descargas terminadas. El equipo se suspende en {seconds} s.",
+  "whenDone.countdown.shutdown": "Descargas terminadas. El equipo se apaga en {seconds} s.",
+  "hold.schedule": "Las descargas esperan al horario de descarga, que empieza a las {time}.",
+  "hold.disk": "Descargas en espera: solo quedan {free} libres en la unidad (se conservan {need}).",
+  "hold.change": "Cambiar"
 }

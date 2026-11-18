@@ -317,5 +317,35 @@
     "{count} weiterer Treffer; mehr vom Namen eingeben, um einzugrenzen",
     "{count} weitere Treffer; mehr vom Namen eingeben, um einzugrenzen"
   ],
-  "creator.alsoOn": "Auch auf"
+  "creator.alsoOn": "Auch auf",
+  "settings.off": "Aus",
+  "settings.schedule": "Download-Zeitfenster",
+  "settings.scheduleHint": "Downloads nur in dieser Zeit starten, zum Beispiel nachts. Laufende Downloads gehen weiter.",
+  "settings.scheduleStart": "Beginn",
+  "settings.scheduleEnd": "Ende",
+  "settings.keepAwake": "Computer wach halten",
+  "settings.keepAwakeHint": "Solange Downloads laufen, geht der Computer nicht in den Ruhezustand. Der Bildschirm kann sich trotzdem ausschalten.",
+  "settings.minFreeSpace": "Frei lassen auf dem Laufwerk",
+  "settings.minFreeSpaceHint": "Hat das Laufwerk weniger frei, warten neue Downloads, statt fehlzuschlagen, und laufen von selbst weiter, sobald Platz ist.",
+  "downloads.retryFailed": [
+    "{count} fehlgeschlagenen wiederholen",
+    "{count} fehlgeschlagene wiederholen"
+  ],
+  "downloads.exportFailed": "Fehler exportieren",
+  "downloads.exportedFailed": [
+    "{count} fehlgeschlagene Datei gespeichert",
+    "{count} fehlgeschlagene Dateien gespeichert"
+  ],
+  "whenDone.label": "Danach",
+  "whenDone.nothing": "Nichts tun",
+  "whenDone.quit": "App beenden",
+  "whenDone.sleep": "Ruhezustand",
+  "whenDone.shutdown": "Herunterfahren",
+  "whenDone.countdown.nothing": "Downloads fertig",
+  "whenDone.countdown.quit": "Downloads fertig. Die App wird in {seconds} s beendet.",
+  "whenDone.countdown.sleep": "Downloads fertig. Der Computer geht in {seconds} s in den Ruhezustand.",
+  "whenDone.countdown.shutdown": "Downloads fertig. Der Computer fährt in {seconds} s herunter.",
+  "hold.schedule": "Downloads warten auf das Zeitfenster, das um {time} beginnt.",
+  "hold.disk": "Downloads warten: nur {free} frei auf dem Laufwerk ({need} bleiben frei).",
+  "hold.change": "Ändern"
 }

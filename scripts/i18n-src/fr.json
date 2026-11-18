@@ -317,5 +317,32 @@
     "{count} autre résultat ; tapez davantage du nom pour affiner",
     "{count} autres résultats ; tapez davantage du nom pour affiner"
   ],
-  "creator.alsoOn": "Aussi sur"
+  "creator.alsoOn": "Aussi sur",
+  "settings.off": "Désactivé",
+  "settings.schedule": "Plage de téléchargement",
+  "settings.scheduleHint": "Ne démarrer les téléchargements qu'entre ces heures, la nuit par exemple. Ceux en cours continuent.",
+  "settings.scheduleStart": "Début",
+  "settings.scheduleEnd": "Fin",
+  "settings.keepAwake": "Garder l'ordinateur éveillé",
+  "settings.keepAwakeHint": "Pendant les téléchargements, l'ordinateur ne se met pas en veille. L'écran peut s'éteindre.",
+  "settings.minFreeSpace": "Espace libre à garder",
+  "settings.minFreeSpaceHint": "Si le disque a moins d'espace libre, les nouveaux téléchargements attendent au lieu d'échouer et reprennent seuls quand il y a de la place.",
+  "downloads.retryFailed": ["Réessayer {count} échec", "Réessayer {count} échecs"],
+  "downloads.exportFailed": "Exporter les échecs",
+  "downloads.exportedFailed": [
+    "{count} fichier en échec enregistré",
+    "{count} fichiers en échec enregistrés"
+  ],
+  "whenDone.label": "À la fin",
+  "whenDone.nothing": "Ne rien faire",
+  "whenDone.quit": "Quitter l'application",
+  "whenDone.sleep": "Mettre en veille",
+  "whenDone.shutdown": "Éteindre",
+  "whenDone.countdown.nothing": "Téléchargements terminés",
+  "whenDone.countdown.quit": "Téléchargements terminés. L'application se ferme dans {seconds} s.",
+  "whenDone.countdown.sleep": "Téléchargements terminés. L'ordinateur se met en veille dans {seconds} s.",
+  "whenDone.countdown.shutdown": "Téléchargements terminés. L'ordinateur s'éteint dans {seconds} s.",
+  "hold.schedule": "Les téléchargements attendent la plage prévue, qui commence à {time}.",
+  "hold.disk": "Téléchargements en attente : seulement {free} libres sur le disque ({need} à garder).",
+  "hold.change": "Modifier"
 }

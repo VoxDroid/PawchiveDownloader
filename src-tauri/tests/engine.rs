@@ -1094,3 +1094,84 @@ async fn searches_the_creator_list_and_keeps_it_on_disk() {
         .unwrap();
     assert_eq!(again.search("aster", None, Sort::Relevance, 10).total, 1);
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn holds_downloads_for_a_full_disk_and_outside_the_window() {
+    use pawchive_downloader_lib::jobs::engine::Hold;
+    let env = env().await;
+    let a = Fixture::new("a.png", 300, 90);
+    env.mount_creator(vec![post("501", "One", &[&a])]).await;
+    env.serve(&a).await;
+    env.core.settings.write().min_free_space_mb = u32::MAX;
+    let mut held = None;
+    for _ in 0..200 {
+        held = env.core.engine.hold();
+        if held.is_some() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert!(matches!(held, Some(Hold::Disk { .. })), "{held:?}");
+    let id = env.core.engine.create(refs_request("501", no_text()));
+    tokio::time::sleep(Duration::from_millis(100)).await;
+    let job = env
+        .core
+        .engine
+        .summaries()
+        .into_iter()
+        .find(|j| j.id == id)
+        .unwrap();
+    assert_eq!(job.stats.done, 0, "nothing starts while held");
+
+    // A closed download window holds too.
+    let now = chrono::Local::now();
+    {
+        let mut s = env.core.settings.write();
+        s.min_free_space_mb = 0;
+        s.schedule_enabled = true;
+        s.schedule_start = (now + chrono::Duration::hours(2))
+            .format("%H:%M")
+            .to_string();
+        s.schedule_end = (now + chrono::Duration::hours(3))
+            .format("%H:%M")
+            .to_string();
+    }
+    for _ in 0..200 {
+        if matches!(env.core.engine.hold(), Some(Hold::Schedule { .. })) {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert!(matches!(
+        env.core.engine.hold(),
+        Some(Hold::Schedule { .. })
+    ));
+    env.core.settings.write().schedule_enabled = false;
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    assert_eq!(env.core.engine.hold(), None);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn runs_the_when_done_action_after_the_queue_empties() {
+    use pawchive_downloader_lib::power::WhenDone;
+    use std::sync::atomic::{AtomicBool, Ordering};
+    let env = env().await;
+    let a = Fixture::new("a.png", 300, 91);
+    env.mount_creator(vec![post("502", "One", &[&a])]).await;
+    env.serve(&a).await;
+    let quit = Arc::new(AtomicBool::new(false));
+    let flag = Arc::clone(&quit);
+    env.core
+        .set_on_quit(Arc::new(move || flag.store(true, Ordering::SeqCst)));
+    env.core.set_when_done(WhenDone::Quit);
+    let id = env.core.engine.create(refs_request("502", no_text()));
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    for _ in 0..300 {
+        if quit.load(Ordering::SeqCst) {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    assert!(quit.load(Ordering::SeqCst), "the app was asked to quit");
+    assert_eq!(env.core.queue_status().when_done, WhenDone::Nothing);
+}

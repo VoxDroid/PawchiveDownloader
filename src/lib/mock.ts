@@ -10,8 +10,10 @@ import {
   type LogEntry,
   type Post,
   type PostFile,
+  type QueueStatus,
   type Settings,
   type WatchEntry,
+  type WhenDone,
 } from './types';
 
 /**
@@ -200,6 +202,7 @@ export function createMockBackend(): Backend {
   const aster = CREATORS[0] as Creator;
   const moss = CREATORS[1] as Creator;
 
+  let queue: QueueStatus = { hold: null, whenDone: 'nothing', actionAt: null, awake: false };
   let jobs: JobSummary[] = [
     summary({
       id: 'j1',
@@ -616,6 +619,15 @@ export function createMockBackend(): Backend {
         return [j];
       });
       emit('jobs', jobs);
+    },
+    queue_status: () => queue,
+    set_when_done: ({ action }) => {
+      queue = { ...queue, whenDone: action as WhenDone };
+      emit('queue', queue);
+    },
+    cancel_when_done: () => {
+      queue = { ...queue, whenDone: 'nothing', actionAt: null };
+      emit('queue', queue);
     },
     jobs_action_all: ({ action }) => {
       jobs = jobs.map((j) =>

@@ -6,7 +6,8 @@
   import { cubicOut } from 'svelte/easing';
   import { api } from '../../lib/api';
   import { SUPPORT_PROMPT_AFTER } from '../../lib/links';
-  import type { ItemView, JobAction } from '../../lib/types';
+  import type { ItemView, JobAction, WhenDone } from '../../lib/types';
+  import { saveTextFile, stamp } from '../../lib/files';
   import type { IconName } from '../../ui/icons.generated';
   import { app, fmt, overallProgress, t } from '../../ui/state/app.svelte';
   import { go } from '../../ui/state/router.svelte';
@@ -17,6 +18,7 @@
   import IconButton from '../../ui/components/IconButton.svelte';
   import JobCard from '../../ui/components/JobCard.svelte';
   import Segmented from '../../ui/components/Segmented.svelte';
+  import Select from '../../ui/components/Select.svelte';
   import SupportCard from '../../ui/components/SupportCard.svelte';
   import VirtualList from '../../ui/components/VirtualList.svelte';
   import PageHeader from '../../ui/layout/PageHeader.svelte';
@@ -52,6 +54,7 @@
     ),
   );
   const anyPaused = $derived(app.jobs.some((j) => j.status === 'paused'));
+  const failedCount = $derived(app.jobs.reduce((n, j) => n + j.stats.failed, 0));
   const items = $derived(
     (detail ?? []).filter((i) => itemFilter === 'all' || i.status === 'failed'),
   );
@@ -97,8 +100,33 @@
     }
   }
 
-  async function all(action: 'pause' | 'resume') {
+  async function all(action: 'pause' | 'resume' | 'retry') {
     await api.jobsActionAll(action);
+  }
+
+  /** Writes every failed item (post link, file, error) to a text file. */
+  async function exportFailed() {
+    const lines: string[] = [];
+    for (const job of app.jobs.filter((j) => j.stats.failed > 0)) {
+      const items = await api.jobItems(job.id).catch(() => []);
+      for (const item of items.filter((i) => i.status === 'failed')) {
+        const post = job.creator
+          ? `https://pawchive.pw/${job.creator.service}/user/${job.creator.id}/post/${item.postId}`
+          : item.postId;
+        lines.push([post, item.label, item.error ?? ''].join('\t'));
+      }
+    }
+    if (!lines.length) return;
+    const path = await saveTextFile(
+      `pawchive-failed-${stamp()}.txt`,
+      `${lines.join('\n')}\n`,
+      t('downloads.exportFailed'),
+    );
+    if (path) toast(t('downloads.exportedFailed', { count: lines.length }), 'success');
+  }
+
+  function whenDone(action: WhenDone) {
+    void api.setWhenDone(action);
   }
 
   async function act(jobId: string, action: JobAction) {
@@ -155,6 +183,12 @@
     {#if anyPaused}<Button icon="play" onclick={() => all('resume')}>
         {t('downloads.resumeAll')}
       </Button>{/if}
+    {#if failedCount}<Button icon="retry" onclick={() => all('retry')}>
+        {t('downloads.retryFailed', { count: failedCount })}
+      </Button>
+      <Button variant="ghost" icon="export" onclick={exportFailed}>
+        {t('downloads.exportFailed')}
+      </Button>{/if}
     <Button
       variant="ghost"
       icon="trash"
@@ -202,6 +236,21 @@
       { value: 'finished', label: t('downloads.filterFinished') },
     ]}
   />
+  <label class="when-done">
+    <Icon name="power" />
+    <span class="faint">{t('whenDone.label')}</span>
+    <Select
+      label={t('whenDone.label')}
+      value={app.queue.whenDone}
+      onchange={whenDone}
+      options={[
+        { value: 'nothing', label: t('whenDone.nothing') },
+        { value: 'quit', label: t('whenDone.quit') },
+        { value: 'sleep', label: t('whenDone.sleep') },
+        { value: 'shutdown', label: t('whenDone.shutdown') },
+      ]}
+    />
+  </label>
 </div>
 
 {#if jobs.length === 0}
@@ -351,6 +400,13 @@
 {/if}
 
 <style>
+  .when-done {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    font-size: var(--fs-sm);
+  }
   .support {
     margin-bottom: 20px;
   }
@@ -381,6 +437,9 @@
   }
   .toolbar {
     display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px 16px;
     margin-bottom: 14px;
   }
   .toolbar :global(.segmented) {

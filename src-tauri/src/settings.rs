@@ -20,6 +20,15 @@ pub const MAX_CONCURRENCY: u32 = 5;
 /// ...and at most one new request a second.
 pub const MIN_REQUEST_INTERVAL_MS: u32 = 1000;
 pub const WATCH_INTERVALS: [u32; 6] = [0, 60, 180, 360, 720, 1440];
+/// Choices for the free space the download drive must keep (MB; 0 is off).
+pub const FREE_SPACE_LIMITS: [u32; 6] = [0, 512, 1024, 2048, 5120, 10240];
+
+/// `HH:MM` in 24-hour time, or None.
+pub fn parse_clock(value: &str) -> Option<(u32, u32)> {
+    let (h, m) = value.trim().split_once(':')?;
+    let (h, m) = (h.parse::<u32>().ok()?, m.parse::<u32>().ok()?);
+    (h < 24 && m < 60).then_some((h, m))
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -88,6 +97,14 @@ pub struct Settings {
     pub categories: BTreeMap<FileCategory, bool>,
     /// Bytes per second over all transfers; 0 is unlimited.
     pub speed_limit_kbps: u32,
+    /// Keep the computer from sleeping while downloads run.
+    pub keep_awake: bool,
+    /// Hold new downloads when the drive has less than this free (MB, 0 off).
+    pub min_free_space_mb: u32,
+    /// Only start downloads between `schedule_start` and `schedule_end`.
+    pub schedule_enabled: bool,
+    pub schedule_start: String,
+    pub schedule_end: String,
     /// One click: every category, no prompts, batch input on.
     pub fast_mode: bool,
     // ZIP
@@ -151,6 +168,11 @@ impl Default for Settings {
             save_announcements: false,
             categories: FileCategory::ALL.iter().map(|c| (*c, true)).collect(),
             speed_limit_kbps: 0,
+            keep_awake: true,
+            min_free_space_mb: 1024,
+            schedule_enabled: false,
+            schedule_start: "01:00".into(),
+            schedule_end: "07:00".into(),
             fast_mode: false,
             zip_max_size_mb: 0,
             zip_videos_separately: false,
@@ -196,6 +218,13 @@ fn int_in(value: Option<&Value>, min: u32, max: u32, fallback: u32) -> u32 {
 
 fn boolean(value: Option<&Value>, fallback: bool) -> bool {
     value.and_then(Value::as_bool).unwrap_or(fallback)
+}
+
+fn clock(value: Option<&Value>, fallback: &str) -> String {
+    match value.and_then(Value::as_str).and_then(parse_clock) {
+        Some((h, m)) => format!("{h:02}:{m:02}"),
+        None => fallback.to_string(),
+    }
 }
 
 fn enum_of<T: for<'de> Deserialize<'de>>(value: Option<&Value>, fallback: T) -> T {
@@ -293,6 +322,15 @@ pub fn coerce(input: &Value) -> Settings {
         save_announcements: boolean(g("saveAnnouncements"), d.save_announcements),
         categories,
         speed_limit_kbps: int_in(g("speedLimitKbps"), 0, 1_000_000, d.speed_limit_kbps),
+        keep_awake: boolean(g("keepAwake"), d.keep_awake),
+        min_free_space_mb: g("minFreeSpaceMb")
+            .and_then(Value::as_u64)
+            .map(|v| v as u32)
+            .filter(|v| FREE_SPACE_LIMITS.contains(v))
+            .unwrap_or(d.min_free_space_mb),
+        schedule_enabled: boolean(g("scheduleEnabled"), d.schedule_enabled),
+        schedule_start: clock(g("scheduleStart"), &d.schedule_start),
+        schedule_end: clock(g("scheduleEnd"), &d.schedule_end),
         fast_mode: boolean(g("fastMode"), d.fast_mode),
         zip_max_size_mb: int_in(g("zipMaxSizeMb"), 0, 1_000_000, d.zip_max_size_mb),
         zip_videos_separately: boolean(g("zipVideosSeparately"), d.zip_videos_separately),
@@ -393,6 +431,11 @@ mod tests {
         assert_eq!(s.download_dir, default_download_dir());
         assert_eq!(s.watch_interval_minutes, 360);
         assert_eq!(s.proxy.mode, ProxyMode::Tor);
+        let s =
+            coerce(&json!({"scheduleStart": "9:5", "scheduleEnd": "24:00", "minFreeSpaceMb": 7}));
+        assert_eq!(s.schedule_start, "09:05");
+        assert_eq!(s.schedule_end, "07:00");
+        assert_eq!(s.min_free_space_mb, 1024);
     }
 
     #[test]

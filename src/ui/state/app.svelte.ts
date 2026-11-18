@@ -17,6 +17,7 @@ import {
   type JobSummary,
   type Locale,
   type LogEntry,
+  type QueueStatus,
   type Settings,
   type UpdateInfo,
 } from '../../lib/types';
@@ -35,6 +36,7 @@ export const app = $state({
   systemDark: true,
   info: null as AppInfo | null,
   update: null as UpdateInfo | null,
+  queue: { hold: null, whenDone: 'nothing', actionAt: null, awake: false } as QueueStatus,
 });
 
 const logListeners = new Set<(entry: LogEntry) => void>();
@@ -49,12 +51,14 @@ let started: Promise<void> | null = null;
 
 export function startApp(): Promise<void> {
   started ??= (async () => {
-    const [settings, info, jobs, watch] = await Promise.all([
+    const [settings, info, jobs, watch, queue] = await Promise.all([
       api.getSettings(),
       api.appInfo(),
       api.listJobs(),
       api.listWatch(),
+      api.queueStatus(),
     ]);
+    app.queue = queue;
     applySettings(settings);
     app.info = info;
     app.jobs = jobs;
@@ -67,6 +71,9 @@ export function startApp(): Promise<void> {
         app.jobs = jobs;
       }),
       on<Settings>('settings', applySettings),
+      on<QueueStatus>('queue', (q) => {
+        app.queue = q;
+      }),
       on<{ newCount: number; checking: boolean }>('watch', (w) => {
         app.watchNew = w.newCount;
         app.watchChecking = w.checking;

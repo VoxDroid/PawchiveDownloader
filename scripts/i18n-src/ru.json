@@ -344,5 +344,37 @@
     "Ещё {count} совпадения; уточните имя",
     "Ещё {count} совпадений; уточните имя"
   ],
-  "creator.alsoOn": "Также на"
+  "creator.alsoOn": "Также на",
+  "settings.off": "Выкл.",
+  "settings.schedule": "Окно загрузки",
+  "settings.scheduleHint": "Начинать загрузки только в это время, например ночью. Уже идущие загрузки продолжаются.",
+  "settings.scheduleStart": "Начало",
+  "settings.scheduleEnd": "Конец",
+  "settings.keepAwake": "Не давать компьютеру уснуть",
+  "settings.keepAwakeHint": "Пока идут загрузки, компьютер не уходит в сон. Экран может гаснуть.",
+  "settings.minFreeSpace": "Оставлять свободным",
+  "settings.minFreeSpaceHint": "Если на диске меньше свободного места, новые загрузки ждут, а не завершаются ошибкой, и продолжаются сами, когда место появится.",
+  "downloads.retryFailed": [
+    "Повторить {count} неудачную",
+    "Повторить {count} неудачные",
+    "Повторить {count} неудачных"
+  ],
+  "downloads.exportFailed": "Экспорт ошибок",
+  "downloads.exportedFailed": [
+    "Сохранён {count} неудачный файл",
+    "Сохранено {count} неудачных файла",
+    "Сохранено {count} неудачных файлов"
+  ],
+  "whenDone.label": "По завершении",
+  "whenDone.nothing": "Ничего не делать",
+  "whenDone.quit": "Закрыть программу",
+  "whenDone.sleep": "Сон",
+  "whenDone.shutdown": "Выключить",
+  "whenDone.countdown.nothing": "Загрузки завершены",
+  "whenDone.countdown.quit": "Загрузки завершены. Программа закроется через {seconds} с.",
+  "whenDone.countdown.sleep": "Загрузки завершены. Компьютер уснёт через {seconds} с.",
+  "whenDone.countdown.shutdown": "Загрузки завершены. Компьютер выключится через {seconds} с.",
+  "hold.schedule": "Загрузки ждут окна загрузки, оно откроется в {time}.",
+  "hold.disk": "Загрузки ждут: на диске свободно только {free} (нужно оставить {need}).",
+  "hold.change": "Изменить"
 }

@@ -314,5 +314,32 @@
     "Mais {count} resultado; digite mais do nome para filtrar",
     "Mais {count} resultados; digite mais do nome para filtrar"
   ],
-  "creator.alsoOn": "Também em"
+  "creator.alsoOn": "Também em",
+  "settings.off": "Desligado",
+  "settings.schedule": "Janela de download",
+  "settings.scheduleHint": "Só inicia downloads entre estes horários, por exemplo à noite. Os que estão em andamento continuam.",
+  "settings.scheduleStart": "Início",
+  "settings.scheduleEnd": "Fim",
+  "settings.keepAwake": "Manter o computador acordado",
+  "settings.keepAwakeHint": "Enquanto houver downloads, o computador não entra em suspensão. A tela ainda pode desligar.",
+  "settings.minFreeSpace": "Espaço livre a manter",
+  "settings.minFreeSpaceHint": "Se o disco tiver menos espaço livre, novos downloads esperam em vez de falhar e continuam sozinhos quando houver espaço.",
+  "downloads.retryFailed": ["Tentar de novo {count} com falha", "Tentar de novo {count} com falha"],
+  "downloads.exportFailed": "Exportar falhas",
+  "downloads.exportedFailed": [
+    "{count} arquivo com falha salvo na lista",
+    "{count} arquivos com falha salvos na lista"
+  ],
+  "whenDone.label": "Ao terminar",
+  "whenDone.nothing": "Não fazer nada",
+  "whenDone.quit": "Fechar o app",
+  "whenDone.sleep": "Suspender",
+  "whenDone.shutdown": "Desligar",
+  "whenDone.countdown.nothing": "Downloads concluídos",
+  "whenDone.countdown.quit": "Downloads concluídos. O app fecha em {seconds} s.",
+  "whenDone.countdown.sleep": "Downloads concluídos. O computador suspende em {seconds} s.",
+  "whenDone.countdown.shutdown": "Downloads concluídos. O computador desliga em {seconds} s.",
+  "hold.schedule": "Os downloads aguardam a janela de download, que abre às {time}.",
+  "hold.disk": "Downloads aguardando: só {free} livres no disco (mantendo {need}).",
+  "hold.change": "Alterar"
 }

@@ -35,6 +35,22 @@ pub fn now_ms() -> i64 {
 }
 
 /// Notified when a job ends (for notifications and the watchlist).
+/// Why no new transfer starts right now, although downloads are queued.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+#[serde(tag = "kind", rename_all = "camelCase")]
+pub enum Hold {
+    /// Outside the download window; it opens at this time (epoch ms).
+    #[serde(rename_all = "camelCase")]
+    Schedule { opens_at: i64 },
+    /// The download drive is nearly full.
+    #[serde(rename_all = "camelCase")]
+    Disk {
+        free: u64,
+        need: u64,
+        folder: String,
+    },
+}
+
 pub trait Hooks: Send + Sync {
     /// `still_running` counts the jobs that have not finished yet, so the
     /// app can wait for the whole batch before it notifies.
@@ -193,6 +209,10 @@ pub struct Engine {
     /// without one (Tauri runs synchronous commands on the main thread), so
     /// the engine keeps its own handle instead of relying on the caller's.
     runtime: std::sync::OnceLock<tokio::runtime::Handle>,
+    hold: RwLock<Option<Hold>>,
+    /// Jobs finished since the app started, so watchers notice even a job
+    /// that came and went between two of their checks.
+    finished_total: AtomicU64,
 }
 
 /// The message of a caught panic, for the log and the item's error.
@@ -229,7 +249,60 @@ impl Engine {
             runtime: tokio::runtime::Handle::try_current()
                 .map(std::sync::OnceLock::from)
                 .unwrap_or_default(),
+            hold: RwLock::new(None),
+            finished_total: AtomicU64::new(0),
         })
+    }
+
+    pub fn hold(&self) -> Option<Hold> {
+        self.hold.read().clone()
+    }
+
+    /// Stops (Some) or allows (None) new transfers. Running ones go on.
+    /// Returns whether it changed.
+    pub fn set_hold(&self, hold: Option<Hold>) -> bool {
+        let changed = {
+            let mut current = self.hold.write();
+            let changed = *current != hold;
+            *current = hold;
+            changed
+        };
+        if changed {
+            self.changed();
+            self.wake.notify_one();
+        }
+        changed
+    }
+
+    /// Download folders of the jobs that still have something to fetch.
+    pub fn pending_folders(&self) -> Vec<String> {
+        let state = self.state.lock();
+        let mut out: Vec<String> = Vec::new();
+        for job in state.jobs.iter().filter(|j| runnable(j)) {
+            let waiting = job.status == JobStatus::Resolving
+                || job
+                    .items
+                    .iter()
+                    .any(|i| matches!(i.status, ItemStatus::Pending | ItemStatus::Active));
+            if waiting && !out.contains(&job.options.download_dir) {
+                out.push(job.options.download_dir.clone());
+            }
+        }
+        out
+    }
+
+    /// Any job not finished yet, paused ones included.
+    pub fn has_unfinished(&self) -> bool {
+        self.state.lock().jobs.iter().any(|j| !j.status.finished())
+    }
+
+    pub fn finished_total(&self) -> u64 {
+        self.finished_total.load(Ordering::Relaxed)
+    }
+
+    /// Transfers running right now.
+    pub fn active_count(&self) -> usize {
+        self.state.lock().active.len()
     }
 
     /// Gives the engine the runtime to spawn its tasks on.
@@ -1080,7 +1153,7 @@ impl Engine {
 
     /// Starts as many pending items as the concurrency setting allows.
     pub fn pump(self: &Arc<Self>) {
-        if self.shutdown.is_cancelled() {
+        if self.shutdown.is_cancelled() || self.hold.read().is_some() {
             return;
         }
         let concurrency = self.settings.read().concurrency.max(1) as usize;
@@ -1721,6 +1794,7 @@ impl Engine {
             return;
         };
         job.finished_at = Some(now_ms());
+        self.finished_total.fetch_add(1, Ordering::Relaxed);
         let stats = compute_stats(&job.items);
         let targets: Vec<PathBuf> = job
             .items

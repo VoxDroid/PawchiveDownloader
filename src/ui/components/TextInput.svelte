@@ -7,7 +7,7 @@
     placeholder?: string;
     label: string;
     icon?: IconName;
-    type?: 'text' | 'search' | 'date' | 'url' | 'number';
+    type?: 'text' | 'search' | 'date' | 'url' | 'number' | 'time';
     invalid?: boolean;
     mono?: boolean;
     clearable?: boolean;

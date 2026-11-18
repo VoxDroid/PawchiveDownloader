@@ -317,6 +317,48 @@
       options={SPEEDS.map((kb) => ({ value: kb, label: speedLabel(kb) }))}
     />
   </SettingRow>
+  <SettingRow label={t('settings.schedule')} description={t('settings.scheduleHint')}>
+    {#if s.scheduleEnabled}
+      <span class="clock">
+        <TextInput
+          type="time"
+          label={t('settings.scheduleStart')}
+          value={s.scheduleStart}
+          onchange={(v) => v && set('scheduleStart', v)}
+        />
+        <span class="faint">-</span>
+        <TextInput
+          type="time"
+          label={t('settings.scheduleEnd')}
+          value={s.scheduleEnd}
+          onchange={(v) => v && set('scheduleEnd', v)}
+        />
+      </span>
+    {/if}
+    <Switch
+      label={t('settings.schedule')}
+      checked={s.scheduleEnabled}
+      onchange={(v) => set('scheduleEnabled', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.keepAwake')} description={t('settings.keepAwakeHint')}>
+    <Switch
+      label={t('settings.keepAwake')}
+      checked={s.keepAwake}
+      onchange={(v) => set('keepAwake', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.minFreeSpace')} description={t('settings.minFreeSpaceHint')}>
+    <Select
+      label={t('settings.minFreeSpace')}
+      value={s.minFreeSpaceMb}
+      onchange={(v) => set('minFreeSpaceMb', v)}
+      options={[0, 512, 1024, 2048, 5120, 10240].map((mb) => ({
+        value: mb,
+        label: mb === 0 ? t('settings.off') : fmt.bytes(mb * 1024 * 1024),
+      }))}
+    />
+  </SettingRow>
   <SettingRow label={t('settings.retries')} description={t('settings.retriesHint')}>
     <Select
       label={t('settings.retries')}
@@ -707,6 +749,14 @@
 </Dialog>
 
 <style>
+  .clock {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .clock :global(.field) {
+    width: 110px;
+  }
   .filters {
     padding: 16px 18px;
   }

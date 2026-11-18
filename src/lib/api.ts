@@ -18,10 +18,12 @@ import type {
   ParsedLink,
   PostPage,
   PostView,
+  QueueStatus,
   Settings,
   TemplatePreview,
   UpdateInfo,
   WatchEntry,
+  WhenDone,
 } from './types';
 
 /**
@@ -126,7 +128,11 @@ export const api = {
   listJobs: () => call<JobSummary[]>('list_jobs'),
   jobItems: (jobId: string) => call<ItemView[]>('job_items', { jobId }),
   jobAction: (jobId: string, action: JobAction) => call<void>('job_action', { jobId, action }),
-  jobsActionAll: (action: 'pause' | 'resume') => call<void>('jobs_action_all', { action }),
+  jobsActionAll: (action: 'pause' | 'resume' | 'retry') =>
+    call<void>('jobs_action_all', { action }),
+  queueStatus: () => call<QueueStatus>('queue_status'),
+  setWhenDone: (action: WhenDone) => call<void>('set_when_done', { action }),
+  cancelWhenDone: () => call<void>('cancel_when_done'),
   clearFinished: () => call<void>('clear_finished'),
   retryItem: (jobId: string, itemId: string) => call<void>('retry_item', { jobId, itemId }),
 
