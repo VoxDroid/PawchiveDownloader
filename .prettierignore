@@ -1,0 +1,10 @@
+dist
+coverage
+node_modules
+pnpm-lock.yaml
+src-tauri/target
+src-tauri/gen
+src/lib/i18n/locales
+src/ui/icons.generated.ts
+playwright-report
+test-results

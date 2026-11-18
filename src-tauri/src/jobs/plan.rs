@@ -1,0 +1,493 @@
+//! Turns posts into download items.
+
+use std::collections::HashSet;
+
+use crate::naming::template::{
+    build_archive_path, build_file_path, build_folder_path, NameContext,
+};
+use crate::pawchive::normalize::html_to_text;
+use crate::pawchive::types::{FileCategory, Post, PostFile};
+use crate::settings::{ContentFormat, DownloadMode, PreviewOnlyAction};
+
+use super::model::*;
+
+fn name_context(
+    post: &Post,
+    creator: Option<&CreatorInfo>,
+    file: Option<&PostFile>,
+    now_ms: i64,
+) -> NameContext {
+    NameContext {
+        service: post.service.clone(),
+        creator_id: post.creator_id.clone(),
+        creator_name: creator
+            .map(|c| c.name.clone())
+            .unwrap_or_else(|| post.creator_id.clone()),
+        post_id: post.id.clone(),
+        post_title: post.title.clone(),
+        published: post.published.clone(),
+        added: post.added.clone(),
+        index: file.map(|f| f.index).unwrap_or(0),
+        count: post.files.len() as u32,
+        file_name: file.map(|f| f.name.clone()).unwrap_or_default(),
+        ext: file.map(|f| f.ext.clone()).unwrap_or_default(),
+        hash: file.and_then(|f| f.hash.clone()),
+        role: file
+            .map(|f| f.role.as_str().to_string())
+            .unwrap_or_default(),
+        now_ms: Some(now_ms),
+    }
+}
+
+/// `name.png` becomes `name_preview.png`, as KemonoDownloader names previews.
+fn preview_file(file: &PostFile) -> PostFile {
+    let stem = match file.name.rfind('.') {
+        Some(dot) if dot > 0 => &file.name[..dot],
+        _ => &file.name,
+    };
+    let ext = if file.ext.is_empty() {
+        "jpg".to_string()
+    } else {
+        file.ext.clone()
+    };
+    PostFile {
+        name: format!("{stem}_preview.{ext}"),
+        ext,
+        ..file.clone()
+    }
+}
+
+pub fn metadata_json(post: &Post, creator: Option<&CreatorInfo>) -> String {
+    let files: Vec<_> = post
+        .files
+        .iter()
+        .map(|f| {
+            serde_json::json!({
+                "index": f.index, "name": f.name, "role": f.role, "hash": f.hash,
+                "url": f.url, "previewOnly": f.preview_only,
+            })
+        })
+        .collect();
+    let value = serde_json::json!({
+        "id": post.id,
+        "service": post.service,
+        "creator": { "id": post.creator_id, "name": creator.map(|c| c.name.clone()) },
+        "title": post.title,
+        "published": post.published,
+        "added": post.added,
+        "edited": post.edited,
+        "tags": post.tags,
+        "url": post.url,
+        "files": files,
+    });
+    format!("{}\n", serde_json::to_string_pretty(&value).unwrap())
+}
+
+fn escape_html(text: &str) -> String {
+    text.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+}
+
+fn content_html_document(post: &Post) -> String {
+    let title = escape_html(&post.title);
+    format!(
+        "<!doctype html>\n<html><head><meta charset=\"utf-8\"><title>{title}</title></head>\n<body>\n<h1>{title}</h1>\n<p><a href=\"{url}\">{url}</a></p>\n{body}\n</body></html>\n",
+        url = escape_html(&post.url),
+        body = post.content_html
+    )
+}
+
+fn content_text(post: &Post) -> String {
+    let mut header = vec![post.title.clone()];
+    if let Some(p) = &post.published {
+        header.push(format!("Published: {p}"));
+    }
+    header.push(post.url.clone());
+    let header: Vec<_> = header.into_iter().filter(|s| !s.is_empty()).collect();
+    format!(
+        "{}\n\n{}\n",
+        header.join("\n"),
+        html_to_text(&post.content_html)
+    )
+}
+
+struct Planned {
+    file: PostFile,
+    path: String,
+    entry_name: String,
+    url: Option<String>,
+    relay: bool,
+    skip: Option<SkipReason>,
+    fallback: bool,
+}
+
+fn plan_file(
+    post: &Post,
+    creator: Option<&CreatorInfo>,
+    original: &PostFile,
+    options: &JobOptions,
+    known: &HashSet<String>,
+    now_ms: i64,
+) -> Planned {
+    let mut file = original.clone();
+    let mut url = file.url.clone();
+    let mut relay = false;
+    let mut skip = None;
+    let mut fallback = false;
+
+    if options.mode == DownloadMode::Thumbnails {
+        url = file.thumbnail_url.clone();
+        file = preview_file(&file);
+        fallback = true;
+    } else if file.preview_only {
+        match options.preview_only {
+            PreviewOnlyAction::Relay => relay = true,
+            PreviewOnlyAction::Thumbnail if file.thumbnail_url.is_some() => {
+                url = file.thumbnail_url.clone();
+                file = preview_file(&file);
+                fallback = true;
+            }
+            _ => skip = Some(SkipReason::PreviewOnly),
+        }
+    }
+    if skip.is_none() && options.skip_downloaded && !fallback {
+        if let Some(hash) = &file.hash {
+            if known.contains(hash) {
+                skip = Some(SkipReason::Duplicate);
+            }
+        }
+    }
+    let ctx = name_context(post, creator, Some(&file), now_ms);
+    let path = build_file_path(&options.folder_template, &options.file_template, &ctx);
+    let entry_name = build_file_path("", &options.file_template, &ctx);
+    Planned {
+        file,
+        path,
+        entry_name,
+        url,
+        relay,
+        skip,
+        fallback,
+    }
+}
+
+fn base_item(post: &Post, id: String, label: String, path: String, kind: ItemKind) -> Item {
+    Item {
+        id,
+        post: PostRef {
+            service: post.service.clone(),
+            creator_id: post.creator_id.clone(),
+            post_id: post.id.clone(),
+        },
+        label,
+        path,
+        target: None,
+        status: ItemStatus::Pending,
+        attempts: 0,
+        bytes: 0,
+        total_bytes: 0,
+        error: None,
+        skip_reason: None,
+        not_before: None,
+        fallback: false,
+        kind,
+    }
+}
+
+fn file_item(post: &Post, p: &Planned) -> Item {
+    let mut item = base_item(
+        post,
+        format!("{}:{}", post.id, p.file.index),
+        p.file.name.clone(),
+        p.path.clone(),
+        ItemKind::File {
+            source: FileSource {
+                url: p.url.clone(),
+                relay: p.relay,
+                path: p.file.path.clone(),
+                name: p.file.name.clone(),
+                thumbnail: if p.fallback {
+                    None
+                } else {
+                    p.file.thumbnail_url.clone()
+                },
+            },
+            hash: if p.fallback {
+                None
+            } else {
+                p.file.hash.clone()
+            },
+            category: p.file.category,
+        },
+    );
+    item.fallback = p.fallback;
+    if let Some(skip) = p.skip {
+        item.status = ItemStatus::Skipped;
+        item.skip_reason = Some(skip);
+    }
+    item
+}
+
+/// Turns one post into download items: a file item per file (or a single ZIP
+/// item holding them), plus the post text and metadata when asked for.
+///
+/// `file_indexes` is an explicit user selection and wins over the category
+/// filter; without it the job's categories decide.
+pub fn plan_post(
+    post: &Post,
+    creator: Option<&CreatorInfo>,
+    options: &JobOptions,
+    file_indexes: Option<&[u32]>,
+    known: &HashSet<String>,
+    now_ms: i64,
+) -> Vec<Item> {
+    let chosen: Vec<&PostFile> = match file_indexes {
+        Some(indexes) => post
+            .files
+            .iter()
+            .filter(|f| indexes.contains(&f.index))
+            .collect(),
+        None => post
+            .files
+            .iter()
+            .filter(|f| options.categories.contains(&f.category))
+            .collect(),
+    };
+    let thumbnails = options.mode == DownloadMode::Thumbnails;
+    let planned: Vec<Planned> = chosen
+        .into_iter()
+        .filter(|f| !thumbnails || f.thumbnail_url.is_some())
+        .map(|f| plan_file(post, creator, f, options, known, now_ms))
+        .collect();
+    let folder_ctx = name_context(post, creator, None, now_ms);
+    let folder = build_folder_path(&options.folder_template, &folder_ctx);
+    let in_folder = |name: &str| {
+        if folder.is_empty() {
+            name.to_string()
+        } else {
+            format!("{folder}/{name}")
+        }
+    };
+
+    let mut texts: Vec<(&str, String)> = Vec::new();
+    let already_saved = !planned.is_empty()
+        && planned
+            .iter()
+            .all(|p| p.skip == Some(SkipReason::Duplicate));
+    let has_content = !already_saved && !html_to_text(&post.content_html).is_empty();
+    // The thumbnail mode always keeps the description, like KemonoDownloader's.
+    let content = if thumbnails && options.save_content == ContentFormat::None {
+        ContentFormat::Txt
+    } else {
+        options.save_content
+    };
+    if has_content && matches!(content, ContentFormat::Txt | ContentFormat::Both) {
+        texts.push(("content.txt", content_text(post)));
+    }
+    if has_content && matches!(content, ContentFormat::Html | ContentFormat::Both) {
+        texts.push(("content.html", content_html_document(post)));
+    }
+    if options.save_metadata {
+        texts.push(("post.json", metadata_json(post, creator)));
+    }
+    let text_item = |name: &str, text: &String| {
+        base_item(
+            post,
+            format!("{}:{name}", post.id),
+            name.to_string(),
+            in_folder(name),
+            ItemKind::Text { text: text.clone() },
+        )
+    };
+
+    if options.mode != DownloadMode::Zip {
+        let mut items: Vec<Item> = planned.iter().map(|p| file_item(post, p)).collect();
+        items.extend(texts.iter().map(|(n, t)| text_item(n, t)));
+        return items;
+    }
+
+    // ZIP mode: one archive per post. Skipped files are still listed so the
+    // job report can say why they are missing; videos may go alongside.
+    let mut items = Vec::new();
+    let mut entries = Vec::new();
+    for p in &planned {
+        let separate = options.zip_videos_separately && p.file.category == FileCategory::Video;
+        if p.skip.is_some() || separate {
+            items.push(file_item(post, p));
+            continue;
+        }
+        entries.push(ZipEntry {
+            name: p.entry_name.clone(),
+            source: Some(FileSource {
+                url: p.url.clone(),
+                relay: p.relay,
+                path: p.file.path.clone(),
+                name: p.file.name.clone(),
+                thumbnail: if p.fallback {
+                    None
+                } else {
+                    p.file.thumbnail_url.clone()
+                },
+            }),
+            text: None,
+            hash: if p.fallback {
+                None
+            } else {
+                p.file.hash.clone()
+            },
+            category: p.file.category,
+            fetched: false,
+            failed: false,
+        });
+    }
+    if entries.iter().any(|e| e.source.is_some()) {
+        for (name, text) in &texts {
+            entries.push(ZipEntry {
+                name: name.to_string(),
+                source: None,
+                text: Some(text.clone()),
+                hash: None,
+                category: FileCategory::Text,
+                fetched: true,
+                failed: false,
+            });
+        }
+        let archive = build_archive_path(
+            &options.folder_template,
+            &options.archive_template,
+            &folder_ctx,
+        );
+        let label = archive
+            .rsplit('/')
+            .next()
+            .unwrap_or("archive.zip")
+            .to_string();
+        items.insert(
+            0,
+            base_item(
+                post,
+                format!("{}:zip", post.id),
+                label,
+                archive,
+                ItemKind::Zip { entries, parts: 0 },
+            ),
+        );
+    } else {
+        // Nothing binary left to archive: save the texts as plain files instead.
+        items.extend(texts.iter().map(|(n, t)| text_item(n, t)));
+    }
+    items
+}
+
+/// Hashes of every file a set of posts would download (for duplicate checks).
+pub fn hashes_of<'a>(posts: impl IntoIterator<Item = &'a Post>) -> Vec<String> {
+    let mut seen = HashSet::new();
+    posts
+        .into_iter()
+        .flat_map(|p| p.files.iter().filter_map(|f| f.hash.clone()))
+        .filter(|h| seen.insert(h.clone()))
+        .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::pawchive::normalize::normalize_post;
+    use crate::settings::Settings;
+
+    fn post() -> Post {
+        let a = "a".repeat(64);
+        let b = "b".repeat(64);
+        normalize_post(serde_json::from_value(serde_json::json!({
+            "id": "1", "user": "9", "service": "patreon", "title": "T", "published": "2026-01-02T00:00:00",
+            "content": "<p>Body</p>",
+            "file": {"name": "a.png", "path": format!("/aa/aa/{a}.png"), "server": "https://n1.pawchive.pw"},
+            "attachments": [
+                {"name": "v.mp4", "path": format!("/bb/bb/{b}.mp4"), "server": "https://n1.pawchive.pw"},
+                {"name": "p.jpg", "path": format!("/cc/cc/{}.jpg", "c".repeat(64)), "preview_only": true}
+            ]
+        })).unwrap())
+    }
+
+    fn options(f: impl FnOnce(&mut Settings)) -> JobOptions {
+        let mut s = Settings {
+            download_dir: "/dl".into(),
+            ..Default::default()
+        };
+        f(&mut s);
+        JobOptions::from_settings(&s, &JobOverrides::default())
+    }
+
+    #[test]
+    fn plans_individual_files_and_text() {
+        let items = plan_post(&post(), None, &options(|_| {}), None, &HashSet::new(), 0);
+        assert_eq!(items.len(), 4);
+        assert_eq!(
+            items[0].path,
+            "Pawchive/9 (patreon)/2026-01-02 T [1]/01_a.png"
+        );
+        match &items[2].kind {
+            ItemKind::File { source, .. } => {
+                assert!(source.relay);
+                assert!(source.url.is_none());
+            }
+            _ => panic!(),
+        }
+        assert_eq!(items[3].label, "content.txt");
+        assert!(matches!(&items[3].kind, ItemKind::Text { text } if text.contains("Body")));
+    }
+
+    #[test]
+    fn skips_known_files_and_previews() {
+        let known: HashSet<String> = ["a".repeat(64), "b".repeat(64)].into_iter().collect();
+        let opts = options(|s| s.preview_only = crate::settings::PreviewOnlyAction::Skip);
+        let items = plan_post(&post(), None, &opts, None, &known, 0);
+        assert_eq!(items[0].skip_reason, Some(SkipReason::Duplicate));
+        assert_eq!(items[2].skip_reason, Some(SkipReason::PreviewOnly));
+        let opts = options(|s| s.preview_only = crate::settings::PreviewOnlyAction::Thumbnail);
+        let items = plan_post(&post(), None, &opts, Some(&[3]), &HashSet::new(), 0);
+        assert_eq!(items[0].label, "p_preview.jpg");
+        assert!(items[0].fallback);
+    }
+
+    #[test]
+    fn plans_one_archive_per_post() {
+        let opts = options(|s| {
+            s.download_mode = DownloadMode::Zip;
+            s.zip_videos_separately = true;
+            s.save_metadata = true;
+        });
+        let creator = CreatorInfo {
+            service: "patreon".into(),
+            id: "9".into(),
+            name: "Cat".into(),
+        };
+        let items = plan_post(&post(), Some(&creator), &opts, None, &HashSet::new(), 0);
+        assert_eq!(items.len(), 2);
+        assert_eq!(
+            items[0].path,
+            "Pawchive/Cat (patreon)/Cat - 2026-01-02 T [1].zip"
+        );
+        match &items[0].kind {
+            ItemKind::Zip { entries, .. } => {
+                let names: Vec<_> = entries.iter().map(|e| e.name.as_str()).collect();
+                assert_eq!(names, ["01_a.png", "03_p.jpg", "content.txt", "post.json"]);
+            }
+            _ => panic!(),
+        }
+        assert_eq!(items[1].label, "v.mp4");
+    }
+
+    #[test]
+    fn thumbnail_mode_saves_previews_and_text() {
+        let opts = options(|s| {
+            s.download_mode = DownloadMode::Thumbnails;
+            s.save_content = ContentFormat::None;
+        });
+        let items = plan_post(&post(), None, &opts, None, &HashSet::new(), 0);
+        let labels: Vec<_> = items.iter().map(|i| i.label.as_str()).collect();
+        assert_eq!(labels, ["a_preview.png", "p_preview.jpg", "content.txt"]);
+        assert_eq!(hashes_of([&post()]).len(), 3);
+    }
+}
