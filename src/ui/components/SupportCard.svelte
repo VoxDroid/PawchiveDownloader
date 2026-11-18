@@ -8,8 +8,9 @@
   import Logo from './Logo.svelte';
 
   interface Props {
-    /** compact: a single link row, for sidebars and footers. */
-    variant?: 'full' | 'compact';
+    /** compact: a single link row, for sidebars and footers; icon: just the
+     * icon, for the collapsed sidebar. */
+    variant?: 'full' | 'compact' | 'icon';
     ondismiss?: () => void;
   }
 
@@ -21,7 +22,19 @@
   }
 </script>
 
-{#if variant === 'compact'}
+{#if variant === 'icon'}
+  <a
+    class="compact icon-only"
+    href={LINKS.kofi}
+    target="_blank"
+    rel="noopener noreferrer"
+    onclick={external}
+    aria-label={t('support.kofi')}
+    data-tip={t('support.kofi')}
+  >
+    <Icon name="coffee" />
+  </a>
+{:else if variant === 'compact'}
   <a class="compact" href={LINKS.kofi} target="_blank" rel="noopener noreferrer" onclick={external}>
     <Icon name="coffee" />
     <span>{t('support.kofi')}</span>
@@ -174,6 +187,10 @@
     position: absolute;
     top: 10px;
     right: 10px;
+  }
+  .icon-only {
+    justify-content: center;
+    padding: 8px 0;
   }
   .compact {
     display: flex;

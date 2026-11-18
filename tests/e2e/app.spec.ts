@@ -178,3 +178,15 @@ test('recent posts load and stay loaded', async ({ page }) => {
   await page.waitForTimeout(1500);
   await expect(loading).toBeHidden();
 });
+
+test('the sidebar collapses to icons and remembers it', async ({ page }) => {
+  await page.getByRole('button', { name: 'Collapse sidebar' }).click();
+  const nav = page.getByRole('navigation').first();
+  await expect(nav.getByText('History', { exact: true })).toBeHidden();
+  await nav.getByRole('link', { name: 'History' }).click();
+  await expect(page.getByRole('heading', { name: 'History', exact: true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('button', { name: 'Expand sidebar' })).toBeVisible();
+  await page.keyboard.press('Control+b');
+  await expect(nav.getByText('History', { exact: true })).toBeVisible();
+});

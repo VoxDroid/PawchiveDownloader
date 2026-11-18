@@ -399,5 +399,8 @@
   "help.schedule.title": "Janela, espaço e energia",
   "help.schedule.body": "Configurações > Downloads > Janela de download só inicia downloads entre dois horários, por exemplo das 01:00 às 07:00. Fora dela, uma barra no topo diz quando voltam.\nEspaço livre a manter faz novos downloads esperarem (em vez de falhar) quando o disco está quase cheio; eles continuam sozinhos quando há espaço.\nManter o computador acordado impede a suspensão enquanto há downloads.\nNa página Downloads, Ao terminar pode fechar o app, suspender ou desligar quando tudo terminar, após uma contagem de 60 segundos que pode ser cancelada. Downloads pausados nunca contam como concluídos.",
   "help.library.title": "Estatísticas e arquivos sumidos",
-  "help.library.body": "A página Estatísticas conta tudo o que você baixou: arquivos, tamanho, publicações e criadores, os últimos doze meses, os criadores mais baixados e arquivos por tipo.\nVerificar agora procura arquivos baixados que foram apagados ou movidos. Baixar de novo traz só esses arquivos (o resto continua conhecido); Só esquecer deixa o próximo download dessas publicações trazê-los.\nLinks para Mega, Google Drive e outros serviços em uma publicação aparecem na aba Links e são salvos em links.txt com as senhas."
+  "help.library.body": "A página Estatísticas conta tudo o que você baixou: arquivos, tamanho, publicações e criadores, os últimos doze meses, os criadores mais baixados e arquivos por tipo.\nVerificar agora procura arquivos baixados que foram apagados ou movidos. Baixar de novo traz só esses arquivos (o resto continua conhecido); Só esquecer deixa o próximo download dessas publicações trazê-los.\nLinks para Mega, Google Drive e outros serviços em uma publicação aparecem na aba Links e são salvos em links.txt com as senhas.",
+  "nav.collapse": "Recolher a barra lateral",
+  "nav.expand": "Expandir a barra lateral",
+  "shortcut.sidebar": "Recolher ou expandir a barra lateral"
 }

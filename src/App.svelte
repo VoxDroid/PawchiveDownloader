@@ -86,6 +86,9 @@
     } else if (event.key.toLowerCase() === 'b' && event.shiftKey) {
       event.preventDefault();
       batch.show('');
+    } else if (event.key.toLowerCase() === 'b') {
+      event.preventDefault();
+      toggleSidebar();
     }
   }
 
@@ -120,6 +123,27 @@
   function label(route: Route) {
     return t(`nav.${route}`);
   }
+
+  // The sidebar can shrink to icons; remembered on this computer.
+  const COLLAPSED_KEY = 'pdl.sidebarCollapsed';
+  let collapsed = $state(
+    (() => {
+      try {
+        return localStorage.getItem(COLLAPSED_KEY) === '1';
+      } catch {
+        return false;
+      }
+    })(),
+  );
+
+  function toggleSidebar() {
+    collapsed = !collapsed;
+    try {
+      localStorage.setItem(COLLAPSED_KEY, collapsed ? '1' : '0');
+    } catch {
+      // Not saved; it still works for this session.
+    }
+  }
 </script>
 
 <svelte:window {onkeydown} />
@@ -134,6 +158,7 @@
 {:else}
   <div
     class="layout"
+    class:collapsed
     role="application"
     {ondragover}
     ondragleave={(e) => {
@@ -157,7 +182,13 @@
                 href="#{item.id}"
                 class:active={router.route === item.id}
                 aria-current={router.route === item.id ? 'page' : undefined}
-                title="{label(item.id)} (Ctrl+{ROUTES.indexOf(item) + 1})"
+                title={collapsed
+                  ? undefined
+                  : `${label(item.id)} (Ctrl+${ROUTES.indexOf(item) + 1})`}
+                aria-label={collapsed ? label(item.id) : undefined}
+                data-tip={collapsed
+                  ? `${label(item.id)} (Ctrl+${ROUTES.indexOf(item) + 1})`
+                  : undefined}
                 onclick={(e) => {
                   e.preventDefault();
                   go(item.id);
@@ -165,7 +196,7 @@
                 data-index={i}
               >
                 <Icon name={item.icon} />
-                <span>{label(item.id)}</span>
+                <span class="label">{label(item.id)}</span>
                 {#if item.id === 'downloads' && progress.active > 0}
                   <span class="badge mono-num">{progress.active}</span>
                 {:else if item.id === 'watchlist' && app.watchNew > 0}
@@ -184,6 +215,9 @@
             class="mini-progress"
             style="--p:{progress.ratio}"
             onclick={() => go('downloads')}
+            data-tip={collapsed
+              ? `${t('nav.activeJobs', { count: progress.active })}, ${Math.round(progress.ratio * 100)}%`
+              : undefined}
           >
             <span class="row">
               <span>{t('nav.activeJobs', { count: progress.active })}</span>
@@ -192,7 +226,18 @@
             <span class="bar"><span></span></span>
           </button>
         {/if}
-        <SupportCard variant="compact" />
+        <SupportCard variant={collapsed ? 'icon' : 'compact'} />
+        <button
+          class="collapse"
+          onclick={toggleSidebar}
+          aria-expanded={!collapsed}
+          aria-label={collapsed ? t('nav.expand') : t('nav.collapse')}
+          data-tip={collapsed ? `${t('nav.expand')} (Ctrl+B)` : undefined}
+          title={collapsed ? undefined : `${t('nav.collapse')} (Ctrl+B)`}
+        >
+          <Icon name={collapsed ? 'chevronRight' : 'chevronLeft'} />
+          <span class="label">{t('nav.collapse')}</span>
+        </button>
       </div>
     </nav>
 
@@ -253,6 +298,76 @@
     display: grid;
     grid-template-columns: 232px minmax(0, 1fr);
     height: 100vh;
+    transition: grid-template-columns var(--dur) var(--ease);
+  }
+  .layout.collapsed {
+    grid-template-columns: 68px minmax(0, 1fr);
+  }
+  .collapse {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 10px;
+    border: 0;
+    border-radius: var(--radius-md);
+    background: transparent;
+    color: var(--text-faint);
+    font: inherit;
+    font-size: var(--fs-sm);
+    font-weight: 600;
+    text-align: left;
+    transition:
+      background-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+  .collapse:hover {
+    color: var(--text);
+    background: var(--bg-hover);
+  }
+  /* Icons only: labels, the brand name and the progress text go; badges
+     become dots on the icons. */
+  .collapsed nav {
+    padding-left: 10px;
+    padding-right: 10px;
+    overflow-x: hidden;
+  }
+  .collapsed .label,
+  .collapsed .brand div,
+  .collapsed .mini-progress .row {
+    display: none;
+  }
+  .collapsed .brand {
+    justify-content: center;
+    padding: 0 0 4px;
+  }
+  .collapsed a,
+  .collapsed .collapse {
+    justify-content: center;
+    padding: 9px 0;
+  }
+  .collapsed a.active::before {
+    left: -10px;
+  }
+  .collapsed .badge {
+    position: absolute;
+    top: 4px;
+    right: 8px;
+    min-width: 0;
+    width: 8px;
+    height: 8px;
+    padding: 0;
+    font-size: 0;
+    line-height: 0;
+    box-shadow: 0 0 0 2px var(--bg-elev);
+  }
+  .collapsed .badge :global(.icon) {
+    display: none;
+  }
+  .collapsed .nav-foot {
+    padding: 0;
+  }
+  .collapsed .mini-progress {
+    padding: 4px 6px;
   }
   nav {
     display: flex;

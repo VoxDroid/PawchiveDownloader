@@ -158,6 +158,7 @@
     ['Ctrl+L', 'shortcut.focusLink'],
     ['Ctrl+V', 'shortcut.paste'],
     ['Ctrl+Shift+B', 'shortcut.batch'],
+    ['Ctrl+B', 'shortcut.sidebar'],
     ['Ctrl+1 ... Ctrl+9', 'shortcut.pages'],
     ['Ctrl+,', 'shortcut.settings'],
     ['Shift+Click', 'shortcut.range'],

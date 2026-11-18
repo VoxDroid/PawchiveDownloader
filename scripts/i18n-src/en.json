@@ -396,5 +396,8 @@
   "help.schedule.title": "Download window, disk space and power",
   "help.schedule.body": "Settings > Downloads > Download window starts downloads only between two times, for example 01:00 to 07:00. Outside it, a bar at the top says when they start again.\nKeep free on the drive makes new downloads wait (instead of failing) when the download drive is nearly full; they continue by themselves once there is room.\nKeep the computer awake stops it from sleeping while downloads run.\nOn the Downloads page, When done can quit the app, sleep or shut down once every download has finished, after a 60 second countdown that can be cancelled. Paused downloads never count as finished.",
   "help.library.title": "Statistics and missing files",
-  "help.library.body": "The Statistics page counts everything you have downloaded: files, size, posts and creators, the last twelve months, your most downloaded creators and files by kind.\nCheck now looks for downloaded files that were deleted or moved since. Download them again fetches only those files (the rest are still known); Only forget them lets the next download of those posts fetch them.\nLinks to Mega, Google Drive and other hosts found in a post are listed on its Links tab and saved to links.txt with any archive passwords."
+  "help.library.body": "The Statistics page counts everything you have downloaded: files, size, posts and creators, the last twelve months, your most downloaded creators and files by kind.\nCheck now looks for downloaded files that were deleted or moved since. Download them again fetches only those files (the rest are still known); Only forget them lets the next download of those posts fetch them.\nLinks to Mega, Google Drive and other hosts found in a post are listed on its Links tab and saved to links.txt with any archive passwords.",
+  "nav.collapse": "Collapse sidebar",
+  "nav.expand": "Expand sidebar",
+  "shortcut.sidebar": "Collapse or expand the sidebar"
 }
