@@ -302,15 +302,16 @@
       border-color var(--dur-fast) var(--ease),
       box-shadow var(--dur-fast) var(--ease);
   }
-  /* Fades out what scrolls up behind the gap above the bar. */
+  /* Covers the gap above the bar, so nothing scrolls past between the bar
+     and the window's edge. */
   .linkbar::before {
     content: '';
     position: absolute;
-    left: -12px;
-    right: -12px;
+    left: -16px;
+    right: -16px;
     bottom: calc(100% + 1px);
-    height: 16px;
-    background: linear-gradient(var(--bg) 40%, transparent);
+    height: 20px;
+    background: var(--bg);
     pointer-events: none;
   }
   .linkbar:focus-within {
