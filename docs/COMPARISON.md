@@ -2,29 +2,48 @@
 
 A look at the other tools people use to download from Pawchive (and from
 Kemono, the site Pawchive is based on), made in November 2026 from each
-project's own documentation. It shows where Pawchive Downloader stands and
+project's own documentation and GitHub releases. It shows where Pawchive Downloader stands and
 what it deliberately leaves out.
 
 The tools:
 
-- **Pawchive Downloader** (this app, 1.1.0): desktop app for Windows, macOS
+- **Pawchive Downloader** (this app, 1.1.1): desktop app for Windows, macOS
   and Linux.
 - **[Pawchive-Downloader](https://github.com/whyamihere773/Pawchive-Downloader)**
-  by whyamihere773: Python desktop app for Kemono-style sites with many
-  outside hosts.
+  by whyamihere773: Python desktop app for Pawchive, Kemono, Coomer and
+  similar sites, with Mega, Google Drive, Dropbox and GoFile downloads.
 - **[KToolBox](https://ktoolbox.readthedocs.io/)**: command line tool with a
   web interface, a Python API and an MCP service.
 - **[Kemono-Downloader](https://github.com/Yuvi9587/Kemono-Downloader)** by
   Yuvi9587: Python desktop app.
 - **[gallery-dl](https://github.com/mikf/gallery-dl)**: general command line
   downloader with a Pawchive extractor.
-- **kumono**: Rust command line tool.
+- **[kumono](https://github.com/APT37/kumono)**: Rust command line tool.
 - **Pawchive File Ripper**: a userscript that zips one post in the browser.
 - **[Pawchive Downloader for the browser](https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension)**:
   this app's little sibling, an extension that works on the page you view.
 
 Legend: **Yes**, **Partly**, a short note, or **-** when the project's
 documentation does not mention it (it may still exist).
+
+## At a glance
+
+Sizes are the Windows download of each project's latest release on
+GitHub, checked on 2026-11-19; stars show how many people follow each
+project there.
+
+|                  | This app                                      | whyamihere773                       | KToolBox              | Yuvi9587                                  | gallery-dl            | kumono                |
+| ---------------- | --------------------------------------------- | ----------------------------------- | --------------------- | ----------------------------------------- | --------------------- | --------------------- |
+| Kind             | Desktop app                                   | Desktop app                         | CLI and web UI        | Desktop app                               | CLI                   | CLI                   |
+| Windows download | **6.4 MB** zip (16 MB exe)                    | 332 MB zip                          | 43 MB zip             | 15 MB exe + 120 MB `_internal`            | pip or standalone exe | 8 MB exe              |
+| Installers       | Setup, MSI, portable, DMG, AppImage, deb, rpm | Zip, tar.gz                         | Zip per system        | Exe and folder                            | pip, exe              | Single binary         |
+| Systems          | Windows, macOS (universal), Linux             | Windows, Linux                      | Windows, macOS, Linux | Windows                                   | Any with Python       | Windows, macOS, Linux |
+| Built with       | Rust and Svelte (Tauri)                       | Python and QML                      | Python and TypeScript | Python (PyQt5)                            | Python                | Rust                  |
+| Sites            | Pawchive only, in depth                       | Pawchive, Kemono, Coomer and others | Pawchive              | Kemono, Coomer, Bunkr, Discord and others | Hundreds              | Kemono, Coomer        |
+| Latest release   | 1.1.1, 2026-11-18                             | 1.4.1, 2026-11-17                   | 1.0.0, 2026-08-23     | 2.0.0, 2026-11-12                         | 1.32.20, 2026-11-14   | 0.77.1, 2026-09-12    |
+| GitHub stars     | private                                       | 91                                  | 597                   | 675                                       | 20,562                | 71                    |
+| License          | MIT (builds on Ko-fi)                         | not stated                          | BSD-3-Clause          | MIT                                       | GPL-2.0               | MIT-0                 |
+| Automated tests  | 150 (Rust, unit, UI) on 3 systems             | -                                   | Yes                   | -                                         | Yes                   | -                     |
 
 ## Getting posts
 
