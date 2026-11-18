@@ -47,6 +47,8 @@ pub struct AppInfo {
     log_file: Option<String>,
     user_agent: String,
     args: Vec<String>,
+    /// "official" for Ko-fi builds, "source" for builds made from the code.
+    channel: &'static str,
 }
 
 #[tauri::command]
@@ -65,6 +67,7 @@ pub fn app_info(core: State<'_, Core_>) -> AppInfo {
             .skip(1)
             .filter(|a| !a.starts_with("--"))
             .collect(),
+        channel: crate::updates::channel(),
     }
 }
 

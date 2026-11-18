@@ -376,9 +376,9 @@ export interface UpdateInfo {
   current: string;
   latest: string | null;
   available: boolean;
+  /** Where official builds are (Ko-fi). */
   url: string;
-  notes: string | null;
-  publishedAt: string | null;
+  sourceUrl: string;
   error: string | null;
 }
 
@@ -390,6 +390,7 @@ export interface AppInfo {
   logFile: string | null;
   userAgent: string;
   args: string[];
+  channel: 'official' | 'source';
 }
 
 export interface TemplatePreview {

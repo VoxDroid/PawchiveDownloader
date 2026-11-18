@@ -1,6 +1,6 @@
 <script lang="ts">
   import { api, openUrl } from '../../lib/api';
-  import { app, fmt, t } from '../../ui/state/app.svelte';
+  import { app, t } from '../../ui/state/app.svelte';
   import { go } from '../../ui/state/router.svelte';
   import type { IconName } from '../../ui/icons.generated';
   import Button from '../../ui/components/Button.svelte';
@@ -51,6 +51,9 @@
     <div class="meta">
       <span class="pill mono-num">v{version}</span>
       <span class="pill">{platform} {app.info?.arch}</span>
+      <span class="pill" class:official={app.info?.channel === 'official'}>
+        {app.info?.channel === 'official' ? t('about.channelOfficial') : t('about.channelSource')}
+      </span>
       <span class="pill">MIT</span>
     </div>
   </div>
@@ -74,15 +77,19 @@
     {/if}
   </div>
   {#if app.update?.available}
-    <Button variant="primary" icon="external" onclick={() => app.update && openUrl(app.update.url)}>
+    <Button variant="primary" icon="coffee" onclick={() => app.update && openUrl(app.update.url)}>
       {t('about.getUpdate')}
+    </Button>
+    <Button
+      variant="ghost"
+      icon="github"
+      onclick={() => app.update && openUrl(app.update.sourceUrl)}
+    >
+      {t('about.buildSource')}
     </Button>
   {:else}
     <Button icon="sync" loading={checking} onclick={checkNow}>{t('about.checkNow')}</Button>
   {/if}
-  {#if app.update?.publishedAt}<span class="faint when">
-      {fmt.date(app.update.publishedAt)}
-    </span>{/if}
 </section>
 
 <div class="support"><SupportCard /></div>
@@ -166,9 +173,6 @@
     font-size: var(--fs-sm);
     color: var(--text-dim);
   }
-  .update .when {
-    font-size: var(--fs-xs);
-  }
   .support {
     margin-bottom: 28px;
   }
@@ -196,6 +200,10 @@
   .meta {
     display: flex;
     gap: 6px;
+  }
+  .pill.official {
+    color: var(--accent-strong);
+    border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
   }
   .pill {
     padding: 2px 10px;

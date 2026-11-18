@@ -185,13 +185,13 @@
   "about.privacyBody": "Keine Konten, kein Tracking, keine Analysen. Einstellungen, Verlauf und Protokolle bleiben im Ordner der App auf diesem Computer. Verbindungen gibt es nur zu Pawchive und, falls aktiviert, zu GitHub für die Update-Prüfung.",
   "about.credits": "Schrift: JetBrains Mono Nerd Font (SIL Open Font License 1.1). Gebaut mit Tauri, Rust und Svelte.",
   "about.updates": "Updates",
-  "about.updatesBody": "Auf GitHub nach einer neueren Version suchen.",
+  "about.updatesBody": "Nach einer neueren Version suchen.",
   "about.checkNow": "Jetzt prüfen",
   "about.upToDate": "Du bist auf dem neuesten Stand",
   "about.upToDateBody": "Version {version} ist die neueste Veröffentlichung.",
   "about.updateAvailable": "Version {version} ist verfügbar",
-  "about.updateBody": "Lade sie von der Release-Seite herunter; Bibliothek und Einstellungen bleiben erhalten.",
-  "about.getUpdate": "Update holen",
+  "about.updateBody": "Offizielle Builds gibt es auf Ko-fi. Den Quellcode kannst du auch kostenlos selbst bauen.",
+  "about.getUpdate": "Auf Ko-fi holen",
   "about.updateUnknown": "Updates konnten nicht geprüft werden",
   "about.noRelease": "Es wurde noch keine Version veröffentlicht.",
   "about.extension": "Browser-Erweiterung",
@@ -233,5 +233,9 @@
   "help.privacy.title": "Datenschutz",
   "help.privacy.body": "Es gibt keine Konten, keine Analysen und kein Tracking. Alles, was die App sich merkt, bleibt in ihrem Ordner auf diesem Computer und lässt sich jederzeit löschen.",
   "settings.categoriesHint": "Gilt für ganze Creator, Stapel-Downloads und Auswahlen in Beitragslisten. Auf einer Beitragsseite kannst du Dateien jederzeit von Hand auswählen.",
-  "watch.emptyBody": "Öffne einen Creator unter Durchsuchen und wähle Beobachten, oder füge oben Creator-Links ein."
+  "watch.emptyBody": "Öffne einen Creator unter Durchsuchen und wähle Beobachten, oder füge oben Creator-Links ein.",
+  "about.channelOfficial": "Offizieller Build",
+  "about.channelSource": "Aus dem Quellcode gebaut",
+  "about.buildSource": "Selbst bauen",
+  "support.body": "Den Quellcode kannst du frei selbst bauen. Fertige Builds für Windows, macOS und Linux gibt es auf Ko-fi, und sie halten das Projekt am Leben."
 }
