@@ -6,6 +6,15 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-18
+
+### Fixed
+
+- On Linux and macOS, posts with long names in Japanese, Chinese or Korean
+  failed with "File name too long": names were limited to 120 characters,
+  but these systems allow 255 bytes and such characters take 3 bytes each.
+  Names now stay within 200 bytes as well.
+
 ## [1.0.1] - 2026-11-18
 
 ### Fixed
@@ -17,10 +26,6 @@ All notable changes to Pawchive Downloader. The format follows
   app's own runtime, whatever thread starts it.
 - Two transfers could write the same file at once when "Replace it" was
   chosen; a file name another running transfer is using is never reused.
-- On Linux and macOS, posts with long names in Japanese, Chinese or Korean
-  failed with "File name too long": names were limited to 120 characters,
-  but these systems allow 255 bytes and such characters take 3 bytes each.
-  Names now stay within 200 bytes as well.
 - Files were matched case-sensitively when choosing names, so `A.png` and
   `a.png` could collide on Windows and macOS.
 - A server answering with a web page (an error page, a login wall or a
@@ -96,6 +101,7 @@ Downloader browser extension.
   and component tests, Playwright interface tests; CI on Windows, macOS and
   Linux.
 
-[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/VoxDroid/PawchiveDownloader/releases/tag/v1.0.0
