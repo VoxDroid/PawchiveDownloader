@@ -26,12 +26,15 @@
   // Finished items plus how far the running ones are, so the bar moves
   // during big files instead of jumping when each one completes.
   const progress = $derived(s.total ? Math.min(1, (settled + (s.partial ?? 0)) / s.total) : 0);
-  const partial = $derived(job.status === 'done' && s.failed > 0);
+  // Some files saved, some not: a warning rather than a plain failure.
+  const partial = $derived(
+    (job.status === 'done' || job.status === 'failed') && s.failed > 0 && s.done > 0,
+  );
   const tone = $derived(
-    job.status === 'failed'
-      ? 'danger'
-      : partial || job.status === 'paused'
-        ? 'warning'
+    partial || job.status === 'paused'
+      ? 'warning'
+      : job.status === 'failed'
+        ? 'danger'
         : job.status === 'done'
           ? 'success'
           : job.status === 'cancelled'
@@ -46,7 +49,7 @@
         running: 'download',
         paused: 'pause',
         done: partial ? 'warning' : 'success',
-        failed: 'error',
+        failed: partial ? 'warning' : 'error',
         cancelled: 'close',
       } as const
     )[job.status],

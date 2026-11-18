@@ -11,7 +11,7 @@ use tokio_util::sync::CancellationToken;
 use crate::jobs::engine::Engine;
 use crate::logs::{Level, Logger};
 use crate::net::http::build_client;
-use crate::net::limiter::SiteLimiter;
+use crate::net::limiter::{RateLimitPolicy, SiteLimiter};
 use crate::net::throttle::Throttle;
 use crate::pawchive::client::PawchiveClient;
 use crate::settings::{self, Settings, MAX_CONCURRENCY};
@@ -28,6 +28,7 @@ pub struct Core {
     pub watcher: Arc<Watcher>,
     pub data_dir: PathBuf,
     pub cancel: CancellationToken,
+    fast_timing: bool,
 }
 
 pub struct CoreOptions {
@@ -36,6 +37,8 @@ pub struct CoreOptions {
     /// Sends every pawchive.pw request to this origin instead (tests).
     pub origin_override: Option<String>,
     pub in_memory: bool,
+    /// Millisecond pauses instead of seconds (tests only).
+    pub fast_timing: bool,
 }
 
 impl Core {
@@ -59,10 +62,23 @@ impl Core {
             );
             build_client(&Default::default())
         })?;
-        let limiter = SiteLimiter::new(
-            MAX_CONCURRENCY as usize,
-            Duration::from_millis(u64::from(settings.request_interval_ms)),
-        );
+        let interval = if options.fast_timing {
+            Duration::ZERO
+        } else {
+            Duration::from_millis(u64::from(settings.request_interval_ms))
+        };
+        let policy = if options.fast_timing {
+            RateLimitPolicy {
+                min_cooldown: Duration::from_millis(5),
+                max_cooldown: Duration::from_millis(50),
+                backoff_base: Duration::from_millis(5),
+                backoff_cap: Duration::from_millis(20),
+                resume_spread: Duration::ZERO,
+            }
+        } else {
+            RateLimitPolicy::default()
+        };
+        let limiter = SiteLimiter::with_policy(MAX_CONCURRENCY as usize, interval, policy);
         let retry_log = Arc::clone(&log);
         let mut client = PawchiveClient::new(http, limiter).with_retry_hook(Arc::new(
             move |url, attempt, delay, reason| {
@@ -75,10 +91,7 @@ impl Core {
         if let Some(origin) = &options.origin_override {
             client = client.with_origin_override(origin.clone());
         }
-        client.configure(
-            settings.max_retries.min(8),
-            Duration::from_millis(u64::from(settings.request_interval_ms)),
-        );
+        client.configure(settings.max_retries.min(8), interval);
         let client = Arc::new(client);
         let throttle = Arc::new(Throttle::new(u64::from(settings.speed_limit_kbps) * 1024));
         let settings = Arc::new(RwLock::new(settings));
@@ -106,6 +119,7 @@ impl Core {
             watcher,
             data_dir: options.data_dir,
             cancel: CancellationToken::new(),
+            fast_timing: options.fast_timing,
         }))
     }
 
@@ -125,7 +139,11 @@ impl Core {
         let previous = self.settings();
         self.store.set("settings", &next)?;
         *self.settings.write() = next.clone();
-        let interval = Duration::from_millis(u64::from(next.request_interval_ms));
+        let interval = if self.fast_timing {
+            Duration::ZERO
+        } else {
+            Duration::from_millis(u64::from(next.request_interval_ms))
+        };
         self.client
             .limiter
             .configure(MAX_CONCURRENCY as usize, interval);

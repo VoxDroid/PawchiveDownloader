@@ -1,0 +1,117 @@
+import { expect, test, type Page } from '@playwright/test';
+
+const CREATOR = 'https://pawchive.pw/patreon/user/48151623';
+
+async function openLink(page: Page, url: string) {
+  const bar = page.getByRole('textbox', { name: /Paste a Pawchive link/ });
+  await bar.fill(url);
+  await bar.press('Enter');
+}
+
+test.beforeEach(async ({ page }) => {
+  await page.goto('/');
+  await expect(
+    page.getByRole('heading', { name: 'What would you like to download?' }),
+  ).toBeVisible();
+});
+
+test('every page opens from the sidebar', async ({ page }) => {
+  const pages: Array<[string, string]> = [
+    ['Downloads', 'Downloads'],
+    ['History', 'History'],
+    ['Watchlist', 'Watchlist'],
+    ['Favorites', 'Favorites'],
+    ['Logs', 'Logs'],
+    ['Settings', 'Settings'],
+    ['Help', 'Help'],
+  ];
+  for (const [link, heading] of pages) {
+    // Badges (running jobs, new posts) are part of a link's name.
+    await page
+      .getByRole('navigation')
+      .getByRole('link', { name: new RegExp(`^${link}`) })
+      .click();
+    await expect(page.getByRole('heading', { level: 1, name: heading })).toBeVisible();
+  }
+  await page.keyboard.press('Control+1');
+  await expect(page).toHaveURL(/#browse$/);
+});
+
+test('a creator can be browsed, filtered and queued', async ({ page }) => {
+  await openLink(page, CREATOR);
+  await expect(page.getByRole('heading', { name: 'Aster Vale' })).toBeVisible();
+  await expect(page.getByText('50 of 50 loaded')).toBeVisible();
+  await page.getByRole('textbox', { name: 'Filter by title or ID' }).fill('Lighthouse');
+  const rows = page.getByRole('option');
+  await expect(rows.first()).toContainText('Lighthouse');
+  await rows.first().click();
+  await rows.nth(1).click({ modifiers: ['Shift'] });
+  await expect(page.getByRole('button', { name: /Download 2 posts/ })).toBeVisible();
+  await page.getByRole('button', { name: /Download 2 posts/ }).click();
+  await expect(page.getByText('Added 2 posts to the queue')).toBeVisible();
+  await page.getByRole('button', { name: 'Load 50 more' }).click();
+  await expect(page.getByText(/of 100 loaded/)).toBeVisible();
+});
+
+test('a post shows its files and text', async ({ page }) => {
+  await openLink(page, CREATOR);
+  await page.getByRole('option').first().dblclick();
+  const files = page.getByRole('listbox', { name: 'Files in this post' });
+  await expect(files).toBeVisible();
+  const first = files.getByRole('option').first();
+  await expect(first).toHaveAttribute('aria-selected', 'true');
+  await first.click();
+  await expect(first).toHaveAttribute('aria-selected', 'false');
+  await page.getByRole('radio', { name: 'Text' }).click();
+  await expect(page.getByText('Thank you all for the support this month!')).toBeVisible();
+});
+
+test('the batch dialog counts links', async ({ page }) => {
+  await page.keyboard.press('Control+Shift+B');
+  const dialog = page.getByRole('dialog', { name: 'Queue many links' });
+  await expect(dialog).toBeVisible();
+  await dialog
+    .getByRole('textbox')
+    .fill(`${CREATOR}\nhttps://pawchive.pw/fanbox/user/90210/post/1\nnot a link`);
+  await expect(dialog.getByText('1 creator')).toBeVisible();
+  await expect(dialog.getByText('1 post')).toBeVisible();
+  await dialog.getByRole('button', { name: 'Queue 2 links' }).click();
+  await expect(page.getByText(/to the queue/)).toBeVisible();
+});
+
+test('jobs can be paused and resumed', async ({ page }) => {
+  await page.getByRole('link', { name: /^Downloads/ }).click();
+  const job = page.getByRole('article').filter({ hasText: 'Spring Sketchbook' });
+  await job.getByRole('button', { name: 'Pause' }).click();
+  await expect(job.getByText('Paused')).toBeVisible();
+  await job.getByRole('button', { name: 'Resume' }).click();
+  await expect(job.getByRole('button', { name: 'Pause' })).toBeVisible();
+  await job.getByRole('button', { name: /Show \d+ items/ }).click();
+  await expect(job.getByText('forest-01.png')).toBeVisible();
+});
+
+test('settings change the theme and the language', async ({ page }) => {
+  await page.keyboard.press('Control+,');
+  await page.getByRole('button', { name: 'Plum' }).click();
+  await expect(page.locator('html')).toHaveAttribute('data-theme', 'plum');
+  await page.getByRole('combobox', { name: 'Language' }).selectOption('ja');
+  await expect(page.getByRole('navigation').getByRole('link', { name: 'ブラウズ' })).toBeVisible();
+  await expect(page.locator('html')).toHaveAttribute('lang', 'ja');
+});
+
+test('the help guide can be searched', async ({ page }) => {
+  await page.getByRole('link', { name: 'Help', exact: true }).click();
+  await page.getByRole('textbox', { name: 'Search the guide' }).fill('socks5');
+  await expect(page.getByRole('button', { name: 'Proxy and Tor' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Favorites' })).toHaveCount(0);
+});
+
+test('favorites can be edited', async ({ page }) => {
+  await page.getByRole('link', { name: 'Favorites', exact: true }).click();
+  const row = page.getByRole('article').filter({ hasText: 'Brush Pack' });
+  await row.getByRole('button', { name: 'Edit favorite' }).click();
+  const dialog = page.getByRole('dialog', { name: 'Edit favorite' });
+  await dialog.getByRole('textbox', { name: 'Title' }).fill('Brushes');
+  await dialog.getByRole('button', { name: 'Save' }).click();
+  await expect(page.getByRole('button', { name: 'Brushes' })).toBeVisible();
+});

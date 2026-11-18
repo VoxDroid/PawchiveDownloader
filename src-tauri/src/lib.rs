@@ -57,6 +57,7 @@ pub fn run() {
                 log_file: Some(core::log_file_in(&log_dir)),
                 origin_override: None,
                 in_memory: false,
+                fast_timing: false,
             })
             .map_err(Box::<dyn std::error::Error>::from)?;
             core.log.info(format!(
