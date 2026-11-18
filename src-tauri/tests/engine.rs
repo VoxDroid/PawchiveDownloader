@@ -937,6 +937,10 @@ async fn hostile_names_stay_inside_the_download_folder() {
         assert!(!name.contains('\u{202e}'));
         assert!(!name.eq_ignore_ascii_case("CON.txt"));
         assert!(name.chars().count() <= 120, "{name}");
+        // Linux and macOS allow 255 bytes per name.
+        for part in p.strip_prefix(&out).unwrap().components() {
+            assert!(part.as_os_str().len() <= 200, "{part:?}");
+        }
     }
     assert!(!env.dir.path().join("escape.png").exists());
 }

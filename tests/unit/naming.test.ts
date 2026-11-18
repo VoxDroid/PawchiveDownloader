@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { MAX_PATH_LENGTH, sanitizePath, sanitizeSegment } from '../../src/lib/naming/sanitize';
+import {
+  MAX_PATH_LENGTH,
+  MAX_SEGMENT_BYTES,
+  sanitizePath,
+  sanitizeSegment,
+} from '../../src/lib/naming/sanitize';
 import {
   buildArchivePath,
   buildFilePath,
@@ -54,6 +59,15 @@ describe('sanitizeSegment', () => {
     const long = sanitizeSegment(`${'a'.repeat(300)}.jpeg`);
     expect(long.length).toBe(120);
     expect(long.endsWith('.jpeg')).toBe(true);
+  });
+});
+
+describe('byte limits', () => {
+  it('keeps long CJK names within the 255-byte limit of Linux and macOS', () => {
+    const name = sanitizeSegment(`${'名'.repeat(300)}.jpg`);
+    expect(new TextEncoder().encode(name).length).toBeLessThanOrEqual(MAX_SEGMENT_BYTES);
+    expect(name.endsWith('.jpg')).toBe(true);
+    expect([...name].length).toBe(Math.floor((MAX_SEGMENT_BYTES - 4) / 3) + 4);
   });
 });
 

@@ -9,6 +9,10 @@ use unicode_normalization::UnicodeNormalization;
 
 pub const MAX_SEGMENT_LENGTH: usize = 120;
 pub const MAX_PATH_LENGTH: usize = 240;
+/// Linux and macOS limit a name to 255 bytes of UTF-8 (a Japanese character
+/// takes 3), Windows to 255 UTF-16 units. 200 bytes leaves room for the
+/// `.part` suffix and a ` (12)` number added later.
+pub const MAX_SEGMENT_BYTES: usize = 200;
 
 static RESERVED: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)^(con|prn|aux|nul|com\d|lpt\d|conin\$|conout\$)$").unwrap());
@@ -33,15 +37,35 @@ fn take_chars(s: &str, n: usize) -> &str {
     }
 }
 
+/// The longest start of `s` within `max_chars` characters and `max_bytes`
+/// bytes, never cutting a character in half.
+fn take_within(s: &str, max_chars: usize, max_bytes: usize) -> &str {
+    let mut end = 0;
+    for (count, (i, c)) in s.char_indices().enumerate() {
+        if count >= max_chars || i + c.len_utf8() > max_bytes {
+            break;
+        }
+        end = i + c.len_utf8();
+    }
+    &s[..end]
+}
+
+/// Shortens a name to `max` characters and `MAX_SEGMENT_BYTES` bytes,
+/// keeping a short extension.
 pub fn truncate_keeping_extension(value: &str, max: usize) -> String {
-    if char_len(value) <= max {
+    if char_len(value) <= max && value.len() <= MAX_SEGMENT_BYTES {
         return value.to_string();
     }
     let ext = match value.rfind('.') {
         Some(dot) if dot > 0 && char_len(&value[dot..]) <= 12 => &value[dot..],
         _ => "",
     };
-    let stem = take_chars(value, max.saturating_sub(char_len(ext))).trim_end();
+    let stem = take_within(
+        value,
+        max.saturating_sub(char_len(ext)),
+        MAX_SEGMENT_BYTES.saturating_sub(ext.len()),
+    )
+    .trim_end();
     format!("{stem}{ext}")
 }
 
@@ -154,6 +178,13 @@ mod tests {
         assert_eq!(sanitize_segment("link.lnk", "_"), "link.lnk_");
         assert_eq!(sanitize_segment("tab\tand\nnew", "_"), "tab and new");
         assert_eq!(sanitize_segment("...", "x"), "x");
+        // Long CJK names stay within the byte limit of Linux and macOS.
+        let cjk = sanitize_segment(&format!("{}.jpg", "\u{540d}".repeat(300)), "_");
+        assert!(cjk.len() <= MAX_SEGMENT_BYTES, "{}", cjk.len());
+        assert!(cjk.ends_with(".jpg"));
+        assert_eq!(cjk.chars().count(), (MAX_SEGMENT_BYTES - 4) / 3 + 4);
+        let folder = sanitize_segment(&"\u{9577}".repeat(200), "_");
+        assert!(folder.len() <= MAX_SEGMENT_BYTES);
         let long = format!("{}.png", "a".repeat(200));
         let out = sanitize_segment(&long, "_");
         assert_eq!(out.chars().count(), MAX_SEGMENT_LENGTH);

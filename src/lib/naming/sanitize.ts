@@ -18,12 +18,28 @@ const SHELL_EXTENSIONS = /\.(lnk|local|scf|url|desktop|sys|cpl|cfg|ini)$/i;
 export const MAX_SEGMENT_LENGTH = 120;
 export const MAX_PATH_LENGTH = 240;
 
+/** Linux and macOS allow 255 bytes of UTF-8 per name; keep room for `.part`. */
+export const MAX_SEGMENT_BYTES = 200;
+
+const utf8 = (text: string) => new TextEncoder().encode(text).length;
+
+/** Same rules as the app's Rust sanitizer: characters and bytes. */
 function truncateKeepingExtension(value: string, max: number): string {
-  if (value.length <= max) return value;
+  const chars = [...value];
+  if (chars.length <= max && utf8(value) <= MAX_SEGMENT_BYTES) return value;
   const dot = value.lastIndexOf('.');
-  const ext = dot > 0 && value.length - dot <= 12 ? value.slice(dot) : '';
-  const stem = value.slice(0, max - ext.length).trimEnd();
-  return `${stem}${ext}`;
+  const ext = dot > 0 && [...value.slice(dot)].length <= 12 ? value.slice(dot) : '';
+  const maxChars = max - [...ext].length;
+  const maxBytes = MAX_SEGMENT_BYTES - utf8(ext);
+  let stem = '';
+  let bytes = 0;
+  for (const c of chars.slice(0, maxChars)) {
+    const size = utf8(c);
+    if (bytes + size > maxBytes) break;
+    stem += c;
+    bytes += size;
+  }
+  return `${stem.trimEnd()}${ext}`;
 }
 
 export function sanitizeSegment(input: string, fallback = '_'): string {
