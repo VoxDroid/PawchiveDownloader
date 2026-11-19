@@ -1382,3 +1382,76 @@ async fn failed_files_are_tried_again_later() {
     }
     assert!(done, "{:?}", env.core.engine.items(&id));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn downloads_outside_links_and_unpacks_them_with_the_post_password() {
+    use pawchive_downloader_lib::jobs::model::SelectedPost;
+    use pawchive_downloader_lib::pawchive::types::Post;
+    use std::io::Write;
+    let env = env().await;
+    // A password-protected archive on an outside host.
+    let mut zip_bytes = Vec::new();
+    {
+        let mut w = zip::ZipWriter::new(std::io::Cursor::new(&mut zip_bytes));
+        let opts = zip::write::SimpleFileOptions::default()
+            .with_aes_encryption(zip::AesMode::Aes256, "kitty");
+        w.start_file("art/page.txt", opts).unwrap();
+        w.write_all(b"full resolution").unwrap();
+        w.finish().unwrap();
+    }
+    Mock::given(method("GET"))
+        .and(path("/share/pack.zip"))
+        .respond_with(ResponseTemplate::new(200).set_body_raw(zip_bytes.clone(), "application/zip"))
+        .mount(&env.server)
+        .await;
+    {
+        let mut s = env.core.settings.write();
+        s.download_outside_links = true;
+        s.extract_archives = "delete".into();
+    }
+    let post = Post {
+        id: "951".into(),
+        service: "patreon".into(),
+        creator_id: "7".into(),
+        title: "Pack".into(),
+        content_html: String::new(),
+        published: None,
+        added: None,
+        edited: None,
+        tags: vec![],
+        files: vec![],
+        url: "https://pawchive.pw/patreon/user/7/post/951".into(),
+        next_id: None,
+        prev_id: None,
+        incomplete: false,
+        links: vec![format!("{}/share/pack.zip", env.server.uri())],
+        passwords: vec!["wrong".into(), "kitty".into()],
+    };
+    let id = env.core.engine.create(JobRequest::Posts {
+        title: None,
+        creator: None,
+        posts: vec![SelectedPost {
+            post,
+            file_indexes: None,
+        }],
+        options: no_text(),
+    });
+    let job = env.wait(&id).await;
+    assert_eq!(
+        job.status,
+        JobStatus::Done,
+        "{:?}",
+        env.core.engine.items(&id)
+    );
+    let saved = files_under(&env.out());
+    let page = saved
+        .iter()
+        .find(|p| p.ends_with("page.txt"))
+        .unwrap_or_else(|| panic!("{saved:?}"));
+    assert_eq!(std::fs::read(page).unwrap(), b"full resolution");
+    assert!(page.to_string_lossy().contains("Links"));
+    assert!(
+        saved.iter().all(|p| !p.to_string_lossy().ends_with(".zip")),
+        "the ZIP is removed"
+    );
+}

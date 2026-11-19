@@ -3,6 +3,7 @@
 pub mod app;
 pub mod commands;
 pub mod core;
+pub mod hosts;
 pub mod jobs;
 pub mod library;
 pub mod logs;

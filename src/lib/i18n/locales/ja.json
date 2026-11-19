@@ -723,5 +723,14 @@
   "about.portable": "ポータブル",
   "post.seen": "表示済み",
   "clipboard.found_other": "コピーしたリンク {count} 件",
-  "clipboard.open": "開く"
+  "clipboard.open": "開く",
+  "settings.outsideLinks": "外部リンクをダウンロード",
+  "settings.outsideLinksHint": "投稿が Mega (このコンピューターで復号)、Google ドライブ、Dropbox、Pixeldrain、GoFile、MediaFire、直接リンクで共有しているファイルも、投稿の Links フォルダーにダウンロードします。",
+  "settings.extract": "ZIP を展開",
+  "settings.extractHint": "ダウンロードした ZIP を隣のフォルダーに展開します。投稿に書かれたパスワードも試します。",
+  "settings.extractKeep": "展開して ZIP も残す",
+  "settings.extractDelete": "展開して ZIP を削除",
+  "options.outsideLinks": "外部リンク",
+  "post.downloadLink": "投稿のフォルダーにダウンロード",
+  "toast.queuedLink": "リンク先のファイルをキューに追加しました"
 }

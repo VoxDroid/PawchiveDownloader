@@ -773,5 +773,14 @@
   "post.seen": "Opened before",
   "clipboard.found_one": "Copied link found",
   "clipboard.found_other": "{count} copied links found",
-  "clipboard.open": "Open"
+  "clipboard.open": "Open",
+  "settings.outsideLinks": "Download outside links",
+  "settings.outsideLinksHint": "Also downloads what posts share on Mega (decrypted on this computer), Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire and direct file links, into a Links folder in the post.",
+  "settings.extract": "Unpack ZIP archives",
+  "settings.extractHint": "Unpacks downloaded ZIP files into a folder next to them, trying the passwords the post mentions.",
+  "settings.extractKeep": "Unpack and keep the ZIP",
+  "settings.extractDelete": "Unpack and delete the ZIP",
+  "options.outsideLinks": "Outside links",
+  "post.downloadLink": "Download into the post's folder",
+  "toast.queuedLink": "Queued the files behind the link"
 }

@@ -468,5 +468,14 @@
     "Найдено {count} скопированные ссылки",
     "Найдено {count} скопированных ссылок"
   ],
-  "clipboard.open": "Открыть"
+  "clipboard.open": "Открыть",
+  "settings.outsideLinks": "Скачивать внешние ссылки",
+  "settings.outsideLinksHint": "Также скачивает то, чем посты делятся на Mega (расшифровка на этом компьютере), Google Диске, Dropbox, Pixeldrain, GoFile, MediaFire и прямых ссылках, в папку Links.",
+  "settings.extract": "Распаковывать ZIP",
+  "settings.extractHint": "Распаковывает скачанные ZIP в папку рядом, пробуя пароли из поста.",
+  "settings.extractKeep": "Распаковать и оставить ZIP",
+  "settings.extractDelete": "Распаковать и удалить ZIP",
+  "options.outsideLinks": "Внешние ссылки",
+  "post.downloadLink": "Скачать в папку поста",
+  "toast.queuedLink": "Файлы по ссылке добавлены в очередь"
 }

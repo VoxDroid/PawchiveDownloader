@@ -432,5 +432,14 @@
   "about.portable": "Portabel",
   "post.seen": "Schon geöffnet",
   "clipboard.found": ["Kopierter Link gefunden", "{count} kopierte Links gefunden"],
-  "clipboard.open": "Öffnen"
+  "clipboard.open": "Öffnen",
+  "settings.outsideLinks": "Externe Links herunterladen",
+  "settings.outsideLinksHint": "Lädt auch, was Beiträge auf Mega (auf diesem Computer entschlüsselt), Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire und direkten Links teilen, in einen Ordner Links.",
+  "settings.extract": "ZIP-Archive entpacken",
+  "settings.extractHint": "Entpackt geladene ZIP-Dateien in einen Ordner daneben und probiert die im Beitrag genannten Passwörter.",
+  "settings.extractKeep": "Entpacken und ZIP behalten",
+  "settings.extractDelete": "Entpacken und ZIP löschen",
+  "options.outsideLinks": "Externe Links",
+  "post.downloadLink": "In den Ordner des Beitrags laden",
+  "toast.queuedLink": "Die Dateien hinter dem Link sind in der Warteschlange"
 }

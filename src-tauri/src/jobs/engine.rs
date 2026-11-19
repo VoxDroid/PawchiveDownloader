@@ -1324,6 +1324,10 @@ impl Engine {
                     Err(e) => Err(api_to_fetch(e)),
                 }
             }
+            ItemKind::External { url, .. } => {
+                self.run_external(job_id, item, url, options, cancel, progress)
+                    .await
+            }
             ItemKind::Announcements { name } => {
                 let p = &item.post;
                 match self
@@ -1463,7 +1467,134 @@ impl Engine {
             verify(&part, hash).await?;
         }
         finish(&part, &target).await?;
+        self.maybe_extract(&target, item, options).await;
         Ok(Outcome::Done { target, bytes })
+    }
+
+    /// Unpacks a downloaded ZIP when the settings say so.
+    async fn maybe_extract(&self, target: &Path, item: &Item, options: &JobOptions) {
+        if options.extract_archives == "off"
+            || !target
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("zip"))
+        {
+            return;
+        }
+        let archive = target.to_path_buf();
+        let passwords = item.passwords.clone();
+        let result =
+            tokio::task::spawn_blocking(move || super::extract::extract_zip(&archive, &passwords))
+                .await;
+        let name = target
+            .file_name()
+            .map(|n| n.to_string_lossy().into_owned())
+            .unwrap_or_default();
+        match result {
+            Ok(Ok(super::extract::Extracted::Done(folder))) => {
+                self.log
+                    .info(format!("Unpacked {name} into {}", folder.display()));
+                if options.extract_archives == "delete" {
+                    let _ = tokio::fs::remove_file(target).await;
+                }
+            }
+            Ok(Ok(super::extract::Extracted::NeedsPassword)) => self.log.warn(
+                format!("{name} needs a password that the post does not give"),
+                None,
+            ),
+            Ok(Err(e)) => self
+                .log
+                .warn(format!("Could not unpack {name}"), Some(e.to_string())),
+            Err(e) => self
+                .log
+                .warn(format!("Could not unpack {name}"), Some(e.to_string())),
+        }
+    }
+
+    /// Finds the files behind an outside link (Mega, Drive...) and downloads
+    /// them into the item's folder. Files already there are kept.
+    async fn run_external(
+        &self,
+        _job_id: &str,
+        item: &Item,
+        link: &str,
+        options: &JobOptions,
+        cancel: &CancellationToken,
+        progress: &Arc<Progress>,
+    ) -> Result<Outcome, FetchError> {
+        use crate::hosts::HostError;
+        use crate::naming::sanitize::{sanitize_path, sanitize_segment};
+        let http = self.client.http();
+        let files = match crate::hosts::resolve(&http, link, cancel).await {
+            Ok(f) => f,
+            Err(HostError::Cancelled) => return Err(FetchError::Cancelled),
+            Err(HostError::NotFound) => return Err(FetchError::Status(404)),
+            Err(HostError::Unsupported) => return Ok(Outcome::Skipped(SkipReason::Empty)),
+            Err(HostError::Refused(m)) | Err(HostError::Network(m)) => {
+                return Err(FetchError::Network(m))
+            }
+        };
+        if files.is_empty() {
+            return Ok(Outcome::Skipped(SkipReason::Empty));
+        }
+        let folder = Path::new(&options.download_dir).join(&item.path);
+        let total: u64 = files.iter().filter_map(|f| f.size).sum();
+        let mut done = 0u64;
+        for (i, f) in files.iter().enumerate() {
+            if cancel.is_cancelled() {
+                return Err(FetchError::Cancelled);
+            }
+            let name = if f.name.is_empty() {
+                format!("file-{}", i + 1)
+            } else {
+                f.name.clone()
+            };
+            let relative = if f.folder.is_empty() {
+                sanitize_segment(&name, "file")
+            } else {
+                sanitize_path(&format!("{}/{name}", f.folder))
+            };
+            let mut target = folder.join(&relative);
+            if let Ok(meta) = tokio::fs::metadata(&target).await {
+                if f.size.is_none_or(|s| s == meta.len()) {
+                    done += meta.len();
+                    continue;
+                }
+            }
+            let part = part_path(&target);
+            progress.base.store(done, Ordering::Relaxed);
+            if total > 0 {
+                progress
+                    .total
+                    .store(total.saturating_sub(done), Ordering::Relaxed);
+            }
+            let (bytes, offered) = self
+                .fetcher
+                .fetch_with(&f.url, &part, &name, &f.headers, progress, cancel)
+                .await?;
+            if let Some(key) = f.mega.clone() {
+                let path = part.clone();
+                tokio::task::spawn_blocking(move || crate::hosts::mega::decrypt_file(&path, &key))
+                    .await
+                    .map_err(|e| FetchError::Internal(e.to_string()))?
+                    .map_err(|e| FetchError::Disk(e.to_string()))?;
+            }
+            // Google Drive only says the name when the download starts.
+            if f.name.is_empty() {
+                if let Some(real) = offered {
+                    target = target.with_file_name(sanitize_segment(&real, "file"));
+                }
+            }
+            finish(&part, &target).await?;
+            self.maybe_extract(&target, item, options).await;
+            done += bytes;
+        }
+        progress.base.store(0, Ordering::Relaxed);
+        progress.bytes.store(done, Ordering::Relaxed);
+        progress.total.store(done, Ordering::Relaxed);
+        Ok(Outcome::Done {
+            target: folder,
+            bytes: done,
+        })
     }
 
     async fn run_text(

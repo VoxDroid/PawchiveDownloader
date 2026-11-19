@@ -429,5 +429,14 @@
   "about.portable": "Portátil",
   "post.seen": "Ya abierta",
   "clipboard.found": ["Enlace copiado detectado", "{count} enlaces copiados detectados"],
-  "clipboard.open": "Abrir"
+  "clipboard.open": "Abrir",
+  "settings.outsideLinks": "Descargar enlaces externos",
+  "settings.outsideLinksHint": "También descarga lo que las publicaciones comparten en Mega (descifrado en este equipo), Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire y enlaces directos, en una carpeta Links.",
+  "settings.extract": "Descomprimir ZIP",
+  "settings.extractHint": "Descomprime los ZIP descargados en una carpeta junto a ellos, probando las contraseñas de la publicación.",
+  "settings.extractKeep": "Descomprimir y conservar",
+  "settings.extractDelete": "Descomprimir y borrar",
+  "options.outsideLinks": "Enlaces externos",
+  "post.downloadLink": "Descargar en la carpeta de la publicación",
+  "toast.queuedLink": "Se pusieron en cola los archivos del enlace"
 }

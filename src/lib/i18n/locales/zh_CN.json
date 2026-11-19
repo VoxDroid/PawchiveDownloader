@@ -723,5 +723,14 @@
   "about.portable": "便携版",
   "post.seen": "已打开过",
   "clipboard.found_other": "发现 {count} 个复制的链接",
-  "clipboard.open": "打开"
+  "clipboard.open": "打开",
+  "settings.outsideLinks": "下载外部链接",
+  "settings.outsideLinksHint": "同时下载帖子在 Mega（在本机解密）、Google 云端硬盘、Dropbox、Pixeldrain、GoFile、MediaFire 和直链上分享的文件，保存到帖子的 Links 文件夹。",
+  "settings.extract": "解压 ZIP 压缩包",
+  "settings.extractHint": "将下载的 ZIP 解压到旁边的文件夹，并尝试帖子中提到的密码。",
+  "settings.extractKeep": "解压并保留 ZIP",
+  "settings.extractDelete": "解压并删除 ZIP",
+  "options.outsideLinks": "外部链接",
+  "post.downloadLink": "下载到帖子文件夹",
+  "toast.queuedLink": "已将链接中的文件加入队列"
 }

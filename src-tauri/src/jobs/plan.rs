@@ -226,6 +226,7 @@ fn base_item(post: &Post, id: String, label: String, path: String, kind: ItemKin
         waits: 0,
         failed_at: None,
         auto_retries: 0,
+        passwords: Vec::new(),
         kind,
     }
 }
@@ -382,10 +383,46 @@ pub fn plan_post(
         )
     });
 
+    // Files the post shares on Mega, Google Drive and other hosts.
+    let mut outside: Vec<Item> = Vec::new();
+    if options.download_links && !already_saved {
+        let base = if options.mode == DownloadMode::Zip {
+            let archive = build_archive_path(
+                &options.folder_template,
+                &options.archive_template,
+                &folder_ctx,
+            );
+            format!("{} - links", archive.trim_end_matches(".zip"))
+        } else {
+            in_folder("Links")
+        };
+        for (n, link) in post.links.iter().enumerate() {
+            let Some(host) = crate::hosts::detect(link) else {
+                continue;
+            };
+            let mut item = base_item(
+                post,
+                format!("{}:link:{n}", post.id),
+                format!("{}: {}", host.name(), short_link(link)),
+                format!("{base}/{}", host.name()),
+                ItemKind::External {
+                    url: link.clone(),
+                    host,
+                },
+            );
+            item.passwords = post.passwords.clone();
+            outside.push(item);
+        }
+    }
+
     if options.mode != DownloadMode::Zip {
         let mut items: Vec<Item> = planned.iter().map(|p| file_item(post, p)).collect();
+        for item in items.iter_mut() {
+            item.passwords = post.passwords.clone();
+        }
         items.extend(texts.iter().map(|(n, t)| text_item(n, t)));
         items.extend(comments);
+        items.extend(outside);
         return items;
     }
 
@@ -460,7 +497,22 @@ pub fn plan_post(
         items.extend(texts.iter().map(|(n, t)| text_item(n, t)));
     }
     items.extend(comments);
+    items.extend(outside);
     items
+}
+
+/// `mega.nz/folder/AbCd...` for labels.
+fn short_link(link: &str) -> String {
+    let rest = link
+        .trim_start_matches("https://")
+        .trim_start_matches("http://")
+        .trim_start_matches("www.");
+    let rest = rest.split('#').next().unwrap_or(rest);
+    if rest.chars().count() > 48 {
+        format!("{}...", rest.chars().take(46).collect::<String>())
+    } else {
+        rest.to_string()
+    }
 }
 
 /// The folder a creator's own files go in: the folder template up to the
@@ -510,6 +562,7 @@ pub fn announcements_item(options: &JobOptions, creator: &CreatorInfo, now_ms: i
         waits: 0,
         failed_at: None,
         auto_retries: 0,
+        passwords: Vec::new(),
         kind: ItemKind::Announcements {
             name: creator.name.clone(),
         },

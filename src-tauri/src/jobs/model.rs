@@ -64,6 +64,11 @@ pub struct JobOptions {
     pub save_comments: bool,
     #[serde(default)]
     pub save_announcements: bool,
+    #[serde(default)]
+    pub download_links: bool,
+    /// "off", "keep" or "delete".
+    #[serde(default = "extract_off")]
+    pub extract_archives: String,
     pub preview_only: PreviewOnlyAction,
     pub skip_downloaded: bool,
     pub verify_hashes: bool,
@@ -95,6 +100,7 @@ pub struct JobOverrides {
     pub save_metadata: Option<bool>,
     pub save_comments: Option<bool>,
     pub save_announcements: Option<bool>,
+    pub download_links: Option<bool>,
     pub preview_only: Option<PreviewOnlyAction>,
     pub skip_downloaded: Option<bool>,
     pub download_dir: Option<String>,
@@ -127,6 +133,8 @@ impl JobOptions {
             save_links: s.save_links,
             save_comments: o.save_comments.unwrap_or(s.save_comments),
             save_announcements: o.save_announcements.unwrap_or(s.save_announcements),
+            download_links: o.download_links.unwrap_or(s.download_outside_links),
+            extract_archives: s.extract_archives.clone(),
             preview_only: o.preview_only.unwrap_or(s.preview_only),
             skip_downloaded: o.skip_downloaded.unwrap_or(s.skip_downloaded),
             verify_hashes: s.verify_hashes,
@@ -225,6 +233,17 @@ pub enum ItemKind {
     /// The creator's announcements, fetched when the item runs.
     #[serde(rename_all = "camelCase")]
     Announcements { name: String },
+    /// A link to an outside file host; the files behind it are found and
+    /// downloaded when the item runs.
+    #[serde(rename_all = "camelCase")]
+    External {
+        url: String,
+        host: crate::hosts::Host,
+    },
+}
+
+fn extract_off() -> String {
+    "off".into()
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -263,6 +282,9 @@ pub struct Item {
     /// Automatic retries it has had.
     #[serde(default)]
     pub auto_retries: u32,
+    /// Passwords found in the post, for unpacking archives.
+    #[serde(default)]
+    pub passwords: Vec<String>,
     #[serde(flatten)]
     pub kind: ItemKind,
 }
@@ -284,6 +306,7 @@ impl Item {
                 "text"
             }
             ItemKind::Zip { .. } => "zip",
+            ItemKind::External { .. } => "link",
         }
     }
 }

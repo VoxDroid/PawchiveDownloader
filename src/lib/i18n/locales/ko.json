@@ -723,5 +723,14 @@
   "about.portable": "포터블",
   "post.seen": "이전에 열어 봄",
   "clipboard.found_other": "복사한 링크 {count}개 발견",
-  "clipboard.open": "열기"
+  "clipboard.open": "열기",
+  "settings.outsideLinks": "외부 링크 다운로드",
+  "settings.outsideLinksHint": "게시물이 Mega(이 컴퓨터에서 복호화), Google 드라이브, Dropbox, Pixeldrain, GoFile, MediaFire, 직접 링크로 공유한 파일도 게시물의 Links 폴더에 받습니다.",
+  "settings.extract": "ZIP 압축 풀기",
+  "settings.extractHint": "받은 ZIP 파일을 옆 폴더에 풉니다. 게시물에 적힌 비밀번호도 시도합니다.",
+  "settings.extractKeep": "풀고 ZIP 유지",
+  "settings.extractDelete": "풀고 ZIP 삭제",
+  "options.outsideLinks": "외부 링크",
+  "post.downloadLink": "게시물 폴더에 받기",
+  "toast.queuedLink": "링크의 파일을 대기열에 넣었습니다"
 }

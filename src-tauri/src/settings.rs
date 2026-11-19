@@ -109,6 +109,10 @@ pub struct Settings {
     pub private_notifications: bool,
     /// Offer to download links copied anywhere.
     pub watch_clipboard: bool,
+    /// Download what posts link to on Mega, Google Drive, Dropbox and others.
+    pub download_outside_links: bool,
+    /// Unpack downloaded ZIP archives: "off", "keep" or "delete" the ZIP.
+    pub extract_archives: String,
     /// Hold new downloads when the drive has less than this free (MB, 0 off).
     pub min_free_space_mb: u32,
     /// Only start downloads between `schedule_start` and `schedule_end`.
@@ -183,6 +187,8 @@ impl Default for Settings {
             blur_previews: false,
             private_notifications: false,
             watch_clipboard: false,
+            download_outside_links: false,
+            extract_archives: "off".into(),
             min_free_space_mb: 1024,
             schedule_enabled: false,
             schedule_start: "01:00".into(),
@@ -352,6 +358,12 @@ pub fn coerce(input: &Value) -> Settings {
         blur_previews: boolean(g("blurPreviews"), d.blur_previews),
         private_notifications: boolean(g("privateNotifications"), d.private_notifications),
         watch_clipboard: boolean(g("watchClipboard"), d.watch_clipboard),
+        download_outside_links: boolean(g("downloadOutsideLinks"), d.download_outside_links),
+        extract_archives: one_of(
+            g("extractArchives"),
+            &["off", "keep", "delete"],
+            &d.extract_archives,
+        ),
         min_free_space_mb: g("minFreeSpaceMb")
             .and_then(Value::as_u64)
             .map(|v| v as u32)

@@ -452,6 +452,25 @@
       ]}
     />
   </SettingRow>
+  <SettingRow label={t('settings.outsideLinks')} description={t('settings.outsideLinksHint')}>
+    <Switch
+      label={t('settings.outsideLinks')}
+      checked={s.downloadOutsideLinks}
+      onchange={(v) => set('downloadOutsideLinks', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.extract')} description={t('settings.extractHint')}>
+    <Select
+      label={t('settings.extract')}
+      value={s.extractArchives}
+      onchange={(v) => set('extractArchives', v)}
+      options={[
+        { value: 'off', label: t('settings.off') },
+        { value: 'keep', label: t('settings.extractKeep') },
+        { value: 'delete', label: t('settings.extractDelete') },
+      ]}
+    />
+  </SettingRow>
   <SettingRow
     label={t('settings.thumbnailFallback')}
     description={t('settings.thumbnailFallbackHint')}

@@ -60,6 +60,11 @@
   const text = $derived(post ? htmlToText(post.contentHtml) : '');
   const outside = $derived(post?.links ?? []);
   const passwords = $derived(post?.passwords ?? []);
+  /** Hosts the app can download from (the Rust side decides for real). */
+  const canDownload = (url: string) =>
+    /(^|\.)(mega\.(nz|co\.nz|io)|dropbox\.com|pixeldrain\.com|gofile\.io|mediafire\.com|catbox\.moe)$|^(drive|docs)\.google\.com$/i.test(
+      hostOf(url),
+    );
   const hostOf = (url: string) => {
     try {
       return new URL(url).hostname.replace(/^www\./, '');
@@ -73,6 +78,23 @@
     if (passwords.length) lines.push('', ...passwords);
     await copyText(lines.join('\n'));
     toast(t('common.copied'), 'success', { duration: 1400 });
+  }
+
+  /** Downloads the files behind one outside link into the post's folder. */
+  async function downloadLink(url: string) {
+    if (!post) return;
+    await queueJob(
+      {
+        kind: 'posts',
+        title: post.title || post.id,
+        creator: view?.creator
+          ? { service: view.creator.service, id: view.creator.id, name: view.creator.name }
+          : null,
+        posts: [{ post: { ...post, links: [url] }, fileIndexes: [] }],
+        options: { downloadLinks: true, saveContent: 'none', saveMetadata: false },
+      },
+      t('toast.queuedLink'),
+    );
   }
 
   async function copyOne(value: string) {
@@ -380,6 +402,14 @@
             <Icon name="link" />
             <span class="host">{hostOf(url)}</span>
             <span class="url truncate selectable" title={url}>{url}</span>
+            {#if canDownload(url)}
+              <IconButton
+                size="sm"
+                icon="download"
+                label={t('post.downloadLink')}
+                onclick={() => downloadLink(url)}
+              />
+            {/if}
             <IconButton
               size="sm"
               icon="copy"

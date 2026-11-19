@@ -208,6 +208,22 @@ impl Fetcher {
         progress: &Progress,
         cancel: &CancellationToken,
     ) -> Result<u64, FetchError> {
+        self.fetch_with(url, part, name, &[], progress, cancel)
+            .await
+            .map(|(bytes, _)| bytes)
+    }
+
+    /// Like `fetch`, with extra request headers; also returns the file name
+    /// the server offered (Content-Disposition), if any.
+    pub async fn fetch_with(
+        &self,
+        url: &str,
+        part: &Path,
+        name: &str,
+        headers: &[(String, String)],
+        progress: &Progress,
+        cancel: &CancellationToken,
+    ) -> Result<(u64, Option<String>), FetchError> {
         if let Some(dir) = part.parent() {
             tokio::fs::create_dir_all(dir).await.map_err(disk)?;
         }
@@ -224,6 +240,9 @@ impl Fetcher {
             .header("Accept-Encoding", "identity");
         if existing > 0 {
             request = request.header("Range", format!("bytes={existing}-"));
+        }
+        for (k, v) in headers {
+            request = request.header(k.as_str(), v.as_str());
         }
         if let Some(site) = self.client.media_down(url) {
             return Err(FetchError::ServerDown(site));
@@ -261,6 +280,8 @@ impl Fetcher {
         }
         // Media servers never send HTML for a file; when one does it is an
         // error page or a login wall, which must not be saved as the file.
+        let offered =
+            header("content-disposition").and_then(|h| crate::hosts::disposition_name(&h));
         let html =
             header("content-type").is_some_and(|t| t.to_ascii_lowercase().starts_with("text/html"));
         let lower = name.to_ascii_lowercase();
@@ -278,7 +299,7 @@ impl Fetcher {
                     append = true;
                 } else {
                     // The server sent a different piece than asked: start over.
-                    return self.restart(part).await;
+                    return self.restart(part).await.map(|b| (b, None));
                 }
             }
             200 => existing = 0,
@@ -289,9 +310,9 @@ impl Fetcher {
                 if existing > 0 && total == Some(existing) {
                     progress.total.store(existing, Ordering::Relaxed);
                     progress.bytes.store(existing, Ordering::Relaxed);
-                    return Ok(existing);
+                    return Ok((existing, offered));
                 }
-                return self.restart(part).await;
+                return self.restart(part).await.map(|b| (b, None));
             }
             s => return Err(FetchError::Status(s)),
         }
@@ -345,7 +366,7 @@ impl Fetcher {
             return Err(FetchError::Network("connection dropped".into()));
         }
         progress.total.store(written, Ordering::Relaxed);
-        Ok(written)
+        Ok((written, offered))
     }
 
     async fn restart(&self, part: &Path) -> Result<u64, FetchError> {

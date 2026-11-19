@@ -426,5 +426,14 @@
   "about.portable": "Portátil",
   "post.seen": "Já aberta",
   "clipboard.found": ["Link copiado encontrado", "{count} links copiados encontrados"],
-  "clipboard.open": "Abrir"
+  "clipboard.open": "Abrir",
+  "settings.outsideLinks": "Baixar links externos",
+  "settings.outsideLinksHint": "Também baixa o que as publicações compartilham no Mega (descriptografado neste computador), Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire e links diretos, numa pasta Links.",
+  "settings.extract": "Extrair ZIP",
+  "settings.extractHint": "Extrai os ZIP baixados numa pasta ao lado, tentando as senhas citadas na publicação.",
+  "settings.extractKeep": "Extrair e manter",
+  "settings.extractDelete": "Extrair e apagar",
+  "options.outsideLinks": "Links externos",
+  "post.downloadLink": "Baixar na pasta da publicação",
+  "toast.queuedLink": "Os arquivos do link foram para a fila"
 }

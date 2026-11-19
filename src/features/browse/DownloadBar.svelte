@@ -50,6 +50,7 @@
   let mode = $state<DownloadMode>(app.settings.downloadMode);
   let saveText = $state(app.settings.saveContent !== 'none');
   let skipDownloaded = $state(app.settings.skipDownloaded);
+  let outside = $state(app.settings.downloadOutsideLinks);
   let folder = $state<string | null>(null);
 
   const destination = $derived(folder ?? app.settings.downloadDir);
@@ -71,6 +72,7 @@
           : app.settings.saveContent
         : 'none',
       skipDownloaded,
+      downloadLinks: outside,
       ...(folder ? { downloadDir: folder } : {}),
       ...(filters ? { filter: $state.snapshot(filter) } : {}),
     });
@@ -91,6 +93,7 @@
     />
     <Checkbox bind:checked={saveText}>{t('options.saveText')}</Checkbox>
     <Checkbox bind:checked={skipDownloaded}>{t('options.skipDownloaded')}</Checkbox>
+    <Checkbox bind:checked={outside}>{t('options.outsideLinks')}</Checkbox>
     {#if filters}
       <button
         type="button"

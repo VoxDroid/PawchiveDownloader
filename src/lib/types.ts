@@ -202,6 +202,10 @@ export interface Settings {
   privateNotifications: boolean;
   /** Offer to download links copied anywhere. */
   watchClipboard: boolean;
+  /** Download what posts link to on Mega, Google Drive and other hosts. */
+  downloadOutsideLinks: boolean;
+  /** Unpack downloaded ZIPs: keep or delete the ZIP afterwards. */
+  extractArchives: 'off' | 'keep' | 'delete';
   /** Hold new downloads below this much free space (MB); 0 is off. */
   minFreeSpaceMb: number;
   scheduleEnabled: boolean;
@@ -260,6 +264,8 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   blurPreviews: false,
   privateNotifications: false,
   watchClipboard: false,
+  downloadOutsideLinks: false,
+  extractArchives: 'off',
   minFreeSpaceMb: 1024,
   scheduleEnabled: false,
   scheduleStart: '01:00',
@@ -336,6 +342,7 @@ export interface JobOverrides {
   saveMetadata?: boolean;
   saveComments?: boolean;
   saveAnnouncements?: boolean;
+  downloadLinks?: boolean;
   previewOnly?: PreviewOnlyAction;
   skipDownloaded?: boolean;
   downloadDir?: string;
