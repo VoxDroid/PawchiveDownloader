@@ -23,9 +23,11 @@ The next generation: more sites, outside hosts and a lot of convenience.
   post, or one link at a time from a post's Links tab.
 - **Unpacking**: downloaded ZIP archives can be unpacked next to
   themselves, trying the passwords the post mentions.
-- **Dead media servers**: when a site answers but its media servers do not,
-  files fail within seconds instead of waiting for the network, the host is
-  skipped for a while, and a bar offers to save thumbnails instead.
+- **Dead media servers**: before a Kemono or Coomer download starts, one
+  tiny request checks the site's media server; when it does not answer, a
+  dialog offers to cancel, download thumbnails instead, or queue the full
+  files to retry later. During downloads such a server is noticed within
+  seconds instead of waiting for the network, and skipped for a while.
 - **Automatic retries** of failed files after a chosen time, up to three
   times.
 - **Browser bridge**: a paired browser extension can hand downloads to the
@@ -39,6 +41,9 @@ The next generation: more sites, outside hosts and a lot of convenience.
 - **Privacy**: blur previews until pointed at, and notifications without
   titles or names.
 - **Compact sidebar** (Ctrl+B) and tooltips that are never cut off.
+- **Open in Browse** on every download, history entry, favorite and
+  watched creator, to see where it came from again.
+- **Settings search** (Ctrl+F).
 - Help topics for all of the above.
 
 ### Fixed

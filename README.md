@@ -81,23 +81,23 @@ How it compares with every other Pawchive, Kemono and Coomer downloader: [docs/C
 
 **Downloading**
 
-| Feature                    | What it does                                                                                                                                                                             |
-| -------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| File picking               | Select files or posts by click and Shift-click, filter by type (images, videos, audio, archives, documents, text), invert, hide what you already have.                                   |
-| Whole creators             | Download everything, a date range, a site search, or just the posts you tick. Large creators are scanned page by page while downloads already run.                                       |
-| Filters                    | Only posts with certain words, skip posts or files with others (plain or `/regex/`), the newest N posts, file types to keep or skip. Defaults in Settings, changeable for each download. |
-| Outside hosts              | Files a post shares on Mega (files and folders, decrypted on your computer), Google Drive (files and folders), Dropbox, Pixeldrain, GoFile and MediaFire are downloaded with the post.   |
-| Unpacking                  | Downloaded ZIP archives can be unpacked next to themselves, trying the passwords the post mentions; nothing can be written outside the folder.                                           |
-| Batch queue and URL import | Paste any number of links, import a `.txt` file or drag links onto the window. Each creator becomes one download; posts of the same creator are grouped.                                 |
-| Three formats              | Separate files in a folder per post, one ZIP archive per post (ZIP64, no size limit, optional parts), or thumbnails only.                                                                |
-| Resumable downloads        | Files are written as `.part` files and continue with HTTP Range requests after a pause, a dropped connection or a restart of the app.                                                    |
-| Checksums                  | Every finished file is checked against the SHA-256 in its address and downloaded again if it does not match.                                                                             |
-| Preview-only files         | When Pawchive only keeps a preview, the full file is fetched through the temporary link the post page offers.                                                                            |
-| Dead media servers         | When a site answers but its media servers do not, the app notices within seconds instead of waiting, can save thumbnails instead, and tries the files again later.                       |
-| Duplicate skipping         | Files are recognised by content hash, across posts, creators and sites, and skipped when you already have them.                                                                          |
-| Post text and metadata     | Save the description as `content.txt` and/or `content.html`, a `post.json`, `links.txt` with outside links and passwords, comments with their replies, and a creator's announcements.    |
-| Clean names                | Remove words such as `[HD]` from titles and file names.                                                                                                                                  |
-| Fast mode                  | One switch: every file type, your saved options, no per-download choices.                                                                                                                |
+| Feature                    | What it does                                                                                                                                                                                                                     |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File picking               | Select files or posts by click and Shift-click, filter by type (images, videos, audio, archives, documents, text), invert, hide what you already have.                                                                           |
+| Whole creators             | Download everything, a date range, a site search, or just the posts you tick. Large creators are scanned page by page while downloads already run.                                                                               |
+| Filters                    | Only posts with certain words, skip posts or files with others (plain or `/regex/`), the newest N posts, file types to keep or skip. Defaults in Settings, changeable for each download.                                         |
+| Outside hosts              | Files a post shares on Mega (files and folders, decrypted on your computer), Google Drive (files and folders), Dropbox, Pixeldrain, GoFile and MediaFire are downloaded with the post.                                           |
+| Unpacking                  | Downloaded ZIP archives can be unpacked next to themselves, trying the passwords the post mentions; nothing can be written outside the folder.                                                                                   |
+| Batch queue and URL import | Paste any number of links, import a `.txt` file or drag links onto the window. Each creator becomes one download; posts of the same creator are grouped.                                                                         |
+| Three formats              | Separate files in a folder per post, one ZIP archive per post (ZIP64, no size limit, optional parts), or thumbnails only.                                                                                                        |
+| Resumable downloads        | Files are written as `.part` files and continue with HTTP Range requests after a pause, a dropped connection or a restart of the app.                                                                                            |
+| Checksums                  | Every finished file is checked against the SHA-256 in its address and downloaded again if it does not match.                                                                                                                     |
+| Preview-only files         | When Pawchive only keeps a preview, the full file is fetched through the temporary link the post page offers.                                                                                                                    |
+| Dead media servers         | Before a Kemono or Coomer download, the app checks the site's media server; when it is down you choose: cancel, thumbnails instead, or queue the full files for later. During downloads a dead server is noticed within seconds. |
+| Duplicate skipping         | Files are recognised by content hash, across posts, creators and sites, and skipped when you already have them.                                                                                                                  |
+| Post text and metadata     | Save the description as `content.txt` and/or `content.html`, a `post.json`, `links.txt` with outside links and passwords, comments with their replies, and a creator's announcements.                                            |
+| Clean names                | Remove words such as `[HD]` from titles and file names.                                                                                                                                                                          |
+| Fast mode                  | One switch: every file type, your saved options, no per-download choices.                                                                                                                                                        |
 
 **Managing**
 
@@ -122,15 +122,16 @@ How it compares with every other Pawchive, Kemono and Coomer downloader: [docs/C
 
 **Interface**
 
-| Feature        | What it does                                                                                                               |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| Nine languages | English, Japanese, Korean, Simplified Chinese, Spanish, Brazilian Portuguese, Russian, German and French, switchable live. |
-| Six themes     | Midnight, Graphite, Plum, Forest, Ember and Light, or Match system, with six accent colors or your own.                    |
-| Compact mode   | The sidebar folds to icons (Ctrl+B); tooltips float above everything and never get cut off.                                |
-| Privacy blur   | Thumbnails, avatars and banners stay blurred until pointed at, for sharing the screen or working in public.                |
-| Typography     | JetBrains Mono Nerd Font throughout; every icon comes from the font itself.                                                |
-| Keyboard       | Ctrl+L link bar, Ctrl+Shift+B batch, Ctrl+B sidebar, Ctrl+1 to Ctrl+9 pages, Ctrl+, settings.                              |
-| Network        | System proxy, no proxy, a custom HTTP, HTTPS or SOCKS5 proxy, or Tor; a total speed limit.                                 |
+| Feature         | What it does                                                                                                               |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| Nine languages  | English, Japanese, Korean, Simplified Chinese, Spanish, Brazilian Portuguese, Russian, German and French, switchable live. |
+| Six themes      | Midnight, Graphite, Plum, Forest, Ember and Light, or Match system, with six accent colors or your own.                    |
+| Compact mode    | The sidebar folds to icons (Ctrl+B); tooltips float above everything and never get cut off.                                |
+| Settings search | Find any setting by typing (Ctrl+F).                                                                                       |
+| Privacy blur    | Thumbnails, avatars and banners stay blurred until pointed at, for sharing the screen or working in public.                |
+| Typography      | JetBrains Mono Nerd Font throughout; every icon comes from the font itself.                                                |
+| Keyboard        | Ctrl+L link bar, Ctrl+Shift+B batch, Ctrl+B sidebar, Ctrl+1 to Ctrl+9 pages, Ctrl+, settings, Ctrl+F settings search.      |
+| Network         | System proxy, no proxy, a custom HTTP, HTTPS or SOCKS5 proxy, or Tor; a total speed limit.                                 |
 
 ## Screenshots
 
