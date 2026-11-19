@@ -450,5 +450,13 @@
   "bridge.codeHint": "Saisissez ce code dans les paramètres de l'extension. Il sert une fois, pendant deux minutes.",
   "bridge.lastUsed": "Dernière utilisation : {when}",
   "bridge.paired": "Associée {when}",
-  "bridge.revoke": "Retirer cette association"
+  "bridge.revoke": "Retirer cette association",
+  "help.sites.title": "Pawchive, Kemono et Coomer",
+  "help.sites.body": "Les liens de pawchive.pw, kemono.cr et coomer.st fonctionnent pareil (les anciens kemono.su et coomer.su aussi). La recherche de créateurs et les posts récents ont un sélecteur de site.\nLe jeton {site} range chaque site dans son propre dossier.\nQuand les serveurs de médias d'un site ne répondent pas, une barre en haut le signale et propose d'enregistrer les miniatures ; les fichiers sont réessayés plus tard d'eux-mêmes.",
+  "help.outside.title": "Mega, Google Drive et autres",
+  "help.outside.body": "Activez Paramètres > Téléchargements > Télécharger les liens externes (ou la case Liens externes au téléchargement) et ce que les posts partagent sur Mega, Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire et liens directs est téléchargé dans un dossier Links.\nLes fichiers Mega sont déchiffrés sur cet ordinateur avec la clé du lien ; la clé n'est envoyée nulle part.\nChaque lien de l'onglet Liens a aussi son bouton de téléchargement.\nParamètres > Téléchargements > Décompresser les ZIP décompresse les ZIP à côté, en essayant les mots de passe du post.",
+  "help.portable.title": "Mode portable et sauvegardes",
+  "help.portable.body": "Avec un dossier nommé data à côté du programme (le zip portable en contient un), paramètres, bibliothèque et journaux restent dans ce dossier, et l'application fonctionne depuis une clé USB. À propos indique Portable quand c'est le cas.\nParamètres > Données > Sauvegarde enregistre paramètres, liste de suivi, favoris et historique dans un fichier ; Restaurer ajoute ce qui manque sur un autre ordinateur.",
+  "help.bridge.title": "L'extension du navigateur",
+  "help.bridge.body": "Paramètres > Extension du navigateur permet à l'extension Pawchive Downloader d'envoyer des téléchargements ici. Activez, appuyez sur Associer et saisissez le code à six chiffres dans les paramètres de l'extension en moins de deux minutes.\nIl n'écoute que sur cet ordinateur, les pages web ne peuvent pas l'utiliser et chaque navigateur associé peut être retiré."
 }

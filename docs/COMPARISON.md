@@ -7,7 +7,7 @@ what it deliberately leaves out.
 
 The tools:
 
-- **Pawchive Downloader** (this app, 1.1.1): desktop app for Windows, macOS
+- **Pawchive Downloader** (this app, 2.0.0): desktop app for Windows, macOS
   and Linux.
 - **[Pawchive-Downloader](https://github.com/whyamihere773/Pawchive-Downloader)**
   by whyamihere773: Python desktop app for Pawchive, Kemono, Coomer and
@@ -39,27 +39,27 @@ project there.
 | Installers       | Setup, MSI, portable, DMG, AppImage, deb, rpm | Zip, tar.gz                         | Zip per system        | Exe and folder                            | pip, exe              | Single binary         |
 | Systems          | Windows, macOS (universal), Linux             | Windows, Linux                      | Windows, macOS, Linux | Windows                                   | Any with Python       | Windows, macOS, Linux |
 | Built with       | Rust and Svelte (Tauri)                       | Python and QML                      | Python and TypeScript | Python (PyQt5)                            | Python                | Rust                  |
-| Sites            | Pawchive only, in depth                       | Pawchive, Kemono, Coomer and others | Pawchive              | Kemono, Coomer, Bunkr, Discord and others | Hundreds              | Kemono, Coomer        |
+| Sites            | Pawchive, Kemono, Coomer                      | Pawchive, Kemono, Coomer and others | Pawchive              | Kemono, Coomer, Bunkr, Discord and others | Hundreds              | Kemono, Coomer        |
 | Latest release   | 1.1.1, 2026-11-18                             | 1.4.1, 2026-11-17                   | 1.0.0, 2026-08-23     | 2.0.0, 2026-11-12                         | 1.32.20, 2026-11-14   | 0.77.1, 2026-09-12    |
 | GitHub stars     | private                                       | 91                                  | 597                   | 675                                       | 20,562                | 71                    |
 | License          | MIT (builds on Ko-fi)                         | not stated                          | BSD-3-Clause          | MIT                                       | GPL-2.0               | MIT-0                 |
-| Automated tests  | 150 (Rust, unit, UI) on 3 systems             | -                                   | Yes                   | -                                         | Yes                   | -                     |
+| Automated tests  | About 160 (Rust, unit, UI) on 3 systems       | -                                   | Yes                   | -                                         | Yes                   | -                     |
 
 ## Getting posts
 
-| Feature                                                  | This app         | whyamihere773  | KToolBox        | Yuvi9587              | gallery-dl | kumono |
-| -------------------------------------------------------- | ---------------- | -------------- | --------------- | --------------------- | ---------- | ------ |
-| Single posts, creators, site search                      | Yes              | Yes            | Yes             | Yes                   | Yes        | Yes    |
-| Paste, drop or import many links                         | Yes              | Yes            | Yes             | Yes                   | Yes        | Yes    |
-| Search creators by name                                  | Yes              | -              | Yes             | -                     | -          | -      |
-| Browse a post's files with thumbnails before downloading | Yes              | Yes            | Partly (web UI) | -                     | -          | -      |
-| Image viewer while picking files                         | Yes              | Yes            | -               | -                     | -          | -      |
-| Linked accounts of a creator                             | Shown            | -              | -               | -                     | -          | Yes    |
-| Preview-only files (signed relay links)                  | Yes              | -              | -               | -                     | -          | -      |
-| Comments                                                 | Yes              | -              | -               | Partly (filter scope) | Yes        | -      |
-| Announcements                                            | Yes              | -              | -               | -                     | Yes        | -      |
-| Outside links (Mega, Drive...) and passwords             | Saved and listed | Downloads them | -               | Lists, some download  | Metadata   | -      |
-| Downloads from outside hosts                             | No (see below)   | Yes            | -               | Partly                | Some       | -      |
+| Feature                                                  | This app                                                                 | whyamihere773  | KToolBox        | Yuvi9587              | gallery-dl | kumono |
+| -------------------------------------------------------- | ------------------------------------------------------------------------ | -------------- | --------------- | --------------------- | ---------- | ------ |
+| Single posts, creators, site search                      | Yes                                                                      | Yes            | Yes             | Yes                   | Yes        | Yes    |
+| Paste, drop or import many links                         | Yes                                                                      | Yes            | Yes             | Yes                   | Yes        | Yes    |
+| Search creators by name                                  | Yes                                                                      | -              | Yes             | -                     | -          | -      |
+| Browse a post's files with thumbnails before downloading | Yes                                                                      | Yes            | Partly (web UI) | -                     | -          | -      |
+| Image viewer while picking files                         | Yes                                                                      | Yes            | -               | -                     | -          | -      |
+| Linked accounts of a creator                             | Shown                                                                    | -              | -               | -                     | -          | Yes    |
+| Preview-only files (signed relay links)                  | Yes                                                                      | -              | -               | -                     | -          | -      |
+| Comments                                                 | Yes                                                                      | -              | -               | Partly (filter scope) | Yes        | -      |
+| Announcements                                            | Yes                                                                      | -              | -               | -                     | Yes        | -      |
+| Outside links (Mega, Drive...) and passwords             | Saved, listed, downloaded                                                | Downloads them | -               | Lists, some download  | Metadata   | -      |
+| Downloads from outside hosts                             | **Yes: Mega (decrypted), Drive, Dropbox, Pixeldrain, GoFile, MediaFire** | Yes            | -               | Partly                | Some       | -      |
 
 ## Choosing what to download
 
@@ -78,21 +78,24 @@ project there.
 
 ## Downloading
 
-| Feature                                        | This app | whyamihere773 | KToolBox   | Yuvi9587 | gallery-dl     | kumono |
-| ---------------------------------------------- | -------- | ------------- | ---------- | -------- | -------------- | ------ |
-| Resume after pause, network loss or restart    | Yes      | Yes           | Partly     | Yes      | Yes            | Yes    |
-| SHA-256 check of every file                    | Yes      | -             | -          | -        | -              | Yes    |
-| One ZIP per post (ZIP64, split parts)          | Yes      | -             | -          | -        | Post-processor | -      |
-| Polite limits and 429 cooldowns                | Yes      | Partly        | Yes        | Partly   | Yes            | Partly |
-| Proxy and Tor                                  | Yes      | Yes           | Yes        | Yes      | Yes            | Yes    |
-| Speed limit                                    | Yes      | -             | -          | -        | Yes            | -      |
-| Waits for the network instead of failing       | Yes      | Partly        | -          | -        | -              | -      |
-| Waits instead of failing when the disk is full | Yes      | Yes           | -          | -        | -              | -      |
-| Download window (for example at night)         | Yes      | Yes           | Cron plans | -        | -              | -      |
-| Keeps the computer awake                       | Yes      | Yes           | -          | -        | -              | -      |
-| Quit, sleep or shut down when done             | Yes      | -             | -          | -        | -              | -      |
-| Queue with pause, reorder and retry per file   | Yes      | Partly        | Yes        | Partly   | -              | -      |
-| Retry all failed, export failed list           | Yes      | Yes           | Rerun      | Yes      | -              | -      |
+| Feature                                              | This app | whyamihere773      | KToolBox   | Yuvi9587 | gallery-dl     | kumono |
+| ---------------------------------------------------- | -------- | ------------------ | ---------- | -------- | -------------- | ------ |
+| Resume after pause, network loss or restart          | Yes      | Yes                | Partly     | Yes      | Yes            | Yes    |
+| SHA-256 check of every file                          | Yes      | -                  | -          | -        | -              | Yes    |
+| One ZIP per post (ZIP64, split parts)                | Yes      | -                  | -          | -        | Post-processor | -      |
+| Polite limits and 429 cooldowns                      | Yes      | Partly             | Yes        | Partly   | Yes            | Partly |
+| Proxy and Tor                                        | Yes      | Yes                | Yes        | Yes      | Yes            | Yes    |
+| Speed limit                                          | Yes      | -                  | -          | -        | Yes            | -      |
+| Waits for the network instead of failing             | Yes      | Partly             | -          | -        | -              | -      |
+| Waits instead of failing when the disk is full       | Yes      | Yes                | -          | -        | -              | -      |
+| Download window (for example at night)               | Yes      | Yes                | Cron plans | -        | -              | -      |
+| Keeps the computer awake                             | Yes      | Yes                | -          | -        | -              | -      |
+| Quit, sleep or shut down when done                   | Yes      | -                  | -          | -        | -              | -      |
+| Queue with pause, reorder and retry per file         | Yes      | Partly             | Yes        | Partly   | -              | -      |
+| Retry all failed, export failed list                 | Yes      | Yes                | Rerun      | Yes      | -              | -      |
+| Notices dead media servers, falls back to thumbnails | **Yes**  | -                  | -          | -        | -              | -      |
+| Unpacks ZIP archives with the post's passwords       | **Yes**  | Yes (zip, rar, 7z) | -          | -        | -              | -      |
+| Retries failed files later by itself                 | **Yes**  | -                  | -          | -        | -              | -      |
 
 ## Keeping up and looking back
 
@@ -106,6 +109,9 @@ project there.
 | Statistics                                       | Yes      | Yes           | Overview   | -                 | -                 | -      |
 | Find deleted or moved files and get them back    | Yes      | Yes           | -          | -                 | -                 | -      |
 | Crash-safe queue                                 | Yes      | Yes           | Yes        | Partly            | -                 | -      |
+| Read markers on posts                            | **Yes**  | -             | -          | -                 | -                 | -      |
+| Portable mode, full backup and restore           | **Yes**  | -             | -          | -                 | -                 | -      |
+| Browser extension hands downloads to the app     | **Yes**  | -             | -          | -                 | -                 | -      |
 
 ## The app itself
 
@@ -119,12 +125,12 @@ project there.
 
 ## Left out on purpose
 
-- **Downloading from Mega, Google Drive and other hosts.** Each host has its
-  own rules, accounts and limits, and some forbid automated downloads. The
-  app saves those links and passwords (`links.txt`, and the Links tab of a
-  post) so they can be opened in the browser or a host's own app.
-- **Extracting archives, converting images, tagging audio, AI character
-  recognition.** These change your files; dedicated tools do them better.
-- **Signing in to Pawchive.** Everything the app does works without an
-  account, and no password or cookie ever has to be handed to it.
-- **Discord servers.** Pawchive does not archive Discord.
+- **RAR and 7z archives, converting images, tagging audio, AI character
+  recognition.** These change your files or need large extra components;
+  dedicated tools do them better. ZIP archives are unpacked.
+- **Hosts that need an account or a captcha** (Bunkr and similar). Their
+  links are still listed and saved to `links.txt`.
+- **Signing in.** Everything the app does works without an account, and no
+  password or cookie ever has to be handed to it.
+- **Discord servers on Kemono.** They are a chat archive rather than posts;
+  they may come later.

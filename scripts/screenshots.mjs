@@ -50,7 +50,7 @@ async function open(url) {
 async function nav(name) {
   await page
     .getByRole('navigation')
-    .getByRole('link', { name: new RegExp(`^${name}`) })
+    .getByRole('link', { name: new RegExp(`^${name}(?![a-z])`) })
     .click();
 }
 
@@ -68,6 +68,10 @@ await rows.first().dblclick();
 await page.getByRole('listbox', { name: 'Files in this post' }).waitFor();
 await shot('post');
 
+await page.getByText(/^\d+ links$/).click();
+await page.getByText('mega.nz').first().waitFor();
+await shot('links');
+
 await nav('Downloads');
 await page
   .getByRole('article')
@@ -75,6 +79,12 @@ await page
   .getByRole('button', { name: /Show \d+ items/ })
   .click();
 await shot('downloads');
+
+await page.keyboard.press('Control+b');
+await page.waitForTimeout(400);
+await shot('compact');
+await page.keyboard.press('Control+b');
+await page.waitForTimeout(300);
 
 await nav('Watchlist');
 await page

@@ -444,5 +444,13 @@
   "bridge.codeHint": "Enter this code in the extension's settings. It works once, for two minutes.",
   "bridge.lastUsed": "Last used {when}",
   "bridge.paired": "Paired {when}",
-  "bridge.revoke": "Remove this pairing"
+  "bridge.revoke": "Remove this pairing",
+  "help.sites.title": "Pawchive, Kemono and Coomer",
+  "help.sites.body": "Links from pawchive.pw, kemono.cr and coomer.st all work the same way (old kemono.su and coomer.su links too). Creator search and Recent posts have a site switch.\nThe {site} name token puts each site's downloads in its own folder.\nWhen a site's media servers do not answer, a bar at the top says so and can switch to saving thumbnails instead; files are tried again later by themselves.",
+  "help.outside.title": "Mega, Google Drive and other hosts",
+  "help.outside.body": "Turn on Settings > Downloads > Download outside links (or the Outside links box when downloading) and the files posts share on Mega, Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire and direct links are downloaded into a Links folder in the post.\nMega files are decrypted on this computer with the key in the link; the key is never sent anywhere.\nEach link in a post's Links tab also has its own download button.\nSettings > Downloads > Unpack ZIP archives unpacks ZIPs next to themselves, trying the passwords the post mentions.",
+  "help.portable.title": "Portable mode and backups",
+  "help.portable.body": "With a folder named data next to the program (the portable zip has one), settings, library and logs stay in that folder, so the app can run from a USB stick. About shows Portable when it is on.\nSettings > Data > Backup saves your settings, watchlist, favorites and history in one file; Restore adds what is missing on another computer.",
+  "help.bridge.title": "The browser extension",
+  "help.bridge.body": "Settings > Browser extension lets the Pawchive Downloader extension send downloads here. Turn it on, press Pair and enter the six-digit code in the extension's settings within two minutes.\nIt only listens on this computer, web pages cannot use it, and each paired browser can be removed again."
 }

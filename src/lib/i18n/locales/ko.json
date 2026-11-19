@@ -744,5 +744,13 @@
   "bridge.codeHint": "확장 프로그램 설정에 이 코드를 입력하세요. 2분 동안 한 번만 쓸 수 있습니다.",
   "bridge.lastUsed": "마지막 사용: {when}",
   "bridge.paired": "연결: {when}",
-  "bridge.revoke": "이 연결 삭제"
+  "bridge.revoke": "이 연결 삭제",
+  "help.sites.title": "Pawchive, Kemono, Coomer",
+  "help.sites.body": "pawchive.pw, kemono.cr, coomer.st 링크는 모두 같은 방식으로 작동합니다(예전 kemono.su, coomer.su 링크도). 크리에이터 검색과 최근 게시물에서 사이트를 바꿀 수 있습니다.\n{site} 이름 토큰으로 사이트마다 다른 폴더에 저장합니다.\n사이트의 미디어 서버가 응답하지 않으면 위쪽 막대가 알려 주고 대신 썸네일을 저장하도록 바꿀 수 있습니다. 파일은 나중에 자동으로 다시 시도됩니다.",
+  "help.outside.title": "Mega, Google 드라이브 등",
+  "help.outside.body": "설정 > 다운로드 > 외부 링크 다운로드(또는 다운로드할 때 외부 링크 상자)를 켜면 게시물이 Mega, Google 드라이브, Dropbox, Pixeldrain, GoFile, MediaFire, 직접 링크로 공유한 파일을 게시물의 Links 폴더에 받습니다.\nMega 파일은 링크의 키로 이 컴퓨터에서 복호화하며, 키는 어디에도 보내지 않습니다.\n게시물 링크 탭의 각 링크에도 다운로드 버튼이 있습니다.\n설정 > 다운로드 > ZIP 압축 풀기는 게시물의 비밀번호를 시도하며 ZIP을 옆에 풉니다.",
+  "help.portable.title": "포터블 모드와 백업",
+  "help.portable.body": "프로그램 옆에 data 폴더가 있으면(포터블 zip에 포함) 설정, 라이브러리, 로그가 그 폴더에 저장되어 USB에서도 실행할 수 있습니다. 켜져 있으면 정보에 포터블이 표시됩니다.\n설정 > 데이터 > 백업은 설정, 관심 목록, 즐겨찾기, 기록을 파일 하나로 저장하고, 다른 컴퓨터에서 복원하면 없는 것을 추가합니다.",
+  "help.bridge.title": "브라우저 확장 프로그램",
+  "help.bridge.body": "설정 > 브라우저 확장 프로그램에서 Pawchive Downloader 확장 프로그램이 여기로 다운로드를 보내게 할 수 있습니다. 켜고 연결을 누른 뒤 2분 안에 6자리 코드를 확장 프로그램 설정에 입력하세요.\n이 컴퓨터에서만 대기하고 웹 페이지는 사용할 수 없으며, 연결한 브라우저는 다시 삭제할 수 있습니다."
 }

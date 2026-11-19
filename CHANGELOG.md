@@ -6,6 +6,47 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-19
+
+The next generation: more sites, outside hosts and a lot of convenience.
+
+### Added
+
+- **Kemono and Coomer** next to Pawchive: links (old kemono.su and
+  coomer.su ones too), creator search, recent posts, the watchlist and every
+  download work on all three. A new `{site}` name token; the default folder
+  template is now `{site}/{creator} ({service})/...` (the old default moves
+  over by itself).
+- **Outside hosts**: files posts share on Mega (files and folders,
+  decrypted on this computer), Google Drive (files and folders), Dropbox,
+  Pixeldrain, GoFile, MediaFire and direct links are downloaded with the
+  post, or one link at a time from a post's Links tab.
+- **Unpacking**: downloaded ZIP archives can be unpacked next to
+  themselves, trying the passwords the post mentions.
+- **Dead media servers**: when a site answers but its media servers do not,
+  files fail within seconds instead of waiting for the network, the host is
+  skipped for a while, and a bar offers to save thumbnails instead.
+- **Automatic retries** of failed files after a chosen time, up to three
+  times.
+- **Browser bridge**: a paired browser extension can hand downloads to the
+  app (loopback only, off by default).
+- **Portable mode**: with a `data` folder next to the program everything
+  stays there; the portable zip ships with one.
+- **Backup and restore** of settings, watchlist, favorites and history.
+- **Read markers** for posts opened before.
+- **Copied links**: optionally, links copied anywhere are offered for
+  opening.
+- **Privacy**: blur previews until pointed at, and notifications without
+  titles or names.
+- **Compact sidebar** (Ctrl+B) and tooltips that are never cut off.
+- Help topics for all of the above.
+
+### Fixed
+
+- Recent posts never finished loading: the list restarted itself after
+  every page and kept sending requests.
+- The link bar's focus ring was cut off at the top of the window.
+
 ## [1.1.1] - 2026-11-18
 
 ### Fixed
@@ -142,7 +183,8 @@ Downloader browser extension.
   and component tests, Playwright interface tests; CI on Windows, macOS and
   Linux.
 
-[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.1.1...HEAD
+[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.1...v1.0.2

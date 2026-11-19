@@ -429,5 +429,13 @@
   "bridge.codeHint": "在扩展的设置中输入此代码。两分钟内有效，只能用一次。",
   "bridge.lastUsed": "上次使用：{when}",
   "bridge.paired": "配对于 {when}",
-  "bridge.revoke": "删除此配对"
+  "bridge.revoke": "删除此配对",
+  "help.sites.title": "Pawchive、Kemono 和 Coomer",
+  "help.sites.body": "pawchive.pw、kemono.cr 和 coomer.st 的链接用法完全相同（旧的 kemono.su、coomer.su 链接也可以）。创作者搜索和最新帖子可以切换网站。\n名称标记 {site} 可让每个网站的下载各占一个文件夹。\n网站的媒体服务器没有响应时，顶部横条会提示，并可改为保存缩略图；文件之后会自动重试。",
+  "help.outside.title": "Mega、Google 云端硬盘等网盘",
+  "help.outside.body": "打开“设置 > 下载 > 下载外部链接”（或下载时的“外部链接”选项），帖子在 Mega、Google 云端硬盘、Dropbox、Pixeldrain、GoFile、MediaFire 和直链上分享的文件会下载到帖子的 Links 文件夹。\nMega 文件在本机用链接中的密钥解密，密钥不会发送到任何地方。\n帖子“链接”标签中的每个链接也有自己的下载按钮。\n“设置 > 下载 > 解压 ZIP 压缩包”会把 ZIP 解压到旁边，并尝试帖子中提到的密码。",
+  "help.portable.title": "便携模式与备份",
+  "help.portable.body": "程序旁边有名为 data 的文件夹时（便携版 zip 自带），设置、资料库和日志都保存在其中，可以从 U 盘运行。开启时“关于”会显示“便携版”。\n“设置 > 数据 > 备份”把设置、关注列表、收藏和历史保存为一个文件；在另一台电脑上“恢复”会补上缺少的内容。",
+  "help.bridge.title": "浏览器扩展",
+  "help.bridge.body": "“设置 > 浏览器扩展”允许 Pawchive Downloader 扩展把下载发送到这里。打开它，点“配对”，并在两分钟内把六位代码输入到扩展的设置中。\n它只在本机监听，网页无法使用，每个已配对的浏览器都可以删除。"
 }

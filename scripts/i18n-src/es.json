@@ -450,5 +450,13 @@
   "bridge.codeHint": "Escribe este código en los ajustes de la extensión. Sirve una vez, durante dos minutos.",
   "bridge.lastUsed": "Último uso: {when}",
   "bridge.paired": "Vinculada {when}",
-  "bridge.revoke": "Quitar esta vinculación"
+  "bridge.revoke": "Quitar esta vinculación",
+  "help.sites.title": "Pawchive, Kemono y Coomer",
+  "help.sites.body": "Los enlaces de pawchive.pw, kemono.cr y coomer.st funcionan igual (también los antiguos de kemono.su y coomer.su). La búsqueda de creadores y las publicaciones recientes tienen un selector de sitio.\nEl marcador {site} guarda cada sitio en su propia carpeta.\nSi los servidores de medios de un sitio no responden, una barra arriba lo avisa y permite guardar miniaturas; los archivos se reintentan solos más tarde.",
+  "help.outside.title": "Mega, Google Drive y otros",
+  "help.outside.body": "Activa Ajustes > Descargas > Descargar enlaces externos (o la casilla Enlaces externos al descargar) y lo que las publicaciones comparten en Mega, Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire y enlaces directos se descarga en una carpeta Links.\nLos archivos de Mega se descifran en este equipo con la clave del enlace; la clave no se envía a ningún sitio.\nCada enlace de la pestaña Enlaces tiene también su propio botón de descarga.\nAjustes > Descargas > Descomprimir ZIP descomprime los ZIP junto a ellos, probando las contraseñas de la publicación.",
+  "help.portable.title": "Modo portátil y copias",
+  "help.portable.body": "Con una carpeta llamada data junto al programa (el zip portátil la trae), los ajustes, la biblioteca y los registros se quedan ahí, así la app funciona desde un USB. Acerca de muestra Portátil cuando está activo.\nAjustes > Datos > Copia de seguridad guarda ajustes, lista, favoritos e historial en un archivo; Restaurar añade lo que falta en otro equipo.",
+  "help.bridge.title": "La extensión del navegador",
+  "help.bridge.body": "Ajustes > Extensión del navegador permite que la extensión de Pawchive Downloader envíe descargas aquí. Actívalo, pulsa Vincular y escribe el código de seis cifras en los ajustes de la extensión en dos minutos.\nSolo escucha en este equipo, las páginas web no pueden usarlo y cada navegador vinculado se puede quitar."
 }
