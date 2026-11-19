@@ -224,6 +224,8 @@ fn base_item(post: &Post, id: String, label: String, path: String, kind: ItemKin
         not_before: None,
         fallback: false,
         waits: 0,
+        failed_at: None,
+        auto_retries: 0,
         kind,
     }
 }
@@ -506,6 +508,8 @@ pub fn announcements_item(options: &JobOptions, creator: &CreatorInfo, now_ms: i
         not_before: None,
         fallback: false,
         waits: 0,
+        failed_at: None,
+        auto_retries: 0,
         kind: ItemKind::Announcements {
             name: creator.name.clone(),
         },

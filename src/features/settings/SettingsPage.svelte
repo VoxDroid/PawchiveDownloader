@@ -1,7 +1,7 @@
 <script lang="ts">
   import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
-  import { api, inTauri, pickFolder } from '../../lib/api';
+  import { api, inTauri, pickFolder, pickFile, pickSavePath } from '../../lib/api';
   import { openTextFile, saveTextFile, stamp } from '../../lib/files';
   import { LANGUAGE_NAMES } from '../../lib/i18n';
   import {
@@ -106,6 +106,34 @@
     if (!proxyError) set('proxy', { mode: 'custom', url: proxyUrl.trim() });
   }
 
+  async function exportBackup() {
+    const path = await pickSavePath(
+      t('settings.backupSave'),
+      `pawchive-downloader-backup-${stamp()}.json`,
+      [{ name: 'JSON', extensions: ['json'] }],
+    );
+    if (!path) return;
+    try {
+      await api.exportBackup(path);
+      toast(t('settings.backupSaved'), 'success');
+    } catch (e) {
+      toast(describeError(e), 'error');
+    }
+  }
+
+  async function restoreBackup() {
+    const path = await pickFile(t('settings.backupRestore'), [
+      { name: 'JSON', extensions: ['json'] },
+    ]);
+    if (!path) return;
+    try {
+      const r = await api.importBackup(path);
+      toast(t('settings.backupRestored', r), 'success');
+    } catch {
+      toast(t('settings.backupInvalid'), 'error');
+    }
+  }
+
   async function exportFile() {
     const path = await saveTextFile(
       `pawchive-downloader-settings-${stamp()}.json`,
@@ -192,6 +220,13 @@
         ...LOCALES.map((l) => ({ value: l, label: LANGUAGE_NAMES[l] })),
       ]}
       onchange={(v) => set('language', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.blurPreviews')} description={t('settings.blurPreviewsHint')}>
+    <Switch
+      label={t('settings.blurPreviews')}
+      checked={s.blurPreviews}
+      onchange={(v) => set('blurPreviews', v)}
     />
   </SettingRow>
   <SettingRow label={t('settings.theme')} stacked>
@@ -340,6 +375,17 @@
       label={t('settings.schedule')}
       checked={s.scheduleEnabled}
       onchange={(v) => set('scheduleEnabled', v)}
+    />
+  </SettingRow>
+  <SettingRow label={t('settings.autoRetry')} description={t('settings.autoRetryHint')}>
+    <Select
+      label={t('settings.autoRetry')}
+      value={s.autoRetryMinutes}
+      onchange={(v) => set('autoRetryMinutes', v)}
+      options={[0, 15, 30, 60, 180].map((m) => ({
+        value: m,
+        label: m === 0 ? t('settings.off') : t('settings.afterMinutes', { count: m }),
+      }))}
     />
   </SettingRow>
   <SettingRow label={t('settings.keepAwake')} description={t('settings.keepAwakeHint')}>
@@ -623,6 +669,23 @@
       onchange={(v) => set('startMinimized', v)}
     />
   </SettingRow>
+  <SettingRow label={t('settings.watchClipboard')} description={t('settings.watchClipboardHint')}>
+    <Switch
+      label={t('settings.watchClipboard')}
+      checked={s.watchClipboard}
+      onchange={(v) => set('watchClipboard', v)}
+    />
+  </SettingRow>
+  <SettingRow
+    label={t('settings.privateNotifications')}
+    description={t('settings.privateNotificationsHint')}
+  >
+    <Switch
+      label={t('settings.privateNotifications')}
+      checked={s.privateNotifications}
+      onchange={(v) => set('privateNotifications', v)}
+    />
+  </SettingRow>
   <SettingRow label={t('settings.notifications')}>
     <Select
       label={t('settings.notifications')}
@@ -692,6 +755,10 @@
   <SettingRow label={t('settings.exportSettings')} description={t('settings.exportHint')}>
     <Button size="sm" icon="export" onclick={exportFile}>{t('common.export')}</Button>
     <Button size="sm" icon="import" onclick={importFile}>{t('common.import')}</Button>
+  </SettingRow>
+  <SettingRow label={t('settings.backup')} description={t('settings.backupHint')}>
+    <Button size="sm" icon="export" onclick={exportBackup}>{t('settings.backupSave')}</Button>
+    <Button size="sm" icon="import" onclick={restoreBackup}>{t('settings.backupRestore')}</Button>
   </SettingRow>
   <SettingRow label={t('settings.dataFolder')} description={t('settings.dataFolderHint')}>
     <Button

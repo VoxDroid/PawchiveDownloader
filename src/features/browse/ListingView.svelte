@@ -26,6 +26,7 @@
 
   let posts = $state<Post[]>([]);
   let downloaded = $state(new Set<string>());
+  let opened = $state(new Set<string>());
   let selected = $state(new Set<string>());
   let offset = $state(0);
   let end = $state(false);
@@ -44,6 +45,7 @@
       const seen = new Set(posts.map((p) => p.id));
       posts = [...posts, ...page.posts.filter((p) => !seen.has(p.id))];
       downloaded = new Set([...downloaded, ...page.downloaded]);
+      opened = new Set([...opened, ...(page.seen ?? [])]);
       offset += PAGE;
       if (page.posts.length < PAGE) end = true;
     } catch (e) {
@@ -145,7 +147,14 @@
         />
       </span>
     </div>
-    <PostList {posts} {selected} {downloaded} showCreator onchange={(next) => (selected = next)} />
+    <PostList
+      {posts}
+      {selected}
+      {downloaded}
+      seen={opened}
+      showCreator
+      onchange={(next) => (selected = next)}
+    />
     {#if !end}
       <div class="more">
         <Button size="sm" icon="plus" {loading} onclick={loadMore}>{t('creator.loadMore')}</Button>

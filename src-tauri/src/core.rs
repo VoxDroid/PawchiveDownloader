@@ -363,6 +363,14 @@ impl Core {
                     _ => {}
                 }
             }
+            if s.auto_retry_minutes > 0 {
+                let after = if self.fast_timing {
+                    i64::from(s.auto_retry_minutes)
+                } else {
+                    i64::from(s.auto_retry_minutes) * 60_000
+                };
+                self.engine.auto_retry(after, 3);
+            }
             let busy = !folders.is_empty();
             let transferring = self.engine.active_count() > 0 || (busy && hold.is_none());
             self.awake.set(s.keep_awake && transferring);

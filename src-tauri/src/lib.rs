@@ -21,9 +21,26 @@ use tauri::Manager;
 
 use crate::core::{Core, CoreOptions};
 
+/// Portable mode: with a `data` folder (or a file named `portable`) next to
+/// the program, everything is kept there instead of in the user's profile,
+/// so the whole app can live on a USB stick.
+pub fn portable_dir() -> Option<std::path::PathBuf> {
+    let exe = std::env::current_exe().ok()?;
+    let dir = exe.parent()?;
+    let data = dir.join("data");
+    (data.is_dir() || dir.join("portable").is_file()).then_some(data)
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let minimized_arg = std::env::args().any(|a| a == "--minimized");
+    let portable = portable_dir();
+    if let Some(dir) = &portable {
+        let _ = std::fs::create_dir_all(dir);
+        // The web view keeps its own data (window size, small preferences).
+        #[cfg(windows)]
+        std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", dir.join("webview"));
+    }
     tauri::Builder::default()
         .plugin(tauri_plugin_single_instance::init(|app, argv, _cwd| {
             app::show_main(app);
@@ -41,6 +58,7 @@ pub fn run() {
                 .build(),
         )
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_autostart::init(
@@ -49,11 +67,17 @@ pub fn run() {
         ))
         .setup(move |app| {
             let handle = app.handle().clone();
-            let data_dir = app.path().app_data_dir()?;
-            let log_dir = app
-                .path()
-                .app_log_dir()
-                .unwrap_or_else(|_| data_dir.join("logs"));
+            let (data_dir, log_dir) = match &portable {
+                Some(dir) => (dir.clone(), dir.join("logs")),
+                None => {
+                    let data_dir = app.path().app_data_dir()?;
+                    let log_dir = app
+                        .path()
+                        .app_log_dir()
+                        .unwrap_or_else(|_| data_dir.join("logs"));
+                    (data_dir, log_dir)
+                }
+            };
             install_crash_reporter(log_dir.clone());
             let core = Core::new(CoreOptions {
                 data_dir,
@@ -113,6 +137,7 @@ pub fn run() {
             }
             app::build_tray(&handle, &core)?;
             app::spawn_live_updates(handle.clone(), Arc::clone(&core));
+            app::spawn_clipboard_watch(handle.clone(), Arc::clone(&core));
             let start_hidden = minimized_arg || core.settings().start_minimized;
             if !start_hidden {
                 // The interface shows the window after its first paint; this
@@ -149,6 +174,8 @@ pub fn run() {
             commands::check_library,
             commands::repair_library,
             commands::set_watch_options,
+            commands::export_backup,
+            commands::import_backup,
             commands::set_when_done,
             commands::cancel_when_done,
             commands::get_creator_posts,

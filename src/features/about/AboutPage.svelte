@@ -53,6 +53,7 @@
       <span class="pill">{platform} {app.info?.arch}</span>
       <span class="pill" class:official={app.info?.channel === 'official'}>
         {app.info?.channel === 'official' ? t('about.channelOfficial') : t('about.channelSource')}
+        {#if app.info?.portable}<span class="sep">/</span>{t('about.portable')}{/if}
       </span>
       <span class="pill">MIT</span>
     </div>

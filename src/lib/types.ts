@@ -102,6 +102,8 @@ export interface CreatorView {
 export interface PostPage {
   posts: Post[];
   downloaded: string[];
+  /** Ids of posts opened before. */
+  seen?: string[];
 }
 
 // ------------------------------------------------------------------ settings
@@ -192,6 +194,14 @@ export interface Settings {
   categories: Record<FileCategory, boolean>;
   speedLimitKbps: number;
   keepAwake: boolean;
+  /** Retry failed files after this many minutes (0 off), up to 3 times. */
+  autoRetryMinutes: number;
+  /** Blur thumbnails and previews until hovered. */
+  blurPreviews: boolean;
+  /** Notifications without titles or creator names. */
+  privateNotifications: boolean;
+  /** Offer to download links copied anywhere. */
+  watchClipboard: boolean;
   /** Hold new downloads below this much free space (MB); 0 is off. */
   minFreeSpaceMb: number;
   scheduleEnabled: boolean;
@@ -246,6 +256,10 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   >,
   speedLimitKbps: 0,
   keepAwake: true,
+  autoRetryMinutes: 30,
+  blurPreviews: false,
+  privateNotifications: false,
+  watchClipboard: false,
   minFreeSpaceMb: 1024,
   scheduleEnabled: false,
   scheduleStart: '01:00',
@@ -545,6 +559,8 @@ export interface AppInfo {
   channel: 'official' | 'source';
   /** A crash report from an earlier run that has not been shown yet. */
   lastCrash: string | null;
+  /** Data is kept next to the program. */
+  portable?: boolean;
 }
 
 export interface TemplatePreview {

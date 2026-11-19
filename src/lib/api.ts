@@ -138,6 +138,9 @@ export const api = {
   jobsActionAll: (action: 'pause' | 'resume' | 'retry') =>
     call<void>('jobs_action_all', { action }),
   queueStatus: () => call<QueueStatus>('queue_status'),
+  exportBackup: (path: string) => call<void>('export_backup', { path }),
+  importBackup: (path: string) =>
+    call<{ watch: number; favorites: number; history: number }>('import_backup', { path }),
   libraryStats: () => call<LibraryStats>('library_stats'),
   checkLibrary: () => call<LibraryCheck>('check_library'),
   repairLibrary: (posts: MissingPost[], redownload: boolean) =>

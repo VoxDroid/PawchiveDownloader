@@ -414,7 +414,9 @@ impl Hooks for AppHooks {
             return;
         }
         let w = words(&language(&core));
-        let (title, body) = if jobs == 1 {
+        // Private notifications never show titles or creator names.
+        let private = core.settings().private_notifications;
+        let (title, body) = if jobs == 1 && !private {
             let title = if failed > 0 { w.failed } else { w.finished };
             let body = format!(
                 "{} ({}/{})",
@@ -538,7 +540,60 @@ pub fn links_in_args(args: &[String]) -> Vec<String> {
 
 pub fn new_posts_text(core: &Core, count: usize, names: &str) -> (String, String) {
     let w = words(&language(core));
-    (format!("{count} {}", w.new_posts), names.to_string())
+    let names = if core.settings().private_notifications {
+        String::new()
+    } else {
+        names.to_string()
+    };
+    (format!("{count} {}", w.new_posts), names)
+}
+
+/// Watches the clipboard while the setting is on and tells the window about
+/// newly copied links to a supported site. Only the text is read, every 1.5 s,
+/// and nothing leaves the computer.
+pub fn spawn_clipboard_watch(app: AppHandle, core: Arc<Core>) {
+    use tauri_plugin_clipboard_manager::ClipboardExt;
+    tauri::async_runtime::spawn(async move {
+        let mut last = String::new();
+        let mut was_on = false;
+        let mut tick = tokio::time::interval(Duration::from_millis(1500));
+        loop {
+            tick.tick().await;
+            if core.cancel.is_cancelled() {
+                break;
+            }
+            let on = core.settings().watch_clipboard;
+            let text = if on {
+                app.clipboard().read_text().unwrap_or_default()
+            } else {
+                String::new()
+            };
+            // What was already copied when watching starts is not new.
+            if on && !was_on {
+                last = text.clone();
+            }
+            was_on = on;
+            if !on || text == last {
+                continue;
+            }
+            last = text.clone();
+            let links: Vec<String> = crate::pawchive::urls::extract_links(&text)
+                .into_iter()
+                .map(|(url, _)| url)
+                .take(200)
+                .collect();
+            if !links.is_empty() {
+                emit(
+                    &app,
+                    "clipboard-links",
+                    &links.join(
+                        "
+",
+                    ),
+                );
+            }
+        }
+    });
 }
 
 #[cfg(test)]

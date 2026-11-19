@@ -10,12 +10,22 @@
     post: Post;
     selected: boolean;
     downloaded: boolean;
+    /** Opened before. */
+    seen?: boolean;
     showCreator?: boolean;
     onselect: (event: MouseEvent | KeyboardEvent) => void;
     onopen: () => void;
   }
 
-  let { post, selected, downloaded, showCreator = false, onselect, onopen }: Props = $props();
+  let {
+    post,
+    selected,
+    downloaded,
+    seen = false,
+    showCreator = false,
+    onselect,
+    onopen,
+  }: Props = $props();
 
   const thumb = $derived(post.files.find((f) => f.thumbnailUrl)?.thumbnailUrl ?? null);
   const kinds = $derived([...new Set(post.files.map((f) => f.category))].slice(0, 4));
@@ -49,7 +59,10 @@
     {/if}
   </div>
   <div class="main">
-    <span class="title truncate">{post.title || t('common.untitled')}</span>
+    <span class="title truncate" class:seen>
+      {#if seen}<span class="seen-dot" data-tip={t('post.seen')}></span>{/if}
+      {post.title || t('common.untitled')}
+    </span>
     <span class="sub truncate mono-num">
       {#if showCreator}{post.creatorId}<span class="sep">/</span>{/if}
       {post.published ? fmt.date(post.published) : '-'}
@@ -80,6 +93,19 @@
 </div>
 
 <style>
+  .title.seen {
+    color: var(--text-dim);
+    font-weight: 500;
+  }
+  .seen-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    margin-right: 6px;
+    border-radius: 99px;
+    background: var(--text-faint);
+    vertical-align: middle;
+  }
   .row {
     height: 100%;
     display: flex;

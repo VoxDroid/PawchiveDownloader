@@ -291,6 +291,54 @@ impl Engine {
         out
     }
 
+    /// Puts failed files back in the queue once they have waited `after_ms`;
+    /// each file gets `max` such second chances. Returns how many.
+    pub fn auto_retry(self: &Arc<Self>, after_ms: i64, max: u32) -> usize {
+        let now = now_ms();
+        let mut count = 0;
+        {
+            let mut state = self.state.lock();
+            for job in state
+                .jobs
+                .iter_mut()
+                .filter(|j| !matches!(j.status, JobStatus::Paused | JobStatus::Cancelled))
+            {
+                let mut any = false;
+                for item in job.items.iter_mut().filter(|i| {
+                    i.status == ItemStatus::Failed
+                        && i.auto_retries < max
+                        && i.failed_at.is_some_and(|t| now - t >= after_ms)
+                }) {
+                    item.status = ItemStatus::Pending;
+                    item.attempts = 0;
+                    item.error = None;
+                    item.not_before = None;
+                    item.failed_at = None;
+                    item.auto_retries += 1;
+                    if let ItemKind::Zip { entries, .. } = &mut item.kind {
+                        for e in entries.iter_mut() {
+                            e.failed = false;
+                        }
+                    }
+                    any = true;
+                    count += 1;
+                }
+                if any && job.status.finished() {
+                    job.status = JobStatus::Queued;
+                    job.finished_at = None;
+                    job.error = None;
+                }
+            }
+        }
+        if count > 0 {
+            self.log
+                .info(format!("Trying {count} failed files again automatically"));
+            self.changed();
+            self.wake.notify_one();
+        }
+        count
+    }
+
     /// Any job not finished yet, paused ones included.
     pub fn has_unfinished(&self) -> bool {
         self.state.lock().jobs.iter().any(|j| !j.status.finished())
@@ -1754,6 +1802,7 @@ impl Engine {
                         );
                     } else {
                         item.status = ItemStatus::Failed;
+                        item.failed_at = Some(now_ms());
                         item.error = Some(error.to_string());
                         self.log
                             .error(format!("Failed: {}", item.label), Some(error.to_string()));

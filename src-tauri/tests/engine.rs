@@ -1344,3 +1344,41 @@ async fn a_down_media_server_falls_back_to_the_thumbnail_at_once() {
     // The folder template names the site.
     assert!(saved[0].to_string_lossy().contains("Kemono"));
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn failed_files_are_tried_again_later() {
+    let env = env().await;
+    let a = Fixture::new("late.png", 300, 110);
+    env.mount_creator(vec![post("901", "Late", &[&a])]).await;
+    // The file fails until the server is fixed.
+    Mock::given(method("GET"))
+        .and(path(a.data_path()))
+        .respond_with(ResponseTemplate::new(404))
+        .up_to_n_times(2)
+        .with_priority(1)
+        .mount(&env.server)
+        .await;
+    env.serve(&a).await;
+    env.core.settings.write().auto_retry_minutes = 0;
+    let id = env.core.engine.create(refs_request("901", no_text()));
+    let job = env.wait(&id).await;
+    assert_eq!(job.stats.failed, 1);
+    // Automatic retries come back once the wait is over (milliseconds here).
+    env.core.settings.write().auto_retry_minutes = 15;
+    let mut done = false;
+    for _ in 0..400 {
+        let j = env
+            .core
+            .engine
+            .summaries()
+            .into_iter()
+            .find(|j| j.id == id)
+            .unwrap();
+        if j.status == JobStatus::Done && j.stats.done == 1 {
+            done = true;
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(25)).await;
+    }
+    assert!(done, "{:?}", env.core.engine.items(&id));
+}

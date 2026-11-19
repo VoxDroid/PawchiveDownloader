@@ -257,6 +257,12 @@ pub struct Item {
     /// Times this item waited for the network to come back.
     #[serde(default)]
     pub waits: u32,
+    /// When it failed (epoch ms), for retrying it automatically later.
+    #[serde(default)]
+    pub failed_at: Option<i64>,
+    /// Automatic retries it has had.
+    #[serde(default)]
+    pub auto_retries: u32,
     #[serde(flatten)]
     pub kind: ItemKind,
 }

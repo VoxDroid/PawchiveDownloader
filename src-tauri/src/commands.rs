@@ -51,6 +51,8 @@ pub struct AppInfo {
     channel: &'static str,
     /// A crash report from a previous run that has not been shown yet.
     last_crash: Option<String>,
+    /// Data is kept next to the program (portable mode).
+    portable: bool,
 }
 
 #[tauri::command(async)]
@@ -60,6 +62,7 @@ pub fn app_info(core: State<'_, Core_>) -> AppInfo {
         platform: std::env::consts::OS.into(),
         arch: std::env::consts::ARCH.into(),
         data_dir: core.data_dir.to_string_lossy().into_owned(),
+        portable: crate::portable_dir().is_some(),
         log_file: core
             .log
             .file_path()
@@ -263,6 +266,10 @@ pub async fn get_post(
         .list_favorites()
         .iter()
         .any(|f| f.key == format!("p:{service}:{creator_id}:{post_id}"));
+    let _ = core.store.mark_seen(
+        &format!("{}:{}:{}", post.service, post.creator_id, post.id),
+        now_ms(),
+    );
     Ok(PostView {
         post,
         creator,
@@ -430,6 +437,98 @@ pub fn set_watch_options(
     })
 }
 
+/// Everything worth keeping when moving to another computer.
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct Backup {
+    app: String,
+    version: String,
+    created_at: i64,
+    settings: Value,
+    #[serde(default)]
+    watch: Vec<WatchEntry>,
+    #[serde(default)]
+    favorites: Vec<Favorite>,
+    #[serde(default)]
+    history: Vec<HistoryEntry>,
+}
+
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct RestoreReport {
+    watch: u32,
+    favorites: u32,
+    history: u32,
+}
+
+#[tauri::command(async)]
+pub fn export_backup(core: State<'_, Core_>, path: String) -> R<()> {
+    let backup = Backup {
+        app: "Pawchive Downloader".into(),
+        version: env!("CARGO_PKG_VERSION").into(),
+        created_at: now_ms(),
+        settings: serde_json::to_value(core.settings()).map_err(|e| e.to_string())?,
+        watch: core.store.list_watch(),
+        favorites: core.store.list_favorites(),
+        history: core.store.list_history(),
+    };
+    let text = serde_json::to_string_pretty(&backup).map_err(|e| e.to_string())?;
+    write_text_file(path, text)
+}
+
+/// Restores a backup on top of what is here: settings are replaced, the
+/// watchlist, favorites and history gain what they do not have yet.
+#[tauri::command(async)]
+pub fn import_backup(app: AppHandle, core: State<'_, Core_>, path: String) -> R<RestoreReport> {
+    let text = read_text_file(path)?;
+    let backup: Backup = serde_json::from_str(&text).map_err(|_| "not-a-backup".to_string())?;
+    let next = settings::merge(&core.settings(), &backup.settings);
+    let next = core.apply_settings(next)?;
+    crate::app::emit(&app, "settings", &next);
+    let mut report = RestoreReport {
+        watch: 0,
+        favorites: 0,
+        history: 0,
+    };
+    core.watcher.update(|entries| {
+        for w in backup.watch {
+            if !entries.iter().any(|e| e.key == w.key) {
+                entries.push(w);
+                report.watch += 1;
+            }
+        }
+    })?;
+    let have: std::collections::HashSet<String> = core
+        .store
+        .list_favorites()
+        .into_iter()
+        .map(|f| f.key)
+        .collect();
+    for f in backup.favorites {
+        if !have.contains(&f.key) {
+            core.store.put_favorite(&f)?;
+            report.favorites += 1;
+        }
+    }
+    let have: std::collections::HashSet<String> = core
+        .store
+        .list_history()
+        .into_iter()
+        .map(|h| h.id)
+        .collect();
+    for h in backup.history {
+        if !have.contains(&h.id) {
+            core.store.add_history(&h)?;
+            report.history += 1;
+        }
+    }
+    core.log.info(format!(
+        "Restored a backup: {} watched creators, {} favorites, {} downloads",
+        report.watch, report.favorites, report.history
+    ));
+    Ok(report)
+}
+
 #[tauri::command(async)]
 pub fn queue_status(core: State<'_, Core_>) -> crate::core::QueueStatus {
     core.queue_status()
@@ -453,6 +552,8 @@ pub struct PostPage {
     posts: Vec<Post>,
     /// Ids of posts already downloaded completely.
     downloaded: Vec<String>,
+    /// Ids of posts opened before.
+    seen: Vec<String>,
 }
 
 fn post_page(core: &Core, posts: Vec<Post>) -> PostPage {
@@ -461,12 +562,23 @@ fn post_page(core: &Core, posts: Vec<Post>) -> PostPage {
         .map(|p| format!("{}:{}:{}", p.service, p.creator_id, p.id))
         .collect();
     let known = core.store.known_posts(&keys);
+    let seen_keys = core.store.seen_posts(&keys);
+    let key = |p: &Post| format!("{}:{}:{}", p.service, p.creator_id, p.id);
     let downloaded = posts
         .iter()
-        .filter(|p| known.contains(&format!("{}:{}:{}", p.service, p.creator_id, p.id)))
+        .filter(|p| known.contains(&key(p)))
         .map(|p| p.id.clone())
         .collect();
-    PostPage { posts, downloaded }
+    let seen = posts
+        .iter()
+        .filter(|p| seen_keys.contains(&key(p)))
+        .map(|p| p.id.clone())
+        .collect();
+    PostPage {
+        posts,
+        downloaded,
+        seen,
+    }
 }
 
 #[tauri::command]

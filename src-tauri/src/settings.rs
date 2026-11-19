@@ -22,6 +22,8 @@ pub const MIN_REQUEST_INTERVAL_MS: u32 = 1000;
 pub const WATCH_INTERVALS: [u32; 6] = [0, 60, 180, 360, 720, 1440];
 /// Choices for the free space the download drive must keep (MB; 0 is off).
 pub const FREE_SPACE_LIMITS: [u32; 6] = [0, 512, 1024, 2048, 5120, 10240];
+/// Choices for retrying failed files automatically (minutes; 0 is off).
+pub const AUTO_RETRY_MINUTES: [u32; 5] = [0, 15, 30, 60, 180];
 
 /// `HH:MM` in 24-hour time, or None.
 pub fn parse_clock(value: &str) -> Option<(u32, u32)> {
@@ -99,6 +101,14 @@ pub struct Settings {
     pub speed_limit_kbps: u32,
     /// Keep the computer from sleeping while downloads run.
     pub keep_awake: bool,
+    /// Try failed files again after this many minutes (0 off), up to 3 times.
+    pub auto_retry_minutes: u32,
+    /// Blur thumbnails and previews until hovered.
+    pub blur_previews: bool,
+    /// Notifications without post titles or creator names.
+    pub private_notifications: bool,
+    /// Offer to download links copied anywhere.
+    pub watch_clipboard: bool,
     /// Hold new downloads when the drive has less than this free (MB, 0 off).
     pub min_free_space_mb: u32,
     /// Only start downloads between `schedule_start` and `schedule_end`.
@@ -169,6 +179,10 @@ impl Default for Settings {
             categories: FileCategory::ALL.iter().map(|c| (*c, true)).collect(),
             speed_limit_kbps: 0,
             keep_awake: true,
+            auto_retry_minutes: 30,
+            blur_previews: false,
+            private_notifications: false,
+            watch_clipboard: false,
             min_free_space_mb: 1024,
             schedule_enabled: false,
             schedule_start: "01:00".into(),
@@ -330,6 +344,14 @@ pub fn coerce(input: &Value) -> Settings {
         categories,
         speed_limit_kbps: int_in(g("speedLimitKbps"), 0, 1_000_000, d.speed_limit_kbps),
         keep_awake: boolean(g("keepAwake"), d.keep_awake),
+        auto_retry_minutes: g("autoRetryMinutes")
+            .and_then(Value::as_u64)
+            .map(|v| v as u32)
+            .filter(|v| AUTO_RETRY_MINUTES.contains(v))
+            .unwrap_or(d.auto_retry_minutes),
+        blur_previews: boolean(g("blurPreviews"), d.blur_previews),
+        private_notifications: boolean(g("privateNotifications"), d.private_notifications),
+        watch_clipboard: boolean(g("watchClipboard"), d.watch_clipboard),
         min_free_space_mb: g("minFreeSpaceMb")
             .and_then(Value::as_u64)
             .map(|v| v as u32)

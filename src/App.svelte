@@ -31,7 +31,7 @@
   import HelpPage from './features/help/HelpPage.svelte';
   import AboutPage from './features/about/AboutPage.svelte';
   import { batch } from './features/browse/batch.svelte';
-  import { api } from './lib/api';
+  import { api, on } from './lib/api';
   import { toast } from './ui/state/toasts.svelte';
 
   themeDocument();
@@ -48,6 +48,17 @@
         const links = app.info?.args.filter((a) => mentionsSite(a)) ?? [];
         if (links.length === 1) openLink(links[0] as string);
         else if (links.length > 1) batch.show(links.join('\n'));
+        // Links copied anywhere while the clipboard watcher is on.
+        void on<string>('clipboard-links', (text) => {
+          const links = text.split('\n').filter(Boolean);
+          toast(t('clipboard.found', { count: links.length }), 'info', {
+            duration: 8000,
+            action: {
+              label: t('clipboard.open'),
+              run: () => (links.length === 1 ? openLink(links[0] as string) : batch.show(text)),
+            },
+          });
+        });
         const crash = app.info?.lastCrash;
         if (crash) {
           toast(t('crash.notice'), 'warning', {

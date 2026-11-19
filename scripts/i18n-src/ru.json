@@ -444,5 +444,29 @@
   "search.site": "Сайт",
   "hold.mediaDown": "Медиасерверы {hosts} не отвечают, поэтому сейчас нельзя скачать полные файлы.",
   "hold.mediaDownThumbs": " Вместо них сохраняются миниатюры.",
-  "hold.useThumbnails": "Сохранить миниатюры"
+  "hold.useThumbnails": "Сохранить миниатюры",
+  "settings.autoRetry": "Повторять неудачные файлы",
+  "settings.autoRetryHint": "Неудачные файлы сами возвращаются в очередь через некоторое время, до трёх раз. К тому времени упавшие серверы часто снова работают.",
+  "settings.afterMinutes": ["Через {count} минуту", "Через {count} минуты", "Через {count} минут"],
+  "settings.watchClipboard": "Замечать скопированные ссылки",
+  "settings.watchClipboardHint": "Когда вы копируете ссылку Pawchive, Kemono или Coomer, приложение предложит её открыть. Буфер обмена читается только на этом компьютере.",
+  "settings.privateNotifications": "Скрытые уведомления",
+  "settings.privateNotificationsHint": "Уведомления показывают только количество, без заголовков и имён авторов.",
+  "settings.blurPreviews": "Размывать превью",
+  "settings.blurPreviewsHint": "Миниатюры, аватары и баннеры размыты, пока на них не навести курсор: для показа экрана или работы на людях.",
+  "settings.backup": "Резервная копия",
+  "settings.backupHint": "Один файл с настройками, списком отслеживания, избранным и историей: для переноса на другой компьютер или про запас. Восстановление добавляет недостающее и сохраняет текущее.",
+  "settings.backupSave": "Сохранить копию",
+  "settings.backupRestore": "Восстановить",
+  "settings.backupSaved": "Копия сохранена",
+  "settings.backupRestored": "Восстановлено: отслеживаемых {watch}, избранного {favorites}, загрузок {history}",
+  "settings.backupInvalid": "Это не резервная копия Pawchive Downloader",
+  "about.portable": "Портативная",
+  "post.seen": "Уже открывали",
+  "clipboard.found": [
+    "Найдена {count} скопированная ссылка",
+    "Найдено {count} скопированные ссылки",
+    "Найдено {count} скопированных ссылок"
+  ],
+  "clipboard.open": "Открыть"
 }

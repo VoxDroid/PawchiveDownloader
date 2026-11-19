@@ -10,11 +10,20 @@
     posts: Post[];
     selected: Set<string>;
     downloaded: Set<string>;
+    /** Posts opened before. */
+    seen?: Set<string>;
     showCreator?: boolean;
     onchange: (next: Set<string>) => void;
   }
 
-  let { posts, selected, downloaded, showCreator = false, onchange }: Props = $props();
+  let {
+    posts,
+    selected,
+    downloaded,
+    seen = new Set(),
+    showCreator = false,
+    onchange,
+  }: Props = $props();
   let last: string | null = null;
 
   function select(id: string, event: MouseEvent | KeyboardEvent) {
@@ -42,6 +51,7 @@
         {post}
         {showCreator}
         selected={selected.has(post.id)}
+        seen={seen.has(post.id)}
         downloaded={downloaded.has(post.id)}
         onselect={(e) => select(post.id, e)}
         onopen={() => openLink(post.url)}

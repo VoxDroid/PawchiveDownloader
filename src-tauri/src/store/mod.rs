@@ -43,6 +43,7 @@ CREATE TABLE IF NOT EXISTS history (id TEXT PRIMARY KEY, finished_at INTEGER NOT
 CREATE INDEX IF NOT EXISTS history_finished ON history (finished_at);
 CREATE TABLE IF NOT EXISTS watch (key TEXT PRIMARY KEY, position INTEGER NOT NULL, data TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS favorites (key TEXT PRIMARY KEY, added_at INTEGER NOT NULL, data TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS seen (key TEXT PRIMARY KEY, at INTEGER NOT NULL);
 ";
 
 /// A downloaded file the library remembers.
@@ -207,6 +208,33 @@ impl Store {
             )
             .map(|_| ())
             .map_err(err)
+    }
+
+    /// Remembers that a post was opened (read markers).
+    pub fn mark_seen(&self, key: &str, at: i64) -> Result<()> {
+        self.conn
+            .lock()
+            .execute(
+                "INSERT INTO seen (key, at) VALUES (?1, ?2) ON CONFLICT(key) DO UPDATE SET at = excluded.at",
+                params![key, at],
+            )
+            .map(|_| ())
+            .map_err(err)
+    }
+
+    /// Which of these posts were opened before.
+    pub fn seen_posts(&self, keys: &[String]) -> HashSet<String> {
+        let conn = self.conn.lock();
+        let mut found = HashSet::new();
+        let Ok(mut stmt) = conn.prepare_cached("SELECT 1 FROM seen WHERE key = ?1") else {
+            return found;
+        };
+        for key in keys {
+            if stmt.exists([key]).unwrap_or(false) {
+                found.insert(key.clone());
+            }
+        }
+        found
     }
 
     pub fn record_post(&self, key: &str, title: &str, at: i64) -> Result<()> {

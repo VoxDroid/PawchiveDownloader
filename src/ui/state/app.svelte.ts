@@ -148,6 +148,7 @@ export function themeDocument(): void {
       if (!el) continue;
       el.dataset.theme = attrs.theme;
       el.dataset.motion = attrs.motion;
+      el.dataset.blur = app.settings.blurPreviews ? 'on' : 'off';
       el.style.setProperty('--accent', app.settings.accent);
     }
     document.documentElement.lang = BCP47[app.locale];

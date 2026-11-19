@@ -32,6 +32,7 @@
   let error = $state<string | null>(null);
   let posts = $state<Post[]>([]);
   let downloaded = $state(new Set<string>());
+  let opened = $state(new Set<string>());
   let selected = $state(new Set<string>());
   let offset = $state(0);
   let end = $state(false);
@@ -112,6 +113,7 @@
       const seen = new Set(posts.map((p) => p.id));
       posts = [...posts, ...page.posts.filter((p) => !seen.has(p.id))];
       downloaded = new Set([...downloaded, ...page.downloaded]);
+      opened = new Set([...opened, ...(page.seen ?? [])]);
       offset += PAGE;
       if (page.posts.length < PAGE) end = true;
       return true;
@@ -358,7 +360,13 @@
       />
     </div>
 
-    <PostList posts={shown} {selected} {downloaded} onchange={(next) => (selected = next)} />
+    <PostList
+      posts={shown}
+      {selected}
+      {downloaded}
+      seen={opened}
+      onchange={(next) => (selected = next)}
+    />
 
     <div class="more">
       {#if loadingAll}
