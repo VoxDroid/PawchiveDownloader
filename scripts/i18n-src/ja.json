@@ -417,5 +417,17 @@
   "settings.extractDelete": "展開して ZIP を削除",
   "options.outsideLinks": "外部リンク",
   "post.downloadLink": "投稿のフォルダーにダウンロード",
-  "toast.queuedLink": "リンク先のファイルをキューに追加しました"
+  "toast.queuedLink": "リンク先のファイルをキューに追加しました",
+  "settings.bridge": "ブラウザー拡張機能",
+  "settings.bridgeHint": "Pawchive Downloader のブラウザー拡張機能からこのアプリにダウンロードを送れるようにします。ブラウザーを閉じても続きます。",
+  "bridge.enable": "ブラウザーからのダウンロードを受け付ける",
+  "bridge.enableHint": "このコンピューター (127.0.0.1) でのみ待ち受けます。Web ページからは使えず、ペアリングした拡張機能だけが使えます。",
+  "bridge.status": "拡張機能をペアリング",
+  "bridge.listening": "{address} で待ち受け中",
+  "bridge.starting": "起動中...",
+  "bridge.pair": "ペアリング",
+  "bridge.codeHint": "拡張機能の設定にこのコードを入力してください。2 分間、1 回だけ使えます。",
+  "bridge.lastUsed": "最終使用: {when}",
+  "bridge.paired": "ペアリング: {when}",
+  "bridge.revoke": "このペアリングを削除"
 }

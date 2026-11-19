@@ -1,6 +1,7 @@
 import type {
   AppInfo,
   BatchResult,
+  BridgeStatus,
   CheckReport,
   Counts,
   Creator,
@@ -139,6 +140,9 @@ export const api = {
     call<void>('jobs_action_all', { action }),
   queueStatus: () => call<QueueStatus>('queue_status'),
   exportBackup: (path: string) => call<void>('export_backup', { path }),
+  bridgeStatus: () => call<BridgeStatus>('bridge_status'),
+  bridgePair: () => call<BridgeStatus>('bridge_pair'),
+  bridgeRevoke: (id: string) => call<BridgeStatus>('bridge_revoke', { id }),
   importBackup: (path: string) =>
     call<{ watch: number; favorites: number; history: number }>('import_backup', { path }),
   libraryStats: () => call<LibraryStats>('library_stats'),

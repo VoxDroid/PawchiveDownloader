@@ -206,6 +206,8 @@ export interface Settings {
   downloadOutsideLinks: boolean;
   /** Unpack downloaded ZIPs: keep or delete the ZIP afterwards. */
   extractArchives: 'off' | 'keep' | 'delete';
+  /** Let a paired browser extension hand downloads to the app. */
+  bridgeEnabled: boolean;
   /** Hold new downloads below this much free space (MB); 0 is off. */
   minFreeSpaceMb: number;
   scheduleEnabled: boolean;
@@ -266,6 +268,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   watchClipboard: false,
   downloadOutsideLinks: false,
   extractArchives: 'off',
+  bridgeEnabled: false,
   minFreeSpaceMb: 1024,
   scheduleEnabled: false,
   scheduleStart: '01:00',
@@ -312,6 +315,21 @@ export type WhenDone = 'nothing' | 'quit' | 'sleep' | 'shutdown';
 export type Hold =
   | { kind: 'schedule'; opensAt: number }
   | { kind: 'disk'; free: number; need: number; folder: string };
+
+export interface BridgePairing {
+  id: string;
+  name: string;
+  createdAt: number;
+  lastUsedAt: number | null;
+}
+
+export interface BridgeStatus {
+  running: boolean;
+  port: number | null;
+  pairings: BridgePairing[];
+  code: string | null;
+  codeExpiresAt: number | null;
+}
 
 export interface QueueStatus {
   hold: Hold | null;

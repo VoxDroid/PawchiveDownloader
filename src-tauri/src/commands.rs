@@ -530,6 +530,24 @@ pub fn import_backup(app: AppHandle, core: State<'_, Core_>, path: String) -> R<
 }
 
 #[tauri::command(async)]
+pub fn bridge_status(core: State<'_, Core_>) -> crate::bridge::BridgeStatus {
+    core.bridge.status(&core)
+}
+
+/// Shows a pairing code for two minutes.
+#[tauri::command(async)]
+pub fn bridge_pair(core: State<'_, Core_>) -> crate::bridge::BridgeStatus {
+    core.bridge.start_pairing();
+    core.bridge.status(&core)
+}
+
+#[tauri::command(async)]
+pub fn bridge_revoke(core: State<'_, Core_>, id: String) -> R<crate::bridge::BridgeStatus> {
+    crate::bridge::Bridge::revoke(&core, &id)?;
+    Ok(core.bridge.status(&core))
+}
+
+#[tauri::command(async)]
 pub fn queue_status(core: State<'_, Core_>) -> crate::core::QueueStatus {
     core.queue_status()
 }

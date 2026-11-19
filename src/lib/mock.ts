@@ -10,6 +10,7 @@ import {
   type LogEntry,
   type Post,
   type PostFile,
+  type BridgeStatus,
   type QueueStatus,
   type Settings,
   type WatchEntry,
@@ -209,6 +210,20 @@ export function createMockBackend(): Backend {
     actionAt: null,
     awake: false,
     downSites: [],
+  };
+  let bridge: BridgeStatus = {
+    running: true,
+    port: 49517,
+    pairings: [
+      {
+        id: 'p1',
+        name: 'Chrome',
+        createdAt: Date.now() - 86_400_000,
+        lastUsedAt: Date.now() - 600_000,
+      },
+    ],
+    code: null,
+    codeExpiresAt: null,
   };
   let jobs: JobSummary[] = [
     summary({
@@ -628,6 +643,15 @@ export function createMockBackend(): Backend {
       emit('jobs', jobs);
     },
     queue_status: () => queue,
+    bridge_status: () => bridge,
+    bridge_pair: () => {
+      bridge = { ...bridge, code: '482917', codeExpiresAt: Date.now() + 120_000 };
+      return bridge;
+    },
+    bridge_revoke: ({ id }) => {
+      bridge = { ...bridge, pairings: bridge.pairings.filter((p) => p.id !== id) };
+      return bridge;
+    },
     library_stats: () => ({
       downloads: 48,
       files: 2214,

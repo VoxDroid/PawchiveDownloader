@@ -113,6 +113,8 @@ pub struct Settings {
     pub download_outside_links: bool,
     /// Unpack downloaded ZIP archives: "off", "keep" or "delete" the ZIP.
     pub extract_archives: String,
+    /// Let a paired browser extension hand downloads to the app.
+    pub bridge_enabled: bool,
     /// Hold new downloads when the drive has less than this free (MB, 0 off).
     pub min_free_space_mb: u32,
     /// Only start downloads between `schedule_start` and `schedule_end`.
@@ -189,6 +191,7 @@ impl Default for Settings {
             watch_clipboard: false,
             download_outside_links: false,
             extract_archives: "off".into(),
+            bridge_enabled: false,
             min_free_space_mb: 1024,
             schedule_enabled: false,
             schedule_start: "01:00".into(),
@@ -359,6 +362,7 @@ pub fn coerce(input: &Value) -> Settings {
         private_notifications: boolean(g("privateNotifications"), d.private_notifications),
         watch_clipboard: boolean(g("watchClipboard"), d.watch_clipboard),
         download_outside_links: boolean(g("downloadOutsideLinks"), d.download_outside_links),
+        bridge_enabled: boolean(g("bridgeEnabled"), d.bridge_enabled),
         extract_archives: one_of(
             g("extractArchives"),
             &["off", "keep", "delete"],

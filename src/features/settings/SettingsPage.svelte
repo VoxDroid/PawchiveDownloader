@@ -38,6 +38,7 @@
   import SettingRow from '../../ui/layout/SettingRow.svelte';
   import SettingSection from '../../ui/layout/SettingSection.svelte';
   import FilterEditor from '../../ui/layout/FilterEditor.svelte';
+  import BridgeSettings from './BridgeSettings.svelte';
   import TermsInput from '../../ui/components/TermsInput.svelte';
   import TemplateField from '../../ui/layout/TemplateField.svelte';
 
@@ -175,6 +176,7 @@
     ['downloads', 'download'],
     ['naming', 'rename'],
     ['filters', 'filter'],
+    ['bridge', 'web'],
     ['zip', 'folderZip'],
     ['network', 'network'],
     ['background', 'tray'],
@@ -768,6 +770,15 @@
       </span>
     </SettingRow>
   {/each}
+</SettingSection>
+
+<SettingSection
+  id="s-bridge"
+  icon="web"
+  title={t('settings.bridge')}
+  description={t('settings.bridgeHint')}
+>
+  <BridgeSettings />
 </SettingSection>
 
 <SettingSection id="s-data" icon="database" title={t('settings.data')}>

@@ -782,5 +782,17 @@
   "settings.extractDelete": "Entpacken und ZIP löschen",
   "options.outsideLinks": "Externe Links",
   "post.downloadLink": "In den Ordner des Beitrags laden",
-  "toast.queuedLink": "Die Dateien hinter dem Link sind in der Warteschlange"
+  "toast.queuedLink": "Die Dateien hinter dem Link sind in der Warteschlange",
+  "settings.bridge": "Browser-Erweiterung",
+  "settings.bridgeHint": "Lässt die Browser-Erweiterung von Pawchive Downloader Downloads an diese App senden, die auch nach dem Schließen des Browsers weiterlaufen.",
+  "bridge.enable": "Downloads aus dem Browser annehmen",
+  "bridge.enableHint": "Lauscht nur auf diesem Computer (127.0.0.1). Webseiten können es nicht nutzen, nur eine gekoppelte Erweiterung.",
+  "bridge.status": "Erweiterung koppeln",
+  "bridge.listening": "Lauscht auf {address}",
+  "bridge.starting": "Startet...",
+  "bridge.pair": "Koppeln",
+  "bridge.codeHint": "Geben Sie diesen Code in den Einstellungen der Erweiterung ein. Er gilt einmal, zwei Minuten lang.",
+  "bridge.lastUsed": "Zuletzt genutzt {when}",
+  "bridge.paired": "Gekoppelt {when}",
+  "bridge.revoke": "Kopplung entfernen"
 }

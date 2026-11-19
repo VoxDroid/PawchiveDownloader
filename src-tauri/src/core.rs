@@ -30,6 +30,8 @@ pub struct Core {
     pub watcher: Arc<Watcher>,
     /// Creator lists for search, one per site.
     directories: Vec<Arc<Directory>>,
+    /// The local server a browser extension can talk to.
+    pub bridge: Arc<crate::bridge::Bridge>,
     pub data_dir: PathBuf,
     pub cancel: CancellationToken,
     fast_timing: bool,
@@ -195,6 +197,7 @@ impl Core {
             cancel: CancellationToken::new(),
             fast_timing: options.fast_timing,
             awake: KeepAwake::new(),
+            bridge: Arc::new(crate::bridge::Bridge::default()),
             when_done: parking_lot::Mutex::new(WhenDone::Nothing),
             countdown: parking_lot::Mutex::new(None),
             on_queue: RwLock::new(None),
@@ -313,6 +316,9 @@ impl Core {
                 _ = self.cancel.cancelled() => break,
             }
             let s = self.settings();
+            // The browser bridge follows its setting.
+            let bridge = Arc::clone(&self.bridge);
+            bridge.apply(Arc::clone(&self), s.bridge_enabled).await;
             let folders = self.engine.pending_folders();
             let mut hold = None;
             if s.schedule_enabled {

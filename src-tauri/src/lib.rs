@@ -1,6 +1,7 @@
 //! Pawchive Downloader: a desktop app for downloading from Pawchive.
 
 pub mod app;
+pub mod bridge;
 pub mod commands;
 pub mod core;
 pub mod hosts;
@@ -176,6 +177,9 @@ pub fn run() {
             commands::repair_library,
             commands::set_watch_options,
             commands::export_backup,
+            commands::bridge_status,
+            commands::bridge_pair,
+            commands::bridge_revoke,
             commands::import_backup,
             commands::set_when_done,
             commands::cancel_when_done,

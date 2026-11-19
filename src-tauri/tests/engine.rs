@@ -1455,3 +1455,112 @@ async fn downloads_outside_links_and_unpacks_them_with_the_post_password() {
         "the ZIP is removed"
     );
 }
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_paired_browser_extension_can_queue_downloads() {
+    let env = env().await;
+    let a = Fixture::new("from-browser.png", 300, 120);
+    env.mount_creator(vec![post("991", "Sent", &[&a])]).await;
+    env.serve(&a).await;
+    env.core.settings.write().bridge_enabled = true;
+    let mut port = None;
+    for _ in 0..200 {
+        port = env.core.bridge.status(&env.core).port;
+        if port.is_some() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(10)).await;
+    }
+    let base = format!("http://127.0.0.1:{}", port.expect("the bridge listens"));
+    let http = reqwest::Client::new();
+    let ext = "chrome-extension://abcdefghijklmnop";
+
+    // A web page may not use it.
+    let evil = http
+        .get(format!("{base}/v1/hello"))
+        .header("Origin", "https://evil.example")
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(evil.status(), 403);
+    let hello: Value = http
+        .get(format!("{base}/v1/hello"))
+        .header("Origin", ext)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(hello["paired"], false);
+
+    // Pairing needs the code shown in the app, once.
+    let wrong = http
+        .post(format!("{base}/v1/pair"))
+        .header("Origin", ext)
+        .json(&json!({"code": "000000x", "name": "Test"}))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(wrong.status(), 401);
+    let (code, _) = env.core.bridge.start_pairing();
+    let token = http
+        .post(format!("{base}/v1/pair"))
+        .header("Origin", ext)
+        .json(&json!({"code": code, "name": "Chrome"}))
+        .send()
+        .await
+        .unwrap()
+        .json::<Value>()
+        .await
+        .unwrap()["token"]
+        .as_str()
+        .unwrap()
+        .to_string();
+    let again = http
+        .post(format!("{base}/v1/pair"))
+        .header("Origin", ext)
+        .json(&json!({"code": code}))
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(again.status(), 401, "a code works once");
+
+    // Without the token nothing is queued; with it the job runs.
+    let request = json!({"kind": "refs", "refs": [{"service": "patreon", "creatorId": "7", "postId": "991"}]});
+    let anonymous = http
+        .post(format!("{base}/v1/jobs"))
+        .header("Origin", ext)
+        .json(&request)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(anonymous.status(), 401);
+    let created: Value = http
+        .post(format!("{base}/v1/jobs"))
+        .header("Origin", ext)
+        .bearer_auth(&token)
+        .json(&request)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    let id = created["jobId"].as_str().unwrap().to_string();
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    let jobs: Value = http
+        .get(format!("{base}/v1/jobs"))
+        .header("Origin", ext)
+        .bearer_auth(&token)
+        .send()
+        .await
+        .unwrap()
+        .json()
+        .await
+        .unwrap();
+    assert_eq!(jobs[0]["id"], id);
+    let status = env.core.bridge.status(&env.core);
+    assert_eq!(status.pairings.len(), 1);
+    assert_eq!(status.pairings[0].name, "Chrome");
+}

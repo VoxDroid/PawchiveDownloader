@@ -438,5 +438,17 @@
   "settings.extractDelete": "Décompresser et supprimer",
   "options.outsideLinks": "Liens externes",
   "post.downloadLink": "Télécharger dans le dossier du post",
-  "toast.queuedLink": "Les fichiers du lien sont en file d'attente"
+  "toast.queuedLink": "Les fichiers du lien sont en file d'attente",
+  "settings.bridge": "Extension du navigateur",
+  "settings.bridgeHint": "Permet à l'extension Pawchive Downloader d'envoyer des téléchargements à cette application, qui continuent après la fermeture du navigateur.",
+  "bridge.enable": "Accepter les téléchargements du navigateur",
+  "bridge.enableHint": "N'écoute que sur cet ordinateur (127.0.0.1). Les pages web ne peuvent pas l'utiliser ; seule une extension associée le peut.",
+  "bridge.status": "Associer une extension",
+  "bridge.listening": "À l'écoute sur {address}",
+  "bridge.starting": "Démarrage...",
+  "bridge.pair": "Associer",
+  "bridge.codeHint": "Saisissez ce code dans les paramètres de l'extension. Il sert une fois, pendant deux minutes.",
+  "bridge.lastUsed": "Dernière utilisation : {when}",
+  "bridge.paired": "Associée {when}",
+  "bridge.revoke": "Retirer cette association"
 }

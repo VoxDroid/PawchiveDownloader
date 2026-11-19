@@ -435,5 +435,17 @@
   "settings.extractDelete": "Extrair e apagar",
   "options.outsideLinks": "Links externos",
   "post.downloadLink": "Baixar na pasta da publicação",
-  "toast.queuedLink": "Os arquivos do link foram para a fila"
+  "toast.queuedLink": "Os arquivos do link foram para a fila",
+  "settings.bridge": "Extensão do navegador",
+  "settings.bridgeHint": "Permite que a extensão do Pawchive Downloader envie downloads para este app, que continua mesmo com o navegador fechado.",
+  "bridge.enable": "Aceitar downloads do navegador",
+  "bridge.enableHint": "Só escuta neste computador (127.0.0.1). Páginas da web não podem usar; só uma extensão pareada.",
+  "bridge.status": "Parear uma extensão",
+  "bridge.listening": "Escutando em {address}",
+  "bridge.starting": "Iniciando...",
+  "bridge.pair": "Parear",
+  "bridge.codeHint": "Digite este código nas configurações da extensão. Vale uma vez, por dois minutos.",
+  "bridge.lastUsed": "Último uso: {when}",
+  "bridge.paired": "Pareada {when}",
+  "bridge.revoke": "Remover este pareamento"
 }

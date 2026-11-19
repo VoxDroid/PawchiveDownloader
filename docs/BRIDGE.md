@@ -1,9 +1,10 @@
-# Extension bridge (design)
+# Extension bridge
 
-Status: **planned, not implemented.** This describes how the
+Status: **implemented in the app (1.2.0)**, in `src-tauri/src/bridge.rs`.
+This describes how the
 [browser extension](https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension)
-will be able to hand downloads to the desktop app, so the work can be picked up
-without redesign.
+hands downloads to the desktop app; the extension side can be built against it
+as written.
 
 ## Goal
 
@@ -54,9 +55,14 @@ extension can send exactly what its own engine would have run.
 
 ## Implementation notes
 
-- Rust: a small `axum` (or `hyper`) server in `src-tauri/src/bridge.rs`,
-  started from `core.rs` when enabled, calling the same `Engine` and `Watcher`
-  methods as the Tauri commands.
+- Rust: a small `axum` server in `src-tauri/src/bridge.rs`, started and
+  stopped by the core to follow the setting, calling the same `Engine` and
+  `Watcher` methods as the Tauri commands.
+- Besides the Origin check, the server requires a `Host` of `127.0.0.1` or
+  `localhost` (against DNS rebinding) and answers CORS preflights for
+  extension origins only. A pairing code works once.
+- Tested end to end in `src-tauri/tests/engine.rs`
+  (`a_paired_browser_extension_can_queue_downloads`).
 - Rate limits are unaffected: jobs from the extension join the same queue and
   limiter.
 - The extension keeps a "send to app" preference and shows the app's

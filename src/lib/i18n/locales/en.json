@@ -782,5 +782,17 @@
   "settings.extractDelete": "Unpack and delete the ZIP",
   "options.outsideLinks": "Outside links",
   "post.downloadLink": "Download into the post's folder",
-  "toast.queuedLink": "Queued the files behind the link"
+  "toast.queuedLink": "Queued the files behind the link",
+  "settings.bridge": "Browser extension",
+  "settings.bridgeHint": "Let the Pawchive Downloader browser extension send downloads to this app, which keeps going after the browser closes.",
+  "bridge.enable": "Accept downloads from the browser",
+  "bridge.enableHint": "Listens on this computer only (127.0.0.1). Web pages cannot use it; only a paired extension can.",
+  "bridge.status": "Pair an extension",
+  "bridge.listening": "Listening on {address}",
+  "bridge.starting": "Starting...",
+  "bridge.pair": "Pair",
+  "bridge.codeHint": "Enter this code in the extension's settings. It works once, for two minutes.",
+  "bridge.lastUsed": "Last used {when}",
+  "bridge.paired": "Paired {when}",
+  "bridge.revoke": "Remove this pairing"
 }

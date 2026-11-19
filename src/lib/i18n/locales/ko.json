@@ -732,5 +732,17 @@
   "settings.extractDelete": "풀고 ZIP 삭제",
   "options.outsideLinks": "외부 링크",
   "post.downloadLink": "게시물 폴더에 받기",
-  "toast.queuedLink": "링크의 파일을 대기열에 넣었습니다"
+  "toast.queuedLink": "링크의 파일을 대기열에 넣었습니다",
+  "settings.bridge": "브라우저 확장 프로그램",
+  "settings.bridgeHint": "Pawchive Downloader 브라우저 확장 프로그램이 이 앱으로 다운로드를 보낼 수 있게 합니다. 브라우저를 닫아도 계속됩니다.",
+  "bridge.enable": "브라우저의 다운로드 받기",
+  "bridge.enableHint": "이 컴퓨터(127.0.0.1)에서만 대기합니다. 웹 페이지는 사용할 수 없고 연결한 확장 프로그램만 사용할 수 있습니다.",
+  "bridge.status": "확장 프로그램 연결",
+  "bridge.listening": "{address}에서 대기 중",
+  "bridge.starting": "시작 중...",
+  "bridge.pair": "연결",
+  "bridge.codeHint": "확장 프로그램 설정에 이 코드를 입력하세요. 2분 동안 한 번만 쓸 수 있습니다.",
+  "bridge.lastUsed": "마지막 사용: {when}",
+  "bridge.paired": "연결: {when}",
+  "bridge.revoke": "이 연결 삭제"
 }

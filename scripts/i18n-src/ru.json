@@ -477,5 +477,17 @@
   "settings.extractDelete": "Распаковать и удалить ZIP",
   "options.outsideLinks": "Внешние ссылки",
   "post.downloadLink": "Скачать в папку поста",
-  "toast.queuedLink": "Файлы по ссылке добавлены в очередь"
+  "toast.queuedLink": "Файлы по ссылке добавлены в очередь",
+  "settings.bridge": "Расширение браузера",
+  "settings.bridgeHint": "Позволяет расширению Pawchive Downloader передавать загрузки в это приложение; они продолжатся и после закрытия браузера.",
+  "bridge.enable": "Принимать загрузки из браузера",
+  "bridge.enableHint": "Работает только на этом компьютере (127.0.0.1). Веб-страницы не могут им пользоваться, только сопряжённое расширение.",
+  "bridge.status": "Сопряжение расширения",
+  "bridge.listening": "Работает на {address}",
+  "bridge.starting": "Запуск...",
+  "bridge.pair": "Сопрячь",
+  "bridge.codeHint": "Введите этот код в настройках расширения. Он действует один раз, две минуты.",
+  "bridge.lastUsed": "Последнее использование: {when}",
+  "bridge.paired": "Сопряжено {when}",
+  "bridge.revoke": "Удалить сопряжение"
 }

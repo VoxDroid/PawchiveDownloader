@@ -417,5 +417,17 @@
   "settings.extractDelete": "解压并删除 ZIP",
   "options.outsideLinks": "外部链接",
   "post.downloadLink": "下载到帖子文件夹",
-  "toast.queuedLink": "已将链接中的文件加入队列"
+  "toast.queuedLink": "已将链接中的文件加入队列",
+  "settings.bridge": "浏览器扩展",
+  "settings.bridgeHint": "允许 Pawchive Downloader 浏览器扩展把下载发送到本应用，关闭浏览器后仍会继续。",
+  "bridge.enable": "接收来自浏览器的下载",
+  "bridge.enableHint": "只在本机（127.0.0.1）监听。网页无法使用，只有已配对的扩展可以。",
+  "bridge.status": "配对扩展",
+  "bridge.listening": "正在 {address} 监听",
+  "bridge.starting": "正在启动...",
+  "bridge.pair": "配对",
+  "bridge.codeHint": "在扩展的设置中输入此代码。两分钟内有效，只能用一次。",
+  "bridge.lastUsed": "上次使用：{when}",
+  "bridge.paired": "配对于 {when}",
+  "bridge.revoke": "删除此配对"
 }
