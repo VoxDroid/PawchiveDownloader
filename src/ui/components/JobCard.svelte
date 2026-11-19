@@ -5,6 +5,7 @@
   import { describeError } from '../state/errors';
   import { fmt, t } from '../state/app.svelte';
   import { toast } from '../state/toasts.svelte';
+  import { openLink } from '../state/router.svelte';
   import type { IconName } from '../icons.generated';
   import Icon from './Icon.svelte';
   import IconButton from './IconButton.svelte';
@@ -96,6 +97,14 @@
       </span>
     </div>
     <div class="actions">
+      {#if job.browseUrl}
+        <IconButton
+          size="sm"
+          icon="compass"
+          label={t('common.openInBrowse')}
+          onclick={() => openLink(job.browseUrl as string)}
+        />
+      {/if}
       {#if job.status === 'running' || job.status === 'queued' || job.status === 'resolving'}
         <IconButton size="sm" icon="pause" label={t('common.pause')} onclick={() => act('pause')} />
       {/if}

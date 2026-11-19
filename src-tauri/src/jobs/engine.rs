@@ -588,6 +588,7 @@ impl Engine {
                 speed,
                 current,
                 folder: job_folder(job).to_string_lossy().into_owned(),
+                browse_url: browse_url(job.creator.as_ref(), &job.refs),
             });
         }
         let ids: HashSet<&String> = state.jobs.iter().map(|j| &j.id).collect();

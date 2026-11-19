@@ -58,6 +58,21 @@ export function serviceLabel(service: string): string {
 
 const e = encodeURIComponent;
 
+/** The page a download came from: its post, else its creator. */
+export function browseUrlOf(
+  creator: { service: string; id: string } | null | undefined,
+  refs: ReadonlyArray<{ service: string; creatorId: string; postId: string }>,
+): string | null {
+  const [only] = refs;
+  if (refs.length === 1 && only) return pageUrls.post(only.service, only.creatorId, only.postId);
+  if (creator) return pageUrls.creator(creator.service, creator.id);
+  const first = refs[0];
+  if (first && refs.every((r) => r.service === first.service && r.creatorId === first.creatorId)) {
+    return pageUrls.creator(first.service, first.creatorId);
+  }
+  return null;
+}
+
 export const pageUrls = {
   post: (service: string, creatorId: string, postId: string) => {
     const s = splitService(service);

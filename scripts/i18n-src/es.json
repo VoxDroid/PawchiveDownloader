@@ -458,5 +458,14 @@
   "help.portable.title": "Modo portátil y copias",
   "help.portable.body": "Con una carpeta llamada data junto al programa (el zip portátil la trae), los ajustes, la biblioteca y los registros se quedan ahí, así la app funciona desde un USB. Acerca de muestra Portátil cuando está activo.\nAjustes > Datos > Copia de seguridad guarda ajustes, lista, favoritos e historial en un archivo; Restaurar añade lo que falta en otro equipo.",
   "help.bridge.title": "La extensión del navegador",
-  "help.bridge.body": "Ajustes > Extensión del navegador permite que la extensión de Pawchive Downloader envíe descargas aquí. Actívalo, pulsa Vincular y escribe el código de seis cifras en los ajustes de la extensión en dos minutos.\nSolo escucha en este equipo, las páginas web no pueden usarlo y cada navegador vinculado se puede quitar."
+  "help.bridge.body": "Ajustes > Extensión del navegador permite que la extensión de Pawchive Downloader envíe descargas aquí. Actívalo, pulsa Vincular y escribe el código de seis cifras en los ajustes de la extensión en dos minutos.\nSolo escucha en este equipo, las páginas web no pueden usarlo y cada navegador vinculado se puede quitar.",
+  "common.openInBrowse": "Abrir en Explorar",
+  "mediaDown.title": "{site} no puede enviar archivos completos ahora",
+  "mediaDown.body": "El sitio funciona, pero su servidor de medios ({host}) no responde, así que ahora no se pueden descargar los archivos completos.",
+  "mediaDown.thumbnails": "Descargar miniaturas",
+  "mediaDown.thumbnailsHint": "vistas previas más pequeñas de las imágenes y el texto, ahora mismo.",
+  "mediaDown.continue": "Poner en cola los completos",
+  "mediaDown.continueHint": "fallan por ahora y se reintentan solos más tarde si Reintentar archivos fallidos está activado.",
+  "settings.search": "Buscar ajustes (Ctrl+F)",
+  "settings.searchNone": "Ningún ajuste coincide"
 }

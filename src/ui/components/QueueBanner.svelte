@@ -1,7 +1,7 @@
 <script lang="ts">
   import { slide } from 'svelte/transition';
   import { api } from '../../lib/api';
-  import { app, fmt, t, updateSettings } from '../state/app.svelte';
+  import { app, fmt, t } from '../state/app.svelte';
   import { go } from '../state/router.svelte';
   import Button from './Button.svelte';
   import Icon from './Icon.svelte';
@@ -22,16 +22,6 @@
       ? app.queue.hold
       : null,
   );
-  const live = $derived(
-    app.jobs.some((j) => ['queued', 'running', 'resolving'].includes(j.status)) ||
-      app.jobs.some((j) => j.stats.failed > 0),
-  );
-
-  async function useThumbnails() {
-    await updateSettings({ thumbnailFallback: true });
-    await api.jobsActionAll('retry');
-  }
-
   const seconds = $derived(
     app.queue.actionAt ? Math.max(0, Math.ceil((app.queue.actionAt - now) / 1000)) : 0,
   );
@@ -51,19 +41,6 @@
     <Button size="sm" variant="secondary" onclick={() => api.cancelWhenDone()}>
       {t('common.cancel')}
     </Button>
-  </div>
-{:else if app.queue.downSites.length && live}
-  <div class="banner warn" role="status" transition:slide={{ duration: 180 }}>
-    <Icon name="cloudOff" />
-    <span class="text">
-      {t('hold.mediaDown', { hosts: app.queue.downSites.join(', ') })}
-      {#if app.settings.thumbnailFallback}{t('hold.mediaDownThumbs')}{/if}
-    </span>
-    {#if !app.settings.thumbnailFallback}
-      <Button size="sm" variant="secondary" onclick={useThumbnails}>
-        {t('hold.useThumbnails')}
-      </Button>
-    {/if}
   </div>
 {:else if hold}
   <div class="banner" role="status" transition:slide={{ duration: 180 }}>
@@ -86,14 +63,14 @@
 {/if}
 
 <style>
+  /* Sits at the top of the page, as wide as the page, with room below so it
+     never touches the floating link bar or its focus ring. */
   .banner {
-    position: sticky;
-    top: 0;
-    z-index: 20;
     display: flex;
     align-items: center;
     gap: 10px;
-    margin: 0 0 12px;
+    max-width: var(--page-width, 1040px);
+    margin: 0 auto 22px;
     padding: 8px 12px;
     border-radius: var(--radius-md);
     border: 1px solid color-mix(in srgb, var(--info) 40%, transparent);

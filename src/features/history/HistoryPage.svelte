@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browseUrlOf } from '../../lib/urls';
   import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
@@ -284,6 +285,13 @@
             {fmt.relative(entry.finishedAt)}
           </span>
           <div class="actions">
+            {#if browseUrlOf(entry.creator, entry.refs)}
+              <IconButton
+                icon="compass"
+                label={t('common.openInBrowse')}
+                onclick={() => openLink(browseUrlOf(entry.creator, entry.refs) as string)}
+              />
+            {/if}
             <IconButton
               icon="folderOpen"
               label={t('history.showFolder')}

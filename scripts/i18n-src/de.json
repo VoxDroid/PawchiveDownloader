@@ -461,5 +461,14 @@
   "help.portable.title": "Portabler Modus und Sicherungen",
   "help.portable.body": "Mit einem Ordner namens data neben dem Programm (das portable Zip enthält ihn) bleiben Einstellungen, Bibliothek und Protokolle darin, so läuft die App vom USB-Stick. Über zeigt dann Portabel.\nEinstellungen > Daten > Sicherung speichert Einstellungen, Beobachtungsliste, Favoriten und Verlauf in einer Datei; Wiederherstellen ergänzt auf einem anderen Computer, was fehlt.",
   "help.bridge.title": "Die Browser-Erweiterung",
-  "help.bridge.body": "Einstellungen > Browser-Erweiterung lässt die Erweiterung von Pawchive Downloader Downloads hierher senden. Einschalten, Koppeln drücken und den sechsstelligen Code innerhalb von zwei Minuten in den Einstellungen der Erweiterung eingeben.\nEs lauscht nur auf diesem Computer, Webseiten können es nicht nutzen, und jede Kopplung lässt sich wieder entfernen."
+  "help.bridge.body": "Einstellungen > Browser-Erweiterung lässt die Erweiterung von Pawchive Downloader Downloads hierher senden. Einschalten, Koppeln drücken und den sechsstelligen Code innerhalb von zwei Minuten in den Einstellungen der Erweiterung eingeben.\nEs lauscht nur auf diesem Computer, Webseiten können es nicht nutzen, und jede Kopplung lässt sich wieder entfernen.",
+  "common.openInBrowse": "In Durchsuchen öffnen",
+  "mediaDown.title": "{site} kann gerade keine vollständigen Dateien senden",
+  "mediaDown.body": "Die Seite funktioniert, aber ihr Medienserver ({host}) antwortet nicht, daher lassen sich die vollständigen Dateien gerade nicht laden.",
+  "mediaDown.thumbnails": "Stattdessen Vorschaubilder laden",
+  "mediaDown.thumbnailsHint": "kleinere Vorschauen der Bilder und den Text, sofort.",
+  "mediaDown.continue": "Vollständige Dateien einreihen",
+  "mediaDown.continueHint": "sie schlagen vorerst fehl und werden später von selbst erneut versucht, wenn Fehlgeschlagene Dateien erneut versuchen an ist.",
+  "settings.search": "Einstellungen durchsuchen (Strg+F)",
+  "settings.searchNone": "Keine Einstellung passt"
 }

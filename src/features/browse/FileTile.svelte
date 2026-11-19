@@ -67,34 +67,47 @@
       <svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" /></svg>
     </span>
     {#if file.ext}<span class="ext">{file.ext}</span>{/if}
-    {#if onpreview && file.thumbnailUrl}
-      <button
-        type="button"
-        class="open zoom"
-        aria-label={t('file.view')}
-        onclick={(e) => {
-          e.stopPropagation();
-          onpreview?.();
-        }}
-      >
-        <Icon name="eye" />
-      </button>
-    {/if}
-    {#if link}
-      <a
-        class="open"
-        href={link}
-        target="_blank"
-        rel="noreferrer noopener"
-        aria-label={t('file.open')}
-        onclick={(e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          void openUrl(link);
-        }}
-      >
-        <Icon name="external" />
-      </a>
+    {#if (onpreview && file.thumbnailUrl) || link}
+      <span class="toolbar" role="group">
+        {#if onpreview && file.thumbnailUrl}
+          <button
+            type="button"
+            class="tool"
+            aria-label={t('file.view')}
+            data-tip={t('file.view')}
+            onclick={(e) => {
+              e.stopPropagation();
+              onpreview?.();
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+        {/if}
+        {#if link}
+          <a
+            class="tool"
+            href={link}
+            target="_blank"
+            rel="noreferrer noopener"
+            aria-label={t('file.open')}
+            data-tip={t('file.open')}
+            onclick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              void openUrl(link);
+            }}
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path
+                d="M14 4.5h5.5V10M19.5 4.5 11 13M10 5.5H6A1.5 1.5 0 0 0 4.5 7v11A1.5 1.5 0 0 0 6 19.5h11a1.5 1.5 0 0 0 1.5-1.5v-4"
+              />
+            </svg>
+          </a>
+        {/if}
+      </span>
     {/if}
   </div>
   <div class="name">{file.name}</div>
@@ -232,29 +245,62 @@
     text-transform: uppercase;
     letter-spacing: 0.04em;
   }
-  .open {
+  /* View and open: one small toolbar in the top-right corner. The icons
+     are drawn, so both sit exactly centered whatever the font does. */
+  .toolbar {
     position: absolute;
     top: 6px;
     right: 6px;
-    width: 24px;
-    height: 24px;
-    border-radius: 6px;
+    display: flex;
+    align-items: stretch;
+    border-radius: 8px;
+    background: rgb(10 12 18 / 0.68);
+    backdrop-filter: blur(6px);
+    box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+    overflow: hidden;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition:
+      opacity var(--dur-fast) var(--ease),
+      transform var(--dur-fast) var(--ease);
+  }
+  .tile:hover .toolbar,
+  .toolbar:focus-within {
+    opacity: 1;
+    transform: none;
+  }
+  .tool {
     display: grid;
     place-items: center;
-    background: rgb(10 12 18 / 0.6);
-    color: #fff;
-    opacity: 0;
-    transition: opacity var(--dur-fast) var(--ease);
-    text-decoration: none;
-  }
-  .zoom {
-    right: 34px;
-    border: 0;
+    width: 28px;
+    height: 28px;
+    margin: 0;
     padding: 0;
+    border: 0;
+    background: transparent;
+    color: #fff;
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color var(--dur-fast) var(--ease);
   }
-  .tile:hover .open,
-  .open:focus-visible {
-    opacity: 1;
+  .tool + .tool {
+    box-shadow: inset 1px 0 0 rgb(255 255 255 / 0.18);
+  }
+  .tool:hover {
+    background: rgb(255 255 255 / 0.14);
+  }
+  .tool:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
+  }
+  .tool svg {
+    width: 16px;
+    height: 16px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.8;
+    stroke-linecap: round;
+    stroke-linejoin: round;
   }
   .name {
     font-size: var(--fs-xs);

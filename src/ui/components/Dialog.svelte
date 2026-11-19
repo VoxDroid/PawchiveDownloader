@@ -13,6 +13,9 @@
     busy?: boolean;
     onconfirm?: () => void;
     oncancel: () => void;
+    /** An optional middle action, between Cancel and the main one. */
+    secondaryLabel?: string;
+    onsecondary?: () => void;
     children?: Snippet;
     /** Width in pixels. */
     width?: number;
@@ -26,6 +29,8 @@
     busy = false,
     onconfirm,
     oncancel,
+    secondaryLabel,
+    onsecondary,
     children,
     width = 440,
   }: Props = $props();
@@ -59,6 +64,9 @@
     {#if children}<div class="body">{@render children()}</div>{/if}
     <div class="actions">
       <Button variant="ghost" onclick={oncancel}>{t('common.cancel')}</Button>
+      {#if onsecondary}
+        <Button variant="secondary" onclick={onsecondary}>{secondaryLabel}</Button>
+      {/if}
       {#if onconfirm}
         <Button variant={danger ? 'danger' : 'primary'} loading={busy} onclick={onconfirm}>
           {confirmLabel ?? t('common.confirm')}
@@ -103,8 +111,10 @@
     display: grid;
     gap: 12px;
   }
+  /* Buttons wrap onto a second line rather than run past the edge. */
   .actions {
     display: flex;
+    flex-wrap: wrap;
     justify-content: flex-end;
     gap: 8px;
     margin-top: 20px;

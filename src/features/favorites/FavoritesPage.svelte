@@ -253,6 +253,11 @@
         </div>
         <div class="actions">
           <IconButton
+            icon="compass"
+            label={t('common.openInBrowse')}
+            onclick={() => openLink(url(fav))}
+          />
+          <IconButton
             icon="download"
             label={t('favorites.download')}
             onclick={() => queue([fav.key])}

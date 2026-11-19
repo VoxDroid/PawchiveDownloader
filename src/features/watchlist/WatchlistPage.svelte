@@ -255,6 +255,11 @@
               />
             {/if}
             <IconButton
+              icon="compass"
+              label={t('common.openInBrowse')}
+              onclick={() => openLink(pageUrls.creator(entry.service, entry.creatorId))}
+            />
+            <IconButton
               icon="filter"
               active={customized(entry)}
               label={t('watch.options')}

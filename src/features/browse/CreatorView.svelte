@@ -15,7 +15,7 @@
   import Spinner from '../../ui/components/Spinner.svelte';
   import TextInput from '../../ui/components/TextInput.svelte';
   import DownloadBar from './DownloadBar.svelte';
-  import { queueJob } from './queue';
+  import { queueJob, sampleFile } from './queue';
   import PostList from './PostList.svelte';
   import { rememberRecent } from './batch.svelte';
 
@@ -215,6 +215,7 @@
       ids
         ? t('toast.queuedPosts', { count: ids.length })
         : t('toast.queuedCreator', { name: view.creator.name }),
+      sampleFile(ids ? posts.filter((p) => ids.includes(p.id)) : posts),
     );
     if (queued) selected = new Set();
     busy = false;

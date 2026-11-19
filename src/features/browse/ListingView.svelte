@@ -13,7 +13,7 @@
   import Spinner from '../../ui/components/Spinner.svelte';
   import TextInput from '../../ui/components/TextInput.svelte';
   import DownloadBar from './DownloadBar.svelte';
-  import { queueJob } from './queue';
+  import { queueJob, sampleFile } from './queue';
   import PostList from './PostList.svelte';
 
   let {
@@ -84,6 +84,7 @@
     const queued = await queueJob(
       { kind: 'refs', title: t('selection.jobTitle', { count: refs.length }), refs, options },
       t('toast.queuedPosts', { count: refs.length }),
+      sampleFile(posts.filter((p) => selected.has(p.id))),
     );
     if (queued) selected = new Set();
     busy = false;

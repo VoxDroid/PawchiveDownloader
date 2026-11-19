@@ -452,5 +452,14 @@
   "help.portable.title": "Portable mode and backups",
   "help.portable.body": "With a folder named data next to the program (the portable zip has one), settings, library and logs stay in that folder, so the app can run from a USB stick. About shows Portable when it is on.\nSettings > Data > Backup saves your settings, watchlist, favorites and history in one file; Restore adds what is missing on another computer.",
   "help.bridge.title": "The browser extension",
-  "help.bridge.body": "Settings > Browser extension lets the Pawchive Downloader extension send downloads here. Turn it on, press Pair and enter the six-digit code in the extension's settings within two minutes.\nIt only listens on this computer, web pages cannot use it, and each paired browser can be removed again."
+  "help.bridge.body": "Settings > Browser extension lets the Pawchive Downloader extension send downloads here. Turn it on, press Pair and enter the six-digit code in the extension's settings within two minutes.\nIt only listens on this computer, web pages cannot use it, and each paired browser can be removed again.",
+  "common.openInBrowse": "Open in Browse",
+  "mediaDown.title": "{site} cannot send full files right now",
+  "mediaDown.body": "The site works, but its media server ({host}) is not answering, so the full files cannot be downloaded at the moment.",
+  "mediaDown.thumbnails": "Download thumbnails instead",
+  "mediaDown.thumbnailsHint": "smaller previews of the images and the post text, right now.",
+  "mediaDown.continue": "Queue the full files",
+  "mediaDown.continueHint": "they fail for now and are tried again later by themselves, when Try failed files again is on.",
+  "settings.search": "Search settings (Ctrl+F)",
+  "settings.searchNone": "No setting matches"
 }

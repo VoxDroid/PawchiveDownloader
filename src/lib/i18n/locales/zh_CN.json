@@ -752,5 +752,14 @@
   "help.portable.title": "便携模式与备份",
   "help.portable.body": "程序旁边有名为 data 的文件夹时（便携版 zip 自带），设置、资料库和日志都保存在其中，可以从 U 盘运行。开启时“关于”会显示“便携版”。\n“设置 > 数据 > 备份”把设置、关注列表、收藏和历史保存为一个文件；在另一台电脑上“恢复”会补上缺少的内容。",
   "help.bridge.title": "浏览器扩展",
-  "help.bridge.body": "“设置 > 浏览器扩展”允许 Pawchive Downloader 扩展把下载发送到这里。打开它，点“配对”，并在两分钟内把六位代码输入到扩展的设置中。\n它只在本机监听，网页无法使用，每个已配对的浏览器都可以删除。"
+  "help.bridge.body": "“设置 > 浏览器扩展”允许 Pawchive Downloader 扩展把下载发送到这里。打开它，点“配对”，并在两分钟内把六位代码输入到扩展的设置中。\n它只在本机监听，网页无法使用，每个已配对的浏览器都可以删除。",
+  "common.openInBrowse": "在浏览中打开",
+  "mediaDown.title": "{site} 目前无法提供完整文件",
+  "mediaDown.body": "网站可以访问，但其媒体服务器（{host}）没有响应，目前无法下载完整文件。",
+  "mediaDown.thumbnails": "改为下载缩略图",
+  "mediaDown.thumbnailsHint": "立即保存图片的小预览和帖子正文。",
+  "mediaDown.continue": "将完整文件加入队列",
+  "mediaDown.continueHint": "现在会失败，开启“自动重试失败的文件”后会稍后自动重试。",
+  "settings.search": "搜索设置 (Ctrl+F)",
+  "settings.searchNone": "没有匹配的设置"
 }

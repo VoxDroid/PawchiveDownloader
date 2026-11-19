@@ -141,6 +141,7 @@ export const api = {
   queueStatus: () => call<QueueStatus>('queue_status'),
   exportBackup: (path: string) => call<void>('export_backup', { path }),
   bridgeStatus: () => call<BridgeStatus>('bridge_status'),
+  checkMedia: (url: string) => call<{ reachable: boolean; host: string }>('check_media', { url }),
   bridgePair: () => call<BridgeStatus>('bridge_pair'),
   bridgeRevoke: (id: string) => call<BridgeStatus>('bridge_revoke', { id }),
   importBackup: (path: string) =>

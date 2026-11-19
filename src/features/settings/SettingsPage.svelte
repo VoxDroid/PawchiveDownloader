@@ -184,6 +184,45 @@
     ['data', 'database'],
   ] as const;
 
+  // Search: every setting whose text matches stays; a matching section title
+  // keeps its whole section. Works on the page itself, so new settings are
+  // found without listing them anywhere.
+  let query = $state('');
+  let nothing = $state(false);
+
+  $effect(() => {
+    const words = query.trim().toLowerCase().split(/\s+/).filter(Boolean);
+    const matches = (text: string) => {
+      const lower = text.toLowerCase();
+      return words.every((w) => lower.includes(w));
+    };
+    let shown = 0;
+    for (const section of document.querySelectorAll<HTMLElement>('[data-section]')) {
+      const header = section.querySelector('header')?.textContent ?? '';
+      const whole = words.length === 0 || matches(header);
+      let any = false;
+      for (const child of section.querySelectorAll<HTMLElement>(':scope > .card > *')) {
+        const show = whole || matches(child.textContent ?? '');
+        child.style.display = show ? '' : 'none';
+        any ||= show;
+      }
+      section.style.display = whole || any ? '' : 'none';
+      if (whole || any) shown += 1;
+    }
+    nothing = words.length > 0 && shown === 0;
+  });
+
+  onMount(() => {
+    const focusSearch = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'f') {
+        e.preventDefault();
+        document.querySelector<HTMLInputElement>('.find input')?.focus();
+      }
+    };
+    window.addEventListener('keydown', focusSearch);
+    return () => window.removeEventListener('keydown', focusSearch);
+  });
+
   const SHORTCUTS = [
     ['Ctrl+L', 'shortcut.focusLink'],
     ['Ctrl+V', 'shortcut.paste'],
@@ -198,7 +237,21 @@
 
 <PageHeader title={t('nav.settings')} description={t('settings.description')} />
 
-<nav class="jump">
+<div class="find">
+  <TextInput
+    label={t('settings.search')}
+    placeholder={t('settings.search')}
+    icon="search"
+    bind:value={query}
+    clearable
+    onkeydown={(e) => e.key === 'Escape' && (query = '')}
+  />
+  {#if query.trim() && nothing}
+    <span class="faint">{t('settings.searchNone')}</span>
+  {/if}
+</div>
+
+<nav class="jump" class:hidden={query.trim().length > 0}>
   {#each sections as [id, icon] (id)}
     <a
       href="#settings/{id}"
@@ -897,6 +950,19 @@
     border-bottom: 1px solid var(--border);
     font-size: var(--fs-sm);
     color: var(--text-dim);
+  }
+  .find {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    max-width: 520px;
+    margin-bottom: 4px;
+  }
+  .find :global(.field) {
+    flex: 1;
+  }
+  .jump.hidden {
+    display: none;
   }
   .jump {
     position: sticky;

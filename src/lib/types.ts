@@ -423,6 +423,8 @@ export interface JobSummary {
   speed: number;
   current: string[];
   folder: string;
+  /** The page it came from, to open in Browse again. */
+  browseUrl?: string | null;
 }
 
 export interface ItemView {

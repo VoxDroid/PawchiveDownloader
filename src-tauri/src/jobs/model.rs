@@ -438,6 +438,24 @@ pub struct JobSummary {
     /// Labels of the items transferring right now.
     pub current: Vec<String>,
     pub folder: String,
+    /// The page this download came from, to open it in Browse again.
+    pub browse_url: Option<String>,
+}
+
+/// The page a download came from: the post when there is one, else the
+/// creator (when all its posts share one).
+pub fn browse_url(creator: Option<&CreatorInfo>, refs: &[PostRef]) -> Option<String> {
+    use crate::pawchive::urls::page;
+    if let [only] = refs {
+        return Some(page::post(&only.service, &only.creator_id, &only.post_id));
+    }
+    if let Some(c) = creator {
+        return Some(page::creator(&c.service, &c.id));
+    }
+    let first = refs.first()?;
+    refs.iter()
+        .all(|r| r.service == first.service && r.creator_id == first.creator_id)
+        .then(|| page::creator(&first.service, &first.creator_id))
 }
 
 /// One item as the job details view shows it.

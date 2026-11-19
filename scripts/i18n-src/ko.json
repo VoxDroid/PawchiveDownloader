@@ -437,5 +437,14 @@
   "help.portable.title": "포터블 모드와 백업",
   "help.portable.body": "프로그램 옆에 data 폴더가 있으면(포터블 zip에 포함) 설정, 라이브러리, 로그가 그 폴더에 저장되어 USB에서도 실행할 수 있습니다. 켜져 있으면 정보에 포터블이 표시됩니다.\n설정 > 데이터 > 백업은 설정, 관심 목록, 즐겨찾기, 기록을 파일 하나로 저장하고, 다른 컴퓨터에서 복원하면 없는 것을 추가합니다.",
   "help.bridge.title": "브라우저 확장 프로그램",
-  "help.bridge.body": "설정 > 브라우저 확장 프로그램에서 Pawchive Downloader 확장 프로그램이 여기로 다운로드를 보내게 할 수 있습니다. 켜고 연결을 누른 뒤 2분 안에 6자리 코드를 확장 프로그램 설정에 입력하세요.\n이 컴퓨터에서만 대기하고 웹 페이지는 사용할 수 없으며, 연결한 브라우저는 다시 삭제할 수 있습니다."
+  "help.bridge.body": "설정 > 브라우저 확장 프로그램에서 Pawchive Downloader 확장 프로그램이 여기로 다운로드를 보내게 할 수 있습니다. 켜고 연결을 누른 뒤 2분 안에 6자리 코드를 확장 프로그램 설정에 입력하세요.\n이 컴퓨터에서만 대기하고 웹 페이지는 사용할 수 없으며, 연결한 브라우저는 다시 삭제할 수 있습니다.",
+  "common.openInBrowse": "탐색에서 열기",
+  "mediaDown.title": "{site}에서 지금 원본 파일을 받을 수 없습니다",
+  "mediaDown.body": "사이트는 작동하지만 미디어 서버({host})가 응답하지 않아 지금은 원본 파일을 받을 수 없습니다.",
+  "mediaDown.thumbnails": "대신 썸네일 받기",
+  "mediaDown.thumbnailsHint": "이미지의 작은 미리보기와 게시물 본문을 지금 저장합니다.",
+  "mediaDown.continue": "원본 파일 대기열에 넣기",
+  "mediaDown.continueHint": "지금은 실패하지만 실패한 파일 다시 시도가 켜져 있으면 나중에 자동으로 다시 시도합니다.",
+  "settings.search": "설정 검색 (Ctrl+F)",
+  "settings.searchNone": "일치하는 설정이 없습니다"
 }

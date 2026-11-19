@@ -190,3 +190,18 @@ test('the sidebar collapses to icons and remembers it', async ({ page }) => {
   await page.keyboard.press('Control+b');
   await expect(nav.getByText('History', { exact: true })).toBeVisible();
 });
+
+test('settings can be searched', async ({ page }) => {
+  await page
+    .getByRole('link', { name: /^Settings/ })
+    .first()
+    .click();
+  const search = page.getByRole('textbox', { name: /Search settings/ });
+  await search.fill('proxy');
+  await expect(page.getByRole('heading', { name: 'Network' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Appearance' })).toBeHidden();
+  await search.fill('zzzz nothing here');
+  await expect(page.getByText('No setting matches')).toBeVisible();
+  await search.fill('');
+  await expect(page.getByRole('heading', { name: 'Appearance' })).toBeVisible();
+});

@@ -19,6 +19,7 @@
   import QueueBanner from './ui/components/QueueBanner.svelte';
   import { mentionsSite } from './lib/urls';
   import Tooltip from './ui/components/Tooltip.svelte';
+  import MediaDownDialog from './ui/components/MediaDownDialog.svelte';
   import StatsPage from './features/stats/StatsPage.svelte';
   import BrowsePage from './features/browse/BrowsePage.svelte';
   import BatchDialog from './features/browse/BatchDialog.svelte';
@@ -253,7 +254,10 @@
       </div>
     </nav>
 
-    <main class:flush={router.route === 'browse'}>
+    <main
+      class:flush={router.route === 'browse'}
+      style:--page-width={router.route === 'browse' ? '1240px' : '1040px'}
+    >
       <QueueBanner />
       {#key router.route}
         <div
@@ -296,6 +300,7 @@
 {/if}
 <Toaster />
 <Tooltip />
+<MediaDownDialog />
 
 <style>
   .boot {

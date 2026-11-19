@@ -529,6 +529,48 @@ pub fn import_backup(app: AppHandle, core: State<'_, Core_>, path: String) -> R<
     Ok(report)
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct MediaCheck {
+    reachable: bool,
+    host: String,
+}
+
+/// Whether the media server behind a file URL answers, with one tiny
+/// request (the first byte). Asked before a download starts, so a dead
+/// server can be pointed out while there is still a choice to make.
+#[tauri::command]
+pub async fn check_media(core: State<'_, Core_>, url: String) -> R<MediaCheck> {
+    let host = crate::pawchive::client::host_key(&url);
+    if let Some(down) = core.client.media_down(&url) {
+        return Ok(MediaCheck {
+            reachable: false,
+            host: down,
+        });
+    }
+    let request = core
+        .client
+        .http()
+        .get(core.client.target(&url))
+        .header("Range", "bytes=0-0")
+        .timeout(std::time::Duration::from_secs(10));
+    match request.send().await {
+        Err(e) if e.is_connect() || e.is_timeout() => {
+            core.client
+                .mark_media_down(&url, crate::jobs::transfer::MEDIA_DOWN_FOR);
+            Ok(MediaCheck {
+                reachable: false,
+                host,
+            })
+        }
+        // Anything else (an answer of any kind) means the server is up.
+        _ => Ok(MediaCheck {
+            reachable: true,
+            host,
+        }),
+    }
+}
+
 #[tauri::command(async)]
 pub fn bridge_status(core: State<'_, Core_>) -> crate::bridge::BridgeStatus {
     core.bridge.status(&core)

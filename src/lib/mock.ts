@@ -644,6 +644,11 @@ export function createMockBackend(): Backend {
     },
     queue_status: () => queue,
     bridge_status: () => bridge,
+    // The demo's Kemono media server is down, to show the prompt.
+    check_media: ({ url }) => ({
+      reachable: !String(url).includes('kemono'),
+      host: new URL(String(url)).host,
+    }),
     bridge_pair: () => {
       bridge = { ...bridge, code: '482917', codeExpiresAt: Date.now() + 120_000 };
       return bridge;

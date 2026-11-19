@@ -198,6 +198,7 @@
       fileIndexes.length
         ? t('toast.queuedFiles', { count: fileIndexes.length })
         : t('toast.queuedPost'),
+      post.files.find((f) => selected.has(f.index) && f.url)?.url,
     );
     busy = false;
   }

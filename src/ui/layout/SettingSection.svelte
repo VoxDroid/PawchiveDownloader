@@ -13,7 +13,7 @@
     $props();
 </script>
 
-<section {id}>
+<section {id} data-section>
   <header>
     <span class="icon-box"><Icon name={icon} /></span>
     <div>

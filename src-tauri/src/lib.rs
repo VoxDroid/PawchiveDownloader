@@ -178,6 +178,7 @@ pub fn run() {
             commands::set_watch_options,
             commands::export_backup,
             commands::bridge_status,
+            commands::check_media,
             commands::bridge_pair,
             commands::bridge_revoke,
             commands::import_backup,
