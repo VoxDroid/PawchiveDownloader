@@ -29,6 +29,7 @@ import type {
   WatchOptions,
   WhenDone,
 } from './types';
+import type { SiteId } from './urls';
 
 /**
  * The bridge to the Rust side. Inside the app every call goes through Tauri's
@@ -107,6 +108,7 @@ export const api = {
   searchCreators: (
     query: string,
     options: {
+      site?: SiteId;
       service?: string | null;
       sort?: CreatorSort;
       limit?: number;
@@ -119,11 +121,12 @@ export const api = {
       sort: options.sort ?? null,
       limit: options.limit ?? null,
       refresh: options.refresh ?? null,
+      site: options.site ?? null,
     }),
   getCreatorPosts: (service: string, creatorId: string, offset: number, query: string | null) =>
     call<PostPage>('get_creator_posts', { service, creatorId, offset, query }),
-  getRecentPosts: (offset: number, query: string | null) =>
-    call<PostPage>('get_recent_posts', { offset, query }),
+  getRecentPosts: (offset: number, query: string | null, site: SiteId = 'pawchive') =>
+    call<PostPage>('get_recent_posts', { offset, query, site }),
 
   createJob: (request: JobRequest) =>
     call<{ jobId: string; duplicate: boolean }>('create_job', { request }),

@@ -350,7 +350,7 @@
   "options.thumbnails": "Vorschaubilder",
   "skip.exists": "Eine Datei mit diesem Namen existiert bereits",
   "conflict.skip": "Download überspringen",
-  "browse.placeholder": "Pawchive-Link einfügen oder den Namen eines Creators eingeben",
+  "browse.placeholder": "Link von Pawchive, Kemono oder Coomer einfügen oder Namen eines Creators eingeben",
   "browse.open": "Öffnen",
   "browse.paste": "Einfügen",
   "browse.batch": "Stapel",
@@ -644,7 +644,7 @@
   "post.password": "Passwort",
   "skip.empty": "Nichts zu speichern",
   "browse.findCreators": "Creators finden",
-  "browse.findCreatorsBody": "Alle Creators auf Pawchive nach Namen durchsuchen",
+  "browse.findCreatorsBody": "Alle Creators auf Pawchive, Kemono und Coomer nach Namen durchsuchen",
   "search.resultsFor": "Creators passend zu „{query}“",
   "search.popular": "Creators auf Pawchive",
   "search.count_one": "{count} Creator",
@@ -747,5 +747,9 @@
   "help.library.body": "Die Seite Statistik zählt alles Heruntergeladene: Dateien, Größe, Beiträge und Creators, die letzten zwölf Monate, die am meisten geladenen Creators und Dateien nach Art.\nJetzt prüfen sucht heruntergeladene Dateien, die seitdem gelöscht oder verschoben wurden. Erneut herunterladen holt nur diese Dateien (der Rest bleibt bekannt); Nur vergessen lässt den nächsten Download dieser Beiträge sie holen.\nLinks zu Mega, Google Drive und anderen Hostern in einem Beitrag stehen auf seinem Tab Links und werden mit Passwörtern in links.txt gespeichert.",
   "nav.collapse": "Seitenleiste einklappen",
   "nav.expand": "Seitenleiste ausklappen",
-  "shortcut.sidebar": "Seitenleiste ein- oder ausklappen"
+  "shortcut.sidebar": "Seitenleiste ein- oder ausklappen",
+  "search.site": "Seite",
+  "hold.mediaDown": "Die Medienserver von {hosts} antworten nicht, vollständige Dateien lassen sich gerade nicht laden.",
+  "hold.mediaDownThumbs": " Stattdessen werden Vorschaubilder gespeichert.",
+  "hold.useThumbnails": "Vorschaubilder speichern"
 }

@@ -15,6 +15,7 @@
   import ListingView from './ListingView.svelte';
   import PostView from './PostView.svelte';
   import { batch, clearRecent, loadRecent, type RecentLink } from './batch.svelte';
+  import { mentionsSite } from '../../lib/urls';
 
   let input = $state(browse.input);
   type Current = PageRef | { kind: 'search'; query: string };
@@ -95,7 +96,7 @@
       const target = event.target as HTMLElement | null;
       if (target?.closest('input, textarea, [contenteditable]')) return;
       const text = event.clipboardData?.getData('text')?.trim() ?? '';
-      if (!text.includes('pawchive.pw')) return;
+      if (!mentionsSite(text)) return;
       event.preventDefault();
       input = text;
       void open(text);
@@ -138,7 +139,7 @@
       oninput={() => (invalid = false)}
       onpaste={(e) => {
         const text = e.clipboardData?.getData('text') ?? '';
-        if (text.includes('pawchive.pw')) {
+        if (mentionsSite(text)) {
           e.preventDefault();
           input = text.trim();
           void open(input);
@@ -178,7 +179,7 @@
       />
     {/key}
   {:else if current?.kind === 'listing'}
-    <ListingView initialQuery={current.query} />
+    <ListingView initialQuery={current.query} initialSite={current.site ?? 'pawchive'} />
   {:else if current?.kind === 'search'}
     <CreatorSearch query={current.query} />
   {:else}

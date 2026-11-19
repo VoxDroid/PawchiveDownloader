@@ -1,5 +1,10 @@
-//! URLs of Pawchive's pages, API and media servers, and parsing of the links
-//! people paste into the app.
+//! URLs of the supported sites' pages, API and media servers, and parsing of
+//! the links people paste into the app.
+//!
+//! Pawchive, Kemono and Coomer run the same software. A service is written
+//! bare for Pawchive (`patreon`) and with its site for the others
+//! (`patreon@kemono`), so every key built from it stays unique and everything
+//! saved before other sites existed keeps working.
 
 use std::sync::LazyLock;
 
@@ -12,8 +17,98 @@ use super::types::RawFile;
 
 pub const SITE_HOST: &str = "pawchive.pw";
 pub const SITE_ORIGIN: &str = "https://pawchive.pw";
-pub const THUMBNAIL_ORIGIN: &str = "https://img.pawchive.pw";
-pub const API_BASE: &str = "https://pawchive.pw/api/v1";
+
+/// A site the app downloads from.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize, Default)]
+#[serde(rename_all = "lowercase")]
+pub enum Site {
+    #[default]
+    Pawchive,
+    Kemono,
+    Coomer,
+}
+
+impl Site {
+    pub const ALL: [Site; 3] = [Site::Pawchive, Site::Kemono, Site::Coomer];
+
+    pub fn id(self) -> &'static str {
+        match self {
+            Site::Pawchive => "pawchive",
+            Site::Kemono => "kemono",
+            Site::Coomer => "coomer",
+        }
+    }
+    pub fn name(self) -> &'static str {
+        match self {
+            Site::Pawchive => "Pawchive",
+            Site::Kemono => "Kemono",
+            Site::Coomer => "Coomer",
+        }
+    }
+    pub fn parse(id: &str) -> Option<Site> {
+        Site::ALL
+            .into_iter()
+            .find(|s| s.id() == id.trim().to_ascii_lowercase())
+    }
+    /// The host the app talks to.
+    pub fn host(self) -> &'static str {
+        match self {
+            Site::Pawchive => "pawchive.pw",
+            Site::Kemono => "kemono.cr",
+            Site::Coomer => "coomer.st",
+        }
+    }
+    /// Every domain the site used, current first (old links still open).
+    fn domains(self) -> &'static [&'static str] {
+        match self {
+            Site::Pawchive => &["pawchive.pw"],
+            Site::Kemono => &["kemono.cr", "kemono.su", "kemono.party"],
+            Site::Coomer => &["coomer.st", "coomer.su", "coomer.party"],
+        }
+    }
+    pub fn origin(self) -> String {
+        format!("https://{}", self.host())
+    }
+    pub fn api_base(self) -> String {
+        format!("https://{}/api/v1", self.host())
+    }
+    pub fn thumbnail_origin(self) -> String {
+        format!("https://img.{}", self.host())
+    }
+    /// Where creator icons and banners live.
+    fn image_origin(self) -> String {
+        match self {
+            Site::Pawchive => self.origin(),
+            _ => self.thumbnail_origin(),
+        }
+    }
+    /// The site a host belongs to, subdomains included (n1., img., www.).
+    pub fn from_host(hostname: &str) -> Option<Site> {
+        let host = hostname.trim_end_matches('.').to_ascii_lowercase();
+        Site::ALL.into_iter().find(|s| {
+            s.domains()
+                .iter()
+                .any(|d| host == *d || host.ends_with(&format!(".{d}")))
+        })
+    }
+}
+
+/// Splits `patreon@kemono` into the site and the bare service.
+pub fn split_service(service: &str) -> (Site, &str) {
+    match service.rsplit_once('@') {
+        Some((bare, site)) => (Site::parse(site).unwrap_or_default(), bare),
+        None => (Site::Pawchive, service),
+    }
+}
+
+/// The service as the app stores it: bare on Pawchive, `bare@site` elsewhere.
+pub fn qualify(site: Site, service: &str) -> String {
+    let (_, bare) = split_service(service);
+    match site {
+        Site::Pawchive => bare.to_string(),
+        other => format!("{bare}@{}", other.id()),
+    }
+}
 /// Posts per page on every paginated listing.
 pub const PAGE_SIZE: u32 = 50;
 
@@ -34,10 +129,9 @@ pub fn enc(value: &str) -> String {
     utf8_percent_encode(value, SEGMENT).to_string()
 }
 
-/// True for pawchive.pw and any of its subdomains (n1., img., t4., ...).
+/// True for any supported site and its subdomains (n1., img., t4., ...).
 pub fn is_site_host(hostname: &str) -> bool {
-    let host = hostname.trim_end_matches('.').to_ascii_lowercase();
-    host == SITE_HOST || host.ends_with(".pawchive.pw")
+    Site::from_host(hostname).is_some()
 }
 
 pub fn is_site_url(url: &str) -> bool {
@@ -69,6 +163,8 @@ pub enum PageRef {
     Listing {
         offset: u32,
         query: Option<String>,
+        #[serde(default)]
+        site: Site,
     },
     Other,
 }
@@ -97,9 +193,10 @@ pub fn parse_page_url(input: &str) -> PageRef {
     };
     let host = host.to_ascii_lowercase();
     let host = host.strip_prefix("www.").unwrap_or(&host);
-    if host != SITE_HOST {
+    // Only the site itself, not its media or image servers.
+    let Some(site) = Site::from_host(host).filter(|s| s.domains().contains(&host)) else {
         return PageRef::Other;
-    }
+    };
     let parts: Vec<String> = url
         .path_segments()
         .map(|s| {
@@ -130,16 +227,17 @@ pub fn parse_page_url(input: &str) -> PageRef {
         if !SERVICE_RE.is_match(service) || !ID_RE.is_match(creator_id) {
             return PageRef::Other;
         }
+        let service = qualify(site, &service.to_ascii_lowercase());
         if parts.len() >= 5 && parts[3] == "post" && ID_RE.is_match(&parts[4]) {
             return PageRef::Post {
-                service: service.clone(),
+                service,
                 creator_id: creator_id.clone(),
                 post_id: parts[4].clone(),
             };
         }
         if parts.len() == 3 {
             return PageRef::Creator {
-                service: service.clone(),
+                service,
                 creator_id: creator_id.clone(),
                 offset,
                 query,
@@ -148,7 +246,11 @@ pub fn parse_page_url(input: &str) -> PageRef {
         return PageRef::Other;
     }
     if parts.len() == 1 && parts[0] == "posts" {
-        return PageRef::Listing { offset, query };
+        return PageRef::Listing {
+            offset,
+            query,
+            site,
+        };
     }
     PageRef::Other
 }
@@ -157,7 +259,10 @@ pub fn parse_page_url(input: &str) -> PageRef {
 /// text), de-duplicated in order. Used by URL import and batch queueing.
 pub fn extract_links(text: &str) -> Vec<(String, PageRef)> {
     static LINK_RE: LazyLock<Regex> = LazyLock::new(|| {
-        Regex::new(r#"(?i)(?:https?://)?(?:www\.)?pawchive\.pw/[^\s<>"'`]+"#).unwrap()
+        Regex::new(
+            r#"(?i)(?:https?://)?(?:www\.)?(?:pawchive\.pw|kemono\.(?:cr|su|party)|coomer\.(?:st|su|party))/[^\s<>"'`]+"#,
+        )
+        .unwrap()
     });
     let mut seen = std::collections::HashSet::new();
     let mut out = Vec::new();
@@ -184,8 +289,16 @@ pub fn extract_links(text: &str) -> Vec<(String, PageRef)> {
                     query.clone().unwrap_or_default()
                 )
             }
-            PageRef::Listing { offset, query } => {
-                format!("l:{offset}:{}", query.clone().unwrap_or_default())
+            PageRef::Listing {
+                offset,
+                query,
+                site,
+            } => {
+                format!(
+                    "l:{}:{offset}:{}",
+                    site.id(),
+                    query.clone().unwrap_or_default()
+                )
             }
             PageRef::Other => continue,
         };
@@ -196,33 +309,54 @@ pub fn extract_links(text: &str) -> Vec<(String, PageRef)> {
     out
 }
 
+/// Page URLs. Services may carry their site (`patreon@kemono`).
 pub mod page {
-    use super::{enc, SITE_ORIGIN};
+    use super::{enc, split_service, Site};
 
     pub fn post(service: &str, creator_id: &str, post_id: &str) -> String {
+        let (site, bare) = split_service(service);
         format!(
-            "{SITE_ORIGIN}/{}/user/{}/post/{}",
-            enc(service),
+            "{}/{}/user/{}/post/{}",
+            site.origin(),
+            enc(bare),
             enc(creator_id),
             enc(post_id)
         )
     }
     pub fn creator(service: &str, creator_id: &str) -> String {
-        format!("{SITE_ORIGIN}/{}/user/{}", enc(service), enc(creator_id))
+        let (site, bare) = split_service(service);
+        format!("{}/{}/user/{}", site.origin(), enc(bare), enc(creator_id))
     }
     pub fn icon(service: &str, creator_id: &str) -> String {
-        format!("{SITE_ORIGIN}/icons/{}/{}", enc(service), enc(creator_id))
+        let (site, bare) = split_service(service);
+        format!(
+            "{}/icons/{}/{}",
+            site.image_origin(),
+            enc(bare),
+            enc(creator_id)
+        )
     }
     pub fn banner(service: &str, creator_id: &str) -> String {
-        format!("{SITE_ORIGIN}/banners/{}/{}", enc(service), enc(creator_id))
+        let (site, bare) = split_service(service);
+        format!(
+            "{}/banners/{}/{}",
+            site.image_origin(),
+            enc(bare),
+            enc(creator_id)
+        )
+    }
+    pub fn recent(site: Site) -> String {
+        format!("{}/posts", site.origin())
     }
 }
 
+/// API URLs. Services may carry their site (`patreon@kemono`).
 pub mod api {
-    use super::{enc, API_BASE};
+    use super::{enc, split_service, Site};
 
     fn creator_base(service: &str, creator_id: &str) -> String {
-        format!("{API_BASE}/{}/user/{}", enc(service), enc(creator_id))
+        let (site, bare) = split_service(service);
+        format!("{}/{}/user/{}", site.api_base(), enc(bare), enc(creator_id))
     }
     fn paged(base: String, offset: u32, query: Option<&str>) -> String {
         let mut url = format!("{base}?o={offset}");
@@ -245,8 +379,8 @@ pub mod api {
     pub fn comments(service: &str, creator_id: &str, post_id: &str) -> String {
         format!("{}/comments", post(service, creator_id, post_id))
     }
-    pub fn creators() -> String {
-        format!("{API_BASE}/creators")
+    pub fn creators(site: Site) -> String {
+        format!("{}/creators", site.api_base())
     }
     pub fn linked(service: &str, creator_id: &str) -> String {
         format!("{}/links", creator_base(service, creator_id))
@@ -266,8 +400,8 @@ pub mod api {
             query,
         )
     }
-    pub fn recent_posts(offset: u32, query: Option<&str>) -> String {
-        paged(format!("{API_BASE}/posts"), offset, query)
+    pub fn recent_posts(site: Site, offset: u32, query: Option<&str>) -> String {
+        paged(format!("{}/posts", site.api_base()), offset, query)
     }
 }
 
@@ -295,23 +429,29 @@ pub fn canonical_path(path: &str) -> Option<String> {
     Some(format!("/{}/{}/{hash}{ext}", &hash[0..2], &hash[2..4]))
 }
 
-pub fn thumbnail_url(path: &str) -> Option<String> {
-    canonical_path(path).map(|c| format!("{THUMBNAIL_ORIGIN}/thumbnail/data{c}"))
+pub fn thumbnail_url(site: Site, path: &str) -> Option<String> {
+    canonical_path(path).map(|c| format!("{}/thumbnail/data{c}", site.thumbnail_origin()))
 }
 
 /// Full-file URL for an API file entry, or None when only a preview exists.
-/// pawchive.pw itself answers 404 for /data paths: without a media server
-/// there is no full file to fetch.
-pub fn file_url(file: &RawFile) -> Option<String> {
+/// pawchive.pw itself answers 404 for /data paths, so a Pawchive file needs
+/// its media server; Kemono and Coomer send the request on from the site.
+pub fn file_url(site: Site, file: &RawFile) -> Option<String> {
     let path = file.path.as_deref().filter(|p| !p.is_empty())?;
     if file.preview_only.unwrap_or(false) {
         return None;
     }
-    let server = Url::parse(file.server.as_deref()?).ok()?;
-    if server.scheme() != "https" || !server.host_str().map(is_site_host).unwrap_or(false) {
-        return None;
-    }
-    let origin = server.origin().ascii_serialization();
+    let origin = match file.server.as_deref().and_then(|s| Url::parse(s).ok()) {
+        Some(server)
+            if server.scheme() == "https"
+                && server.host_str().and_then(Site::from_host) == Some(site) =>
+        {
+            server.origin().ascii_serialization()
+        }
+        Some(_) => return None,
+        None if site == Site::Pawchive => return None,
+        None => site.origin(),
+    };
     let path = if path.starts_with('/') {
         path.to_string()
     } else {
@@ -358,8 +498,29 @@ mod tests {
             parse_page_url("https://www.pawchive.pw/posts?q=%20dog%20"),
             PageRef::Listing {
                 offset: 0,
-                query: Some("dog".into())
+                query: Some("dog".into()),
+                site: Site::Pawchive,
             }
+        );
+        assert_eq!(
+            parse_page_url("https://kemono.su/Fanbox/user/9/post/3"),
+            PageRef::Post {
+                service: "fanbox@kemono".into(),
+                creator_id: "9".into(),
+                post_id: "3".into()
+            }
+        );
+        assert_eq!(
+            parse_page_url("coomer.st/posts"),
+            PageRef::Listing {
+                offset: 0,
+                query: None,
+                site: Site::Coomer,
+            }
+        );
+        assert_eq!(
+            parse_page_url("https://n2.kemono.cr/patreon/user/1"),
+            PageRef::Other
         );
         assert_eq!(
             parse_page_url("https://example.com/patreon/user/1"),
@@ -381,7 +542,10 @@ mod tests {
         let text = "see https://pawchive.pw/patreon/user/1 and (pawchive.pw/patreon/user/1/post/2).\n\
                     https://pawchive.pw/patreon/user/1\nhttps://kemono.cr/patreon/user/1\nhttps://pawchive.pw/about";
         let links = extract_links(text);
-        assert_eq!(links.len(), 2);
+        assert_eq!(links.len(), 3);
+        assert!(
+            matches!(&links[2].1, PageRef::Creator { service, .. } if service == "patreon@kemono")
+        );
         assert!(matches!(links[1].1, PageRef::Post { .. }));
         assert_eq!(links[1].0, "pawchive.pw/patreon/user/1/post/2");
     }
@@ -397,9 +561,24 @@ mod tests {
             "https://pawchive.pw/api/v1/fanbox/user/x/profile"
         );
         assert_eq!(
-            api::recent_posts(0, None),
+            api::recent_posts(Site::Pawchive, 0, None),
             "https://pawchive.pw/api/v1/posts?o=0"
         );
+        assert_eq!(
+            api::profile("onlyfans@coomer", "x"),
+            "https://coomer.st/api/v1/onlyfans/user/x/profile"
+        );
+        assert_eq!(
+            page::icon("patreon@kemono", "5"),
+            "https://img.kemono.cr/icons/patreon/5"
+        );
+        assert_eq!(
+            page::icon("patreon", "5"),
+            "https://pawchive.pw/icons/patreon/5"
+        );
+        assert_eq!(qualify(Site::Kemono, "patreon"), "patreon@kemono");
+        assert_eq!(qualify(Site::Pawchive, "patreon@kemono"), "patreon");
+        assert_eq!(split_service("fansly@coomer"), (Site::Coomer, "fansly"));
     }
 
     #[test]
@@ -409,7 +588,7 @@ mod tests {
         assert_eq!(hash_from_path(&path), Some((hash.clone(), "png".into())));
         assert_eq!(canonical_path(&path), Some(format!("/64/bb/{hash}.png")));
         assert_eq!(
-            thumbnail_url(&path),
+            thumbnail_url(Site::Pawchive, &path),
             Some(format!(
                 "https://img.pawchive.pw/thumbnail/data/64/bb/{hash}.png"
             ))
@@ -425,17 +604,25 @@ mod tests {
             server: Some("https://n1.pawchive.pw".into()),
             preview_only: None,
         };
+        let p = Site::Pawchive;
         assert_eq!(
-            file_url(&f).as_deref(),
+            file_url(p, &f).as_deref(),
             Some("https://n1.pawchive.pw/data/26/bb/x.png?f=a%20b.png")
         );
         f.server = Some("https://evil.example".into());
-        assert_eq!(file_url(&f), None);
+        assert_eq!(file_url(p, &f), None);
         f.server = Some("https://n2.pawchive.pw".into());
         f.preview_only = Some(true);
-        assert_eq!(file_url(&f), None);
+        assert_eq!(file_url(p, &f), None);
         f.preview_only = None;
         f.server = None;
-        assert_eq!(file_url(&f), None);
+        assert_eq!(file_url(p, &f), None);
+        // Kemono and Coomer send /data requests on to their media servers.
+        assert_eq!(
+            file_url(Site::Kemono, &f).as_deref(),
+            Some("https://kemono.cr/data/26/bb/x.png?f=a%20b.png")
+        );
+        f.server = Some("https://n1.pawchive.pw".into());
+        assert_eq!(file_url(Site::Kemono, &f), None);
     }
 }

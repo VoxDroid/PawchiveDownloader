@@ -96,3 +96,19 @@ describe('demo backend', () => {
     await expect(backend.invoke('nope')).rejects.toThrow(/no "nope"/);
   });
 });
+
+describe('sites', () => {
+  it('splits services and builds page URLs per site', async () => {
+    const { splitService, pageUrls, mentionsSite, serviceLabel, siteOf } =
+      await import('../../src/lib/urls');
+    expect(splitService('patreon')).toEqual({ site: 'pawchive', service: 'patreon' });
+    expect(splitService('fansly@coomer')).toEqual({ site: 'coomer', service: 'fansly' });
+    expect(pageUrls.post('fanbox@kemono', '9', '3')).toBe('https://kemono.cr/fanbox/user/9/post/3');
+    expect(pageUrls.creator('patreon', '1')).toBe('https://pawchive.pw/patreon/user/1');
+    expect(pageUrls.icon('patreon@kemono', '5')).toBe('https://img.kemono.cr/icons/patreon/5');
+    expect(serviceLabel('onlyfans@coomer')).toBe('onlyfans / Coomer');
+    expect(mentionsSite('see https://kemono.su/patreon/user/1')).toBe(true);
+    expect(mentionsSite('https://example.com/')).toBe(false);
+    expect(siteOf('n2.coomer.st')).toBe('coomer');
+  });
+});

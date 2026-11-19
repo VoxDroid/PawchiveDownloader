@@ -526,7 +526,12 @@ pub fn human_bytes(n: f64) -> String {
 pub fn links_in_args(args: &[String]) -> Vec<String> {
     args.iter()
         .filter(|a| !a.starts_with("--"))
-        .filter(|a| a.contains("pawchive.pw"))
+        .filter(|a| {
+            url::Url::parse(a)
+                .ok()
+                .and_then(|u| u.host_str().map(crate::pawchive::urls::is_site_host))
+                .unwrap_or(false)
+        })
         .cloned()
         .collect()
 }

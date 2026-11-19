@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { api } from '../../lib/api';
+  import { pageUrls, serviceLabel } from '../../lib/urls';
   import type { LibraryCheck, LibraryStats } from '../../lib/types';
   import { fmt, t } from '../../ui/state/app.svelte';
   import { go, openLink } from '../../ui/state/router.svelte';
@@ -65,8 +66,8 @@
   }
 
   const postUrl = (key: string) => {
-    const [service, creator, post] = key.split(':');
-    return `https://pawchive.pw/${service}/user/${creator}/post/${post}`;
+    const [service = '', creator = '', post = ''] = key.split(':');
+    return pageUrls.post(service, creator, post);
   };
 </script>
 
@@ -157,9 +158,9 @@
         <ol class="rank">
           {#each stats.topCreators as c (`${c.service}:${c.id}`)}
             <li>
-              <button onclick={() => openLink(`https://pawchive.pw/${c.service}/user/${c.id}`)}>
+              <button onclick={() => openLink(pageUrls.creator(c.service, c.id))}>
                 <span class="name truncate">{c.name}</span>
-                <span class="faint">{c.service}</span>
+                <span class="faint">{serviceLabel(c.service)}</span>
                 <span class="mono-num right">{fmt.bytes(c.bytes)}</span>
                 <span class="mono-num faint">{t('stats.filesCount', { count: c.files })}</span>
               </button>

@@ -42,7 +42,7 @@ async function shot(name) {
 }
 
 async function open(url) {
-  const bar = page.getByRole('textbox', { name: /Paste a Pawchive link/ });
+  const bar = page.getByRole('textbox', { name: /Paste a Pawchive/ });
   await bar.fill(url);
   await bar.press('Enter');
 }

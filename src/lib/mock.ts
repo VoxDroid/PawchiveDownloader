@@ -203,7 +203,13 @@ export function createMockBackend(): Backend {
   const aster = CREATORS[0] as Creator;
   const moss = CREATORS[1] as Creator;
 
-  let queue: QueueStatus = { hold: null, whenDone: 'nothing', actionAt: null, awake: false };
+  let queue: QueueStatus = {
+    hold: null,
+    whenDone: 'nothing',
+    actionAt: null,
+    awake: false,
+    downSites: [],
+  };
   let jobs: JobSummary[] = [
     summary({
       id: 'j1',

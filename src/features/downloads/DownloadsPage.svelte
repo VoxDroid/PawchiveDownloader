@@ -8,6 +8,7 @@
   import { SUPPORT_PROMPT_AFTER } from '../../lib/links';
   import type { ItemView, JobAction, WhenDone } from '../../lib/types';
   import { saveTextFile, stamp } from '../../lib/files';
+  import { pageUrls } from '../../lib/urls';
   import type { IconName } from '../../ui/icons.generated';
   import { app, fmt, overallProgress, t } from '../../ui/state/app.svelte';
   import { go } from '../../ui/state/router.svelte';
@@ -111,7 +112,7 @@
       const items = await api.jobItems(job.id).catch(() => []);
       for (const item of items.filter((i) => i.status === 'failed')) {
         const post = job.creator
-          ? `https://pawchive.pw/${job.creator.service}/user/${job.creator.id}/post/${item.postId}`
+          ? pageUrls.post(job.creator.service, job.creator.id, item.postId)
           : item.postId;
         lines.push([post, item.label, item.error ?? ''].join('\t'));
       }

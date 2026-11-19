@@ -1,3 +1,4 @@
+import type { SiteId } from './urls';
 /**
  * Shapes shared with the Rust side (serde, camelCase). Keep in step with
  * src-tauri/src/**.
@@ -77,7 +78,7 @@ export interface Creator {
 export type PageRef =
   | { kind: 'post'; service: string; creatorId: string; postId: string }
   | { kind: 'creator'; service: string; creatorId: string; offset: number; query: string | null }
-  | { kind: 'listing'; offset: number; query: string | null }
+  | { kind: 'listing'; offset: number; query: string | null; site?: SiteId }
   | { kind: 'other' };
 
 export interface ParsedLink {
@@ -226,7 +227,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   concurrency: 3,
   requestIntervalMs: 1000,
   maxRetries: 5,
-  folderTemplate: 'Pawchive/{creator} ({service})/{published:YYYY-MM-DD} {title} [{post_id}]',
+  folderTemplate: '{site}/{creator} ({service})/{published:YYYY-MM-DD} {title} [{post_id}]',
   fileTemplate: '{index:2}_{filename}',
   archiveTemplate: '{creator} - {published:YYYY-MM-DD} {title} [{post_id}]',
   conflictAction: 'uniquify',
@@ -298,6 +299,8 @@ export interface QueueStatus {
   /** When the when-done action fires (epoch ms), during its countdown. */
   actionAt: number | null;
   awake: boolean;
+  /** Media hosts that are not answering (only thumbnails work). */
+  downSites: string[];
 }
 
 export interface CreatorInfo {

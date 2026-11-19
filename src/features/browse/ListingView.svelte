@@ -3,6 +3,8 @@
   import { untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { api } from '../../lib/api';
+  import { SITES, type SiteId } from '../../lib/urls';
+  import Segmented from '../../ui/components/Segmented.svelte';
   import type { JobOverrides, Post } from '../../lib/types';
   import { t } from '../../ui/state/app.svelte';
   import Button from '../../ui/components/Button.svelte';
@@ -14,7 +16,12 @@
   import { queueJob } from './queue';
   import PostList from './PostList.svelte';
 
-  let { initialQuery }: { initialQuery: string | null } = $props();
+  let {
+    initialQuery,
+    initialSite = 'pawchive',
+  }: { initialQuery: string | null; initialSite?: SiteId } = $props();
+
+  let site = $state<SiteId>('pawchive');
   const PAGE = 50;
 
   let posts = $state<Post[]>([]);
@@ -33,7 +40,7 @@
     loading = true;
     error = null;
     try {
-      const page = await api.getRecentPosts(offset, applied);
+      const page = await api.getRecentPosts(offset, applied, site);
       const seen = new Set(posts.map((p) => p.id));
       posts = [...posts, ...page.posts.filter((p) => !seen.has(p.id))];
       downloaded = new Set([...downloaded, ...page.downloaded]);
@@ -60,7 +67,11 @@
   // tracking that here restarted the list after every page, forever.
   $effect(() => {
     const q = initialQuery;
-    untrack(() => reset(q));
+    const s = initialSite;
+    untrack(() => {
+      site = s;
+      reset(q);
+    });
   });
 
   async function download(options: JobOverrides) {
@@ -83,6 +94,13 @@
       <h2>{applied ? t('listing.searchTitle', { query: applied }) : t('listing.recentTitle')}</h2>
       <p class="faint">{t('listing.body')}</p>
     </div>
+    <Segmented
+      size="sm"
+      label={t('search.site')}
+      bind:value={site}
+      onchange={() => reset(applied)}
+      options={SITES.map((s) => ({ value: s.id, label: s.name }))}
+    />
     <form
       onsubmit={(e) => {
         e.preventDefault();

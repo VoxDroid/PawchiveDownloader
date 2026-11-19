@@ -3,6 +3,7 @@
   import { fade } from 'svelte/transition';
   import { api, copyText, openUrl } from '../../lib/api';
   import { htmlToText } from '../../lib/text';
+  import { pageUrls, serviceLabel } from '../../lib/urls';
   import {
     FILE_CATEGORIES,
     type FileCategory,
@@ -223,7 +224,7 @@
     <header class="intro">
       <button
         class="avatar-btn"
-        onclick={() => openLink(`https://pawchive.pw/${post.service}/user/${post.creatorId}`)}
+        onclick={() => openLink(pageUrls.creator(post.service, post.creatorId))}
         data-tip={t('browse.openCreator')}
       >
         <img class="avatar" src={view.creator?.iconUrl ?? ''} alt="" loading="lazy" />
@@ -233,11 +234,11 @@
         <p class="sub">
           <button
             class="crumb"
-            onclick={() => openLink(`https://pawchive.pw/${post.service}/user/${post.creatorId}`)}
+            onclick={() => openLink(pageUrls.creator(post.service, post.creatorId))}
           >
             {creatorName}
           </button>
-          <span class="sep">/</span>{post.service}
+          <span class="sep">/</span>{serviceLabel(post.service)}
           {#if post.published}<span class="sep">/</span>{fmt.date(post.published)}{/if}
           <span class="sep">/</span>{t('post.files', { count: post.files.length })}
         </p>
@@ -253,9 +254,7 @@
             icon="chevronLeft"
             label={t('browse.newerPost')}
             onclick={() =>
-              openLink(
-                `https://pawchive.pw/${post.service}/user/${post.creatorId}/post/${post.prevId}`,
-              )}
+              openLink(pageUrls.post(post.service, post.creatorId, post.prevId as string))}
           />
         {/if}
         {#if post.nextId}
@@ -263,9 +262,7 @@
             icon="chevronRight"
             label={t('browse.olderPost')}
             onclick={() =>
-              openLink(
-                `https://pawchive.pw/${post.service}/user/${post.creatorId}/post/${post.nextId}`,
-              )}
+              openLink(pageUrls.post(post.service, post.creatorId, post.nextId as string))}
           />
         {/if}
         <IconButton

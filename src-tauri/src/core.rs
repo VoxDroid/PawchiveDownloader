@@ -28,7 +28,8 @@ pub struct Core {
     pub throttle: Arc<Throttle>,
     pub engine: Arc<Engine>,
     pub watcher: Arc<Watcher>,
-    pub directory: Arc<Directory>,
+    /// Creator lists for search, one per site.
+    directories: Vec<Arc<Directory>>,
     pub data_dir: PathBuf,
     pub cancel: CancellationToken,
     fast_timing: bool,
@@ -54,6 +55,8 @@ pub struct QueueStatus {
     /// When the when-done action fires (epoch ms), during its countdown.
     pub action_at: Option<i64>,
     pub awake: bool,
+    /// Sites whose media servers are not answering (only thumbnails work).
+    pub down_sites: Vec<String>,
 }
 
 /// Seconds between the queue finishing and the when-done action.
@@ -184,7 +187,10 @@ impl Core {
             throttle,
             engine,
             watcher,
-            directory: Arc::new(Directory::new(options.data_dir.clone())),
+            directories: crate::pawchive::urls::Site::ALL
+                .iter()
+                .map(|s| Arc::new(Directory::for_site(options.data_dir.clone(), *s)))
+                .collect(),
             data_dir: options.data_dir,
             cancel: CancellationToken::new(),
             fast_timing: options.fast_timing,
@@ -221,6 +227,7 @@ impl Core {
             when_done: *self.when_done.lock(),
             action_at: self.countdown.lock().as_ref().map(|(at, _)| *at),
             awake: self.awake.is_held(),
+            down_sites: self.client.down_sites(),
         }
     }
 
@@ -379,6 +386,14 @@ impl Core {
             }
         }
         self.awake.set(false);
+    }
+
+    pub fn directory(&self, site: crate::pawchive::urls::Site) -> &Arc<Directory> {
+        let index = crate::pawchive::urls::Site::ALL
+            .iter()
+            .position(|s| *s == site)
+            .unwrap_or(0);
+        &self.directories[index]
     }
 
     pub fn settings(&self) -> Settings {

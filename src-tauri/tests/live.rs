@@ -76,3 +76,39 @@ async fn live_comments_announcements_and_links() {
     let post = c.get_post(SERVICE, CREATOR, POST, &cancel).await.unwrap();
     println!("links {:?} passwords {:?}", post.links, post.passwords);
 }
+
+#[tokio::test]
+#[ignore]
+async fn live_kemono_and_coomer() {
+    use pawchive_downloader_lib::pawchive::urls::Site;
+    let c = client();
+    let cancel = CancellationToken::new();
+    let creator = c
+        .get_creator("fanbox@kemono", CREATOR, &cancel)
+        .await
+        .unwrap();
+    println!("kemono creator {} {}", creator.name, creator.icon_url);
+    assert_eq!(creator.service, "fanbox@kemono");
+    let page = c
+        .get_creator_page("fanbox@kemono", CREATOR, 0, None, &cancel)
+        .await
+        .unwrap();
+    println!("kemono posts {}", page.len());
+    assert!(!page.is_empty());
+    let first = &page[0];
+    assert_eq!(first.service, "fanbox@kemono");
+    assert!(first.url.starts_with("https://kemono.cr/fanbox/user/"));
+    let file = first.files.first().expect("a file");
+    println!("file {:?} thumb {:?}", file.url, file.thumbnail_url);
+    assert!(file
+        .url
+        .as_deref()
+        .unwrap()
+        .starts_with("https://kemono.cr/data/"));
+    for site in [Site::Kemono, Site::Coomer] {
+        let recent = c.get_recent_posts(site, 0, None, &cancel).await.unwrap();
+        println!("{} recent {}", site.name(), recent.len());
+        assert!(!recent.is_empty());
+        assert!(recent[0].service.ends_with(&format!("@{}", site.id())));
+    }
+}

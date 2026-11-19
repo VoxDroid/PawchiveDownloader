@@ -1,6 +1,6 @@
 //! Path templates such as `Pawchive/{creator}/{published:YYYY-MM-DD} {title}`.
 //!
-//! Tokens: {service} {creator} {creator_id} {post_id} {title} {published}
+//! Tokens: {site} {service} {creator} {creator_id} {post_id} {title} {published}
 //! {added} {date} {index} {count} {name} {filename} {ext} {hash} {role}.
 //! Date tokens take a format after a colon (YYYY YY MM DD HH mm ss), {index}
 //! takes a zero-padding width ({index:3} -> 007) and {hash} a length.
@@ -37,7 +37,8 @@ pub struct NameContext {
     pub now_ms: Option<i64>,
 }
 
-pub const TEMPLATE_TOKENS: [&str; 15] = [
+pub const TEMPLATE_TOKENS: [&str; 16] = [
+    "site",
     "service",
     "creator",
     "creator_id",
@@ -59,6 +60,9 @@ static TOKEN_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"(?i)\{([a-z_]+)(?::([^{}]*))?\}").unwrap());
 
 pub const DEFAULT_FOLDER_TEMPLATE: &str =
+    "{site}/{creator} ({service})/{published:YYYY-MM-DD} {title} [{post_id}]";
+/// The default before other sites existed; moved to the new one on load.
+pub const OLD_DEFAULT_FOLDER_TEMPLATE: &str =
     "Pawchive/{creator} ({service})/{published:YYYY-MM-DD} {title} [{post_id}]";
 pub const DEFAULT_FILE_TEMPLATE: &str = "{index:2}_{filename}";
 pub const DEFAULT_ARCHIVE_TEMPLATE: &str = "{creator} - {published:YYYY-MM-DD} {title} [{post_id}]";
@@ -115,7 +119,13 @@ fn stem(file_name: &str, ext: &str) -> String {
 fn token_value(token: &str, arg: Option<&str>, ctx: &NameContext) -> Option<String> {
     let arg = arg.filter(|a| !a.is_empty());
     Some(match token.to_ascii_lowercase().as_str() {
-        "service" => ctx.service.clone(),
+        "service" => crate::pawchive::urls::split_service(&ctx.service)
+            .1
+            .to_string(),
+        "site" => crate::pawchive::urls::split_service(&ctx.service)
+            .0
+            .name()
+            .to_string(),
         "creator" => {
             if ctx.creator_name.is_empty() {
                 ctx.creator_id.clone()

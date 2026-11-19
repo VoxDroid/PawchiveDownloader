@@ -350,7 +350,7 @@
   "options.thumbnails": "Thumbnails",
   "skip.exists": "A file with this name already exists",
   "conflict.skip": "Skip the download",
-  "browse.placeholder": "Paste a Pawchive link, or type a creator's name",
+  "browse.placeholder": "Paste a Pawchive, Kemono or Coomer link, or type a creator's name",
   "browse.open": "Open",
   "browse.paste": "Paste",
   "browse.batch": "Batch",
@@ -644,7 +644,7 @@
   "post.password": "Password",
   "skip.empty": "Nothing to save",
   "browse.findCreators": "Find creators",
-  "browse.findCreatorsBody": "Search every creator on Pawchive by name",
+  "browse.findCreatorsBody": "Search every creator on Pawchive, Kemono and Coomer by name",
   "search.resultsFor": "Creators matching \"{query}\"",
   "search.popular": "Creators on Pawchive",
   "search.count_one": "{count} creator",
@@ -747,5 +747,9 @@
   "help.library.body": "The Statistics page counts everything you have downloaded: files, size, posts and creators, the last twelve months, your most downloaded creators and files by kind.\nCheck now looks for downloaded files that were deleted or moved since. Download them again fetches only those files (the rest are still known); Only forget them lets the next download of those posts fetch them.\nLinks to Mega, Google Drive and other hosts found in a post are listed on its Links tab and saved to links.txt with any archive passwords.",
   "nav.collapse": "Collapse sidebar",
   "nav.expand": "Expand sidebar",
-  "shortcut.sidebar": "Collapse or expand the sidebar"
+  "shortcut.sidebar": "Collapse or expand the sidebar",
+  "search.site": "Site",
+  "hold.mediaDown": "The media servers of {hosts} are not answering, so full files cannot be downloaded right now.",
+  "hold.mediaDownThumbs": " Thumbnails are saved instead.",
+  "hold.useThumbnails": "Save thumbnails instead"
 }

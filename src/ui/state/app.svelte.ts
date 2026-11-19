@@ -36,7 +36,13 @@ export const app = $state({
   systemDark: true,
   info: null as AppInfo | null,
   update: null as UpdateInfo | null,
-  queue: { hold: null, whenDone: 'nothing', actionAt: null, awake: false } as QueueStatus,
+  queue: {
+    hold: null,
+    whenDone: 'nothing',
+    actionAt: null,
+    awake: false,
+    downSites: [],
+  } as QueueStatus,
 });
 
 const logListeners = new Set<(entry: LogEntry) => void>();

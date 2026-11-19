@@ -7,7 +7,7 @@ use regex::Regex;
 use url::Url;
 
 use super::types::*;
-use super::urls::{file_url, hash_from_path, is_site_url, page, thumbnail_url};
+use super::urls::{file_url, hash_from_path, is_site_url, page, qualify, thumbnail_url, Site};
 
 pub fn extension_of(name: &str) -> String {
     let base = name.rsplit(['/', '\\']).next().unwrap_or("");
@@ -48,7 +48,7 @@ fn has_thumbnail(ext: &str) -> bool {
     )
 }
 
-fn build_file(raw: &RawFile, role: FileRole, index: u32) -> Option<PostFile> {
+fn build_file(site: Site, raw: &RawFile, role: FileRole, index: u32) -> Option<PostFile> {
     let path = raw.path.clone().filter(|p| !p.is_empty())?;
     let info = hash_from_path(&path);
     let name = raw
@@ -68,12 +68,12 @@ fn build_file(raw: &RawFile, role: FileRole, index: u32) -> Option<PostFile> {
     if ext.is_empty() {
         ext = info.as_ref().map(|i| i.1.clone()).unwrap_or_default();
     }
-    let url = file_url(raw);
+    let url = file_url(site, raw);
     Some(PostFile {
         index,
         role,
         thumbnail_url: if has_thumbnail(&ext) {
-            thumbnail_url(&path)
+            thumbnail_url(site, &path)
         } else {
             None
         },
@@ -110,8 +110,10 @@ pub fn decode_entities(value: &str) -> String {
     text.replace("&amp;", "&")
 }
 
-/// Images embedded in the post body that live on Pawchive's own servers.
-pub fn inline_images(content_html: &str) -> Vec<RawFile> {
+/// Images embedded in the post body that live on the site's own servers.
+/// On Pawchive a bare `/data/...` path is only a preview; Kemono and Coomer
+/// serve the full file there.
+pub fn inline_images(content_html: &str, site: Site) -> Vec<RawFile> {
     let mut found = Vec::new();
     for caps in IMG_SRC_RE.captures_iter(content_html) {
         let src = decode_entities(caps.get(2).map(|m| m.as_str()).unwrap_or(""))
@@ -135,7 +137,7 @@ pub fn inline_images(content_html: &str) -> Vec<RawFile> {
                 path: Some(path),
                 name,
                 server: None,
-                preview_only: Some(true),
+                preview_only: (site == Site::Pawchive).then_some(true),
             });
             continue;
         }
@@ -173,6 +175,12 @@ fn id_of(value: &Option<serde_json::Value>) -> Option<String> {
 /// The API repeats the main file among the attachments, and the body may embed
 /// the same images again, so files are de-duplicated by content hash (or path).
 pub fn normalize_post(raw: RawPost) -> Post {
+    normalize_post_on(Site::Pawchive, raw)
+}
+
+/// Normalizes a post of the given site; its service gets the site attached.
+pub fn normalize_post_on(site: Site, mut raw: RawPost) -> Post {
+    raw.service = qualify(site, &raw.service);
     let content_html = raw
         .content
         .clone()
@@ -189,13 +197,13 @@ pub fn normalize_post(raw: RawPost) -> Post {
     for a in raw.attachments.iter().flatten() {
         candidates.push((a.clone(), FileRole::Attachment));
     }
-    for i in inline_images(&content_html) {
+    for i in inline_images(&content_html, site) {
         candidates.push((i, FileRole::Inline));
     }
     let mut seen = HashSet::new();
     let mut files = Vec::new();
     for (raw_file, role) in candidates {
-        let Some(file) = build_file(&raw_file, role, files.len() as u32 + 1) else {
+        let Some(file) = build_file(site, &raw_file, role, files.len() as u32 + 1) else {
             continue;
         };
         let key = file.hash.clone().unwrap_or_else(|| file.path.clone());
@@ -248,6 +256,11 @@ fn to_iso(value: &Option<serde_json::Value>) -> Option<String> {
 }
 
 pub fn normalize_creator(raw: RawProfile) -> Creator {
+    normalize_creator_on(Site::Pawchive, raw)
+}
+
+pub fn normalize_creator_on(site: Site, mut raw: RawProfile) -> Creator {
+    raw.service = qualify(site, &raw.service);
     Creator {
         name: raw
             .name

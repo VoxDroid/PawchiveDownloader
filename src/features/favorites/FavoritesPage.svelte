@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { serviceLabel } from '../../lib/urls';
   import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
@@ -242,7 +243,7 @@
           <button class="title truncate" onclick={() => openLink(url(fav))}>{fav.title}</button>
           <span class="sub truncate">
             {fav.kind === 'creator' ? t('favorites.creator') : (fav.creatorName ?? fav.creatorId)}
-            <span class="sep">/</span>{fav.service}
+            <span class="sep">/</span>{serviceLabel(fav.service)}
             <span class="sep">/</span>{t('favorites.addedAt', { date: fmt.date(fav.addedAt) })}
             {#if fav.lastDownloadedAt}<span class="sep">/</span>{t('favorites.lastDownloaded', {
                 time: fmt.relative(fav.lastDownloadedAt),

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { fade } from 'svelte/transition';
   import { api } from '../../lib/api';
+  import { SITES, splitService, type SiteId } from '../../lib/urls';
   import type { CreatorHit, CreatorSearchResult, CreatorSort } from '../../lib/types';
   import { fmt, t } from '../../ui/state/app.svelte';
   import { openLink } from '../../ui/state/router.svelte';
@@ -15,7 +16,38 @@
 
   let { query }: { query: string } = $props();
 
-  let service = $state<'' | 'patreon' | 'fanbox'>('');
+  let site = $state<SiteId>('pawchive');
+  let service = $state('');
+  /** The services each site archives. */
+  const SITE_SERVICES: Record<SiteId, string[]> = {
+    pawchive: ['patreon', 'fanbox'],
+    kemono: [
+      'patreon',
+      'fanbox',
+      'fantia',
+      'gumroad',
+      'subscribestar',
+      'dlsite',
+      'discord',
+      'afdian',
+      'boosty',
+    ],
+    coomer: ['onlyfans', 'fansly', 'candfans'],
+  };
+  const NAMES: Record<string, string> = {
+    patreon: 'Patreon',
+    fanbox: 'Fanbox',
+    fantia: 'Fantia',
+    gumroad: 'Gumroad',
+    subscribestar: 'SubscribeStar',
+    dlsite: 'DLsite',
+    discord: 'Discord',
+    afdian: 'Afdian',
+    boosty: 'Boosty',
+    onlyfans: 'OnlyFans',
+    fansly: 'Fansly',
+    candfans: 'CandFans',
+  };
   let sort = $state<CreatorSort>('relevance');
   let result = $state<CreatorSearchResult | null>(null);
   let error = $state<string | null>(null);
@@ -29,6 +61,7 @@
     error = null;
     try {
       const found = await api.searchCreators(query, {
+        site,
         service: service || null,
         sort,
         limit: 120,
@@ -44,7 +77,7 @@
 
   $effect(() => {
     // Searches again whenever the query, the service or the order changes.
-    void [query, service, sort];
+    void [query, site, service, sort];
     void search();
   });
 
@@ -54,7 +87,6 @@
     refreshing = false;
   }
 
-  const SERVICES: Record<string, string> = { patreon: 'Patreon', fanbox: 'Fanbox' };
   const hidden = $derived(result ? Math.max(0, result.total - result.creators.length) : 0);
 
   function open(c: CreatorHit) {
@@ -87,12 +119,17 @@
     <div class="controls">
       <Segmented
         size="sm"
+        label={t('search.site')}
+        bind:value={site}
+        onchange={() => (service = '')}
+        options={SITES.map((s) => ({ value: s.id, label: s.name }))}
+      />
+      <Select
         label={t('search.service')}
         bind:value={service}
         options={[
           { value: '', label: t('search.allServices') },
-          { value: 'patreon', label: 'Patreon' },
-          { value: 'fanbox', label: 'Fanbox' },
+          ...SITE_SERVICES[site].map((s) => ({ value: s, label: NAMES[s] ?? s })),
         ]}
       />
       <Select
@@ -135,7 +172,7 @@
             <span class="who">
               <span class="name truncate">{c.name}</span>
               <span class="meta faint truncate">
-                {SERVICES[c.service] ?? c.service}
+                {NAMES[splitService(c.service).service] ?? splitService(c.service).service}
                 <span class="sep">/</span><span class="mono-num">{c.id}</span>
                 {#if c.publicId && c.publicId !== c.name}<span class="sep">/</span>{c.publicId}{/if}
               </span>

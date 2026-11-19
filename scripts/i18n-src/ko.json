@@ -8,7 +8,7 @@
   "options.thumbnails": "썸네일",
   "skip.exists": "같은 이름의 파일이 이미 있습니다",
   "conflict.skip": "다운로드 건너뛰기",
-  "browse.placeholder": "Pawchive 링크를 붙여넣거나 크리에이터 이름을 입력하세요",
+  "browse.placeholder": "Pawchive, Kemono, Coomer 링크를 붙여넣거나 크리에이터 이름을 입력하세요",
   "browse.open": "열기",
   "browse.paste": "붙여넣기",
   "browse.batch": "일괄",
@@ -289,7 +289,7 @@
   "post.password": "비밀번호",
   "skip.empty": "저장할 내용 없음",
   "browse.findCreators": "크리에이터 찾기",
-  "browse.findCreatorsBody": "Pawchive의 모든 크리에이터를 이름으로 검색",
+  "browse.findCreatorsBody": "Pawchive, Kemono, Coomer의 모든 크리에이터를 이름으로 검색",
   "search.resultsFor": "\"{query}\"와 일치하는 크리에이터",
   "search.popular": "Pawchive의 크리에이터",
   "search.count": "{count}명",
@@ -384,5 +384,9 @@
   "help.library.body": "통계 페이지는 지금까지 받은 파일, 용량, 게시물, 크리에이터, 최근 12개월, 가장 많이 받은 크리에이터, 종류별 파일을 집계합니다.\n지금 확인은 받은 뒤 삭제되거나 옮겨진 파일을 찾습니다. 다시 받기는 그 파일만 받습니다(나머지는 이미 기록됨). 기록만 지우기를 고르면 다음에 그 게시물을 받을 때 가져옵니다.\n게시물에 있는 Mega, Google 드라이브 등의 링크는 링크 탭에 표시되고 비밀번호와 함께 links.txt에 저장됩니다.",
   "nav.collapse": "사이드바 접기",
   "nav.expand": "사이드바 펼치기",
-  "shortcut.sidebar": "사이드바 접기 / 펼치기"
+  "shortcut.sidebar": "사이드바 접기 / 펼치기",
+  "search.site": "사이트",
+  "hold.mediaDown": "{hosts}의 미디어 서버가 응답하지 않아 지금은 원본 파일을 받을 수 없습니다.",
+  "hold.mediaDownThumbs": " 대신 썸네일을 저장합니다.",
+  "hold.useThumbnails": "대신 썸네일 저장"
 }

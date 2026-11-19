@@ -20,7 +20,7 @@ use crate::naming::template::{
 use crate::net::http::{user_agent, validate_proxy_url};
 use crate::pawchive::client::ApiError;
 use crate::pawchive::types::{Creator, Post};
-use crate::pawchive::urls::{extract_links, parse_page_url, PageRef};
+use crate::pawchive::urls::{extract_links, parse_page_url, PageRef, Site};
 use crate::settings::{self, Settings};
 use crate::store::records::{history_to_csv, Favorite, FavoriteKind, HistoryEntry, WatchEntry};
 use crate::store::Counts;
@@ -332,14 +332,16 @@ pub async fn search_creators(
     sort: Option<crate::pawchive::directory::Sort>,
     limit: Option<u32>,
     refresh: Option<bool>,
+    site: Option<Site>,
 ) -> R<crate::pawchive::directory::SearchResult> {
     let cancel = CancellationToken::new();
-    core.directory
+    let directory = core.directory(site.unwrap_or_default());
+    directory
         .ensure(&core.client, now_ms(), refresh.unwrap_or(false), &cancel)
         .await
         .map_err(api)?;
     let query: String = query.chars().take(200).collect();
-    Ok(core.directory.search(
+    Ok(directory.search(
         &query,
         service.as_deref().filter(|s| !s.is_empty()),
         sort.unwrap_or_default(),
@@ -495,11 +497,17 @@ pub async fn get_recent_posts(
     core: State<'_, Core_>,
     offset: u32,
     query: Option<String>,
+    site: Option<Site>,
 ) -> R<PostPage> {
     let cancel = CancellationToken::new();
     let posts = core
         .client
-        .get_recent_posts(offset, query.as_deref().filter(|q| !q.is_empty()), &cancel)
+        .get_recent_posts(
+            site.unwrap_or_default(),
+            offset,
+            query.as_deref().filter(|q| !q.is_empty()),
+            &cancel,
+        )
         .await
         .map_err(api)?;
     Ok(post_page(&core, posts))

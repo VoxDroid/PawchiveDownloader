@@ -8,7 +8,7 @@
   "options.thumbnails": "缩略图",
   "skip.exists": "已存在同名文件",
   "conflict.skip": "跳过下载",
-  "browse.placeholder": "粘贴 Pawchive 链接，或输入创作者名称",
+  "browse.placeholder": "粘贴 Pawchive、Kemono 或 Coomer 链接，或输入创作者名称",
   "browse.open": "打开",
   "browse.paste": "粘贴",
   "browse.batch": "批量",
@@ -289,7 +289,7 @@
   "post.password": "密码",
   "skip.empty": "没有可保存的内容",
   "browse.findCreators": "查找创作者",
-  "browse.findCreatorsBody": "按名称搜索 Pawchive 上的所有创作者",
+  "browse.findCreatorsBody": "按名称搜索 Pawchive、Kemono 和 Coomer 上的所有创作者",
   "search.resultsFor": "与“{query}”匹配的创作者",
   "search.popular": "Pawchive 上的创作者",
   "search.count": "{count} 位创作者",
@@ -384,5 +384,9 @@
   "help.library.body": "统计页面汇总你下载过的全部内容：文件、大小、帖子和创作者、最近十二个月、下载最多的创作者以及按类型统计的文件。\n“立即检查”会查找下载后被删除或移动的文件。“重新下载”只获取这些文件（其他文件仍有记录）；“仅忘记记录”则会在下次下载这些帖子时获取它们。\n帖子中指向 Mega、Google 云端硬盘等网盘的链接会显示在“链接”标签中，并连同密码保存到 links.txt。",
   "nav.collapse": "收起侧边栏",
   "nav.expand": "展开侧边栏",
-  "shortcut.sidebar": "收起或展开侧边栏"
+  "shortcut.sidebar": "收起或展开侧边栏",
+  "search.site": "网站",
+  "hold.mediaDown": "{hosts} 的媒体服务器没有响应，目前无法下载完整文件。",
+  "hold.mediaDownThumbs": " 将改为保存缩略图。",
+  "hold.useThumbnails": "改为保存缩略图"
 }

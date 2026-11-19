@@ -12,7 +12,7 @@ use serde::{Deserialize, Deserializer, Serialize};
 use tokio_util::sync::CancellationToken;
 
 use super::client::{ApiError, PawchiveClient};
-use super::urls::page;
+use super::urls::{page, qualify, split_service, Site};
 
 /// How long a fetched list is used before it is fetched again.
 pub const MAX_AGE_MS: i64 = 24 * 60 * 60 * 1000;
@@ -102,6 +102,7 @@ struct Loaded {
 }
 
 pub struct Directory {
+    site: Site,
     path: PathBuf,
     loaded: RwLock<Option<Loaded>>,
     fetching: tokio::sync::Mutex<()>,
@@ -142,15 +143,28 @@ fn rank(name_folded: &str, entry: &Entry, query: &str) -> Option<u8> {
 }
 
 impl Directory {
+    /// Pawchive's list.
     pub fn new(data_dir: PathBuf) -> Self {
+        Self::for_site(data_dir, Site::Pawchive)
+    }
+
+    pub fn for_site(data_dir: PathBuf, site: Site) -> Self {
+        let file = match site {
+            Site::Pawchive => "creators.json".to_string(),
+            other => format!("creators-{}.json", other.id()),
+        };
         Self {
-            path: data_dir.join("creators.json"),
+            site,
+            path: data_dir.join(file),
             loaded: RwLock::new(None),
             fetching: tokio::sync::Mutex::new(()),
         }
     }
 
-    fn set(&self, fetched_at: i64, entries: Vec<Entry>) {
+    fn set(&self, fetched_at: i64, mut entries: Vec<Entry>) {
+        for e in &mut entries {
+            e.service = qualify(self.site, &e.service);
+        }
         let folded = entries.iter().map(|e| fold(&e.name)).collect();
         *self.loaded.write() = Some(Loaded {
             fetched_at,
@@ -191,7 +205,7 @@ impl Directory {
         if !force && fresh(self.fetched_at()) {
             return Ok(());
         }
-        match client.get_creator_list(cancel).await {
+        match client.get_creator_list(self.site, cancel).await {
             Ok(entries) if !entries.is_empty() => {
                 let cache = Cache {
                     fetched_at: now_ms,
@@ -239,7 +253,7 @@ impl Directory {
             .entries
             .iter()
             .enumerate()
-            .filter(|(_, e)| service.is_none_or(|s| e.service == s))
+            .filter(|(_, e)| service.is_none_or(|s| split_service(&e.service).1 == s))
             .filter_map(|(i, e)| rank(&loaded.folded[i], e, &query).map(|r| (r, i)))
             .collect();
         let entries = &loaded.entries;

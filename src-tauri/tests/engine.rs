@@ -1089,7 +1089,9 @@ async fn searches_the_creator_list_and_keeps_it_on_disk() {
         .mount(&env.server)
         .await;
     let cancel = tokio_util::sync::CancellationToken::new();
-    let dir = &env.core.directory;
+    let dir = env
+        .core
+        .directory(pawchive_downloader_lib::pawchive::urls::Site::Pawchive);
     dir.ensure(&env.core.client, 1_000, false, &cancel)
         .await
         .unwrap();
@@ -1264,4 +1266,81 @@ async fn watchlist_downloads_can_filter_posts() {
     assert_eq!(job.status, JobStatus::Done);
     assert_eq!(job.post_count, 1);
     assert_eq!(files_under(&env.out()).len(), 1);
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn a_down_media_server_falls_back_to_the_thumbnail_at_once() {
+    use pawchive_downloader_lib::jobs::model::SelectedPost;
+    use pawchive_downloader_lib::pawchive::types::{FileCategory, FileRole, Post, PostFile};
+    let env = env().await;
+    // The site answers; its media server (port 1) refuses every connection.
+    let dead = "https://127.0.0.1:1";
+    env.core.client.note_site_ok(dead);
+    Mock::given(method("GET"))
+        .and(path("/thumb.png"))
+        .respond_with(ResponseTemplate::new(200).set_body_bytes(b"thumbnail".to_vec()))
+        .mount(&env.server)
+        .await;
+    let file = |i: u32| PostFile {
+        index: i,
+        role: FileRole::Attachment,
+        name: format!("full{i}.png"),
+        ext: "png".into(),
+        hash: None,
+        path: format!("/x/{i}.png"),
+        url: Some(format!("{dead}/data/x/{i}.png")),
+        thumbnail_url: Some(format!("{}/thumb.png", env.server.uri())),
+        preview_only: false,
+        category: FileCategory::Image,
+    };
+    let post = Post {
+        id: "801".into(),
+        service: "patreon@kemono".into(),
+        creator_id: "7".into(),
+        title: "Down".into(),
+        content_html: String::new(),
+        published: None,
+        added: None,
+        edited: None,
+        tags: vec![],
+        files: vec![file(1), file(2)],
+        url: "https://kemono.cr/patreon/user/7/post/801".into(),
+        next_id: None,
+        prev_id: None,
+        incomplete: false,
+        links: vec![],
+        passwords: vec![],
+    };
+    env.core.settings.write().thumbnail_fallback = true;
+    let started = std::time::Instant::now();
+    let id = env.core.engine.create(JobRequest::Posts {
+        title: None,
+        creator: None,
+        posts: vec![SelectedPost {
+            post,
+            file_indexes: None,
+        }],
+        options: no_text(),
+    });
+    let job = env.wait(&id).await;
+    assert_eq!(
+        job.status,
+        JobStatus::Done,
+        "{:?}",
+        env.core.engine.items(&id)
+    );
+    assert!(
+        started.elapsed() < Duration::from_secs(8),
+        "no waiting for the network"
+    );
+    let items = env.core.engine.items(&id);
+    assert!(items.iter().all(|i| i.fallback), "{items:?}");
+    assert_eq!(env.core.queue_status().down_sites, ["127.0.0.1:1"]);
+    let saved = files_under(&env.out());
+    assert_eq!(saved.len(), 2);
+    assert!(saved
+        .iter()
+        .all(|p| p.to_string_lossy().ends_with("_preview.png")));
+    // The folder template names the site.
+    assert!(saved[0].to_string_lossy().contains("Kemono"));
 }

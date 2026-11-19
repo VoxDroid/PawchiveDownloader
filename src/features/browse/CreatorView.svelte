@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { serviceLabel } from '../../lib/urls';
   import { describeError } from '../../ui/state/errors';
   import { fade } from 'svelte/transition';
   import { api, openUrl } from '../../lib/api';
@@ -243,7 +244,9 @@
         <div class="who">
           <h2 class="selectable">{creator.name}</h2>
           <p>
-            {creator.service}<span class="sep">/</span><span class="mono-num">{creator.id}</span>
+            {serviceLabel(creator.service)}<span class="sep">/</span><span class="mono-num">
+              {creator.id}
+            </span>
             {#if creator.updated}<span class="sep">/</span>{t('creator.updated', {
                 date: fmt.date(creator.updated),
               })}{/if}
@@ -258,7 +261,7 @@
                 <button class="link-chip" onclick={() => openLink(other.url)} title={other.url}>
                   <img src={other.iconUrl} alt="" loading="lazy" />
                   <span class="truncate">{other.name}</span>
-                  <span class="faint">{other.service}</span>
+                  <span class="faint">{serviceLabel(other.service)}</span>
                 </button>
               {/each}
             </div>

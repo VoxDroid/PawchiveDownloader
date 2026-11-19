@@ -307,7 +307,14 @@ pub fn coerce(input: &Value) -> Settings {
             d.request_interval_ms,
         ),
         max_retries: int_in(g("maxRetries"), 0, 50, d.max_retries),
-        folder_template: template(g("folderTemplate"), "folder", &d.folder_template),
+        folder_template: {
+            let t = template(g("folderTemplate"), "folder", &d.folder_template);
+            if t == crate::naming::template::OLD_DEFAULT_FOLDER_TEMPLATE {
+                d.folder_template.clone()
+            } else {
+                t
+            }
+        },
         file_template: template(g("fileTemplate"), "file", &d.file_template),
         archive_template: template(g("archiveTemplate"), "file", &d.archive_template),
         conflict_action: enum_of(g("conflictAction"), d.conflict_action),

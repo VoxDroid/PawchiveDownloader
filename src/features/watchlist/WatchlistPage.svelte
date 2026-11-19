@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { serviceLabel } from '../../lib/urls';
   import { describeError } from '../../ui/state/errors';
   import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
@@ -147,7 +148,7 @@
 <div class="add">
   <TextInput
     label={t('watch.addLabel')}
-    placeholder="https://pawchive.pw/patreon/user/..."
+    placeholder="https://pawchive.pw/patreon/user/..., https://kemono.cr/..."
     icon="link"
     type="url"
     bind:value={link}
@@ -195,7 +196,7 @@
               {entry.name}
             </a>
             <span class="faint truncate">
-              {entry.service}<span class="sep">/</span>{entry.lastCheckedAt
+              {serviceLabel(entry.service)}<span class="sep">/</span>{entry.lastCheckedAt
                 ? t('watch.checked', { time: fmt.relative(entry.lastCheckedAt) })
                 : t('watch.neverChecked')}
             </span>

@@ -45,13 +45,26 @@ pub enum FetchError {
     /// page, a login wall or a captive portal).
     #[error("got a web page instead of the file")]
     NotAFile,
+    /// The site works but its media servers do not answer, so only
+    /// thumbnails can be had for now.
+    #[error("the site's media servers are not answering ({0})")]
+    ServerDown(String),
 }
+
+/// How long a site's media servers are skipped after they stop answering.
+pub const MEDIA_DOWN_FOR: Duration = Duration::from_secs(5 * 60);
+/// A site that answered this recently is up, so a failed connection to its
+/// media server means the server is down, not the network.
+const SITE_ALIVE_WITHIN: Duration = Duration::from_secs(15 * 60);
 
 impl FetchError {
     /// Whether another attempt may succeed.
     pub fn retryable(&self) -> bool {
         match self {
-            FetchError::Cancelled | FetchError::Disk(_) | FetchError::Internal(_) => false,
+            FetchError::Cancelled
+            | FetchError::Disk(_)
+            | FetchError::Internal(_)
+            | FetchError::ServerDown(_) => false,
             FetchError::Status(s) => is_transient_status(*s),
             _ => true,
         }
@@ -59,7 +72,10 @@ impl FetchError {
 
     /// Whether the full file is simply not on the server (thumbnail fallback).
     pub fn missing(&self) -> bool {
-        matches!(self, FetchError::Status(403 | 404 | 410))
+        matches!(
+            self,
+            FetchError::Status(403 | 404 | 410) | FetchError::ServerDown(_)
+        )
     }
 }
 
@@ -209,9 +225,22 @@ impl Fetcher {
         if existing > 0 {
             request = request.header("Range", format!("bytes={existing}-"));
         }
+        if let Some(site) = self.client.media_down(url) {
+            return Err(FetchError::ServerDown(site));
+        }
         let response = tokio::select! {
             r = request.send() => r.map_err(|e| {
-                if e.is_connect() { FetchError::Offline } else { FetchError::Network(describe(&e)) }
+                if !e.is_connect() {
+                    return FetchError::Network(describe(&e));
+                }
+                // The site answers but its media server does not: that server
+                // is down, which waiting for the network will not fix.
+                if self.client.site_answered_within(url, SITE_ALIVE_WITHIN) {
+                    self.client.mark_media_down(url, MEDIA_DOWN_FOR);
+                    FetchError::ServerDown(crate::pawchive::client::host_key(url))
+                } else {
+                    FetchError::Offline
+                }
             })?,
             _ = cancel.cancelled() => return Err(FetchError::Cancelled),
         };

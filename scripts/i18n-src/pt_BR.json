@@ -8,7 +8,7 @@
   "options.thumbnails": "Miniaturas",
   "skip.exists": "Já existe um arquivo com este nome",
   "conflict.skip": "Pular o download",
-  "browse.placeholder": "Cole um link do Pawchive ou digite o nome de um criador",
+  "browse.placeholder": "Cole um link do Pawchive, Kemono ou Coomer, ou digite o nome de um criador",
   "browse.open": "Abrir",
   "browse.paste": "Colar",
   "browse.batch": "Lote",
@@ -292,7 +292,7 @@
   "post.password": "Senha",
   "skip.empty": "Nada para salvar",
   "browse.findCreators": "Encontrar criadores",
-  "browse.findCreatorsBody": "Pesquise todos os criadores do Pawchive pelo nome",
+  "browse.findCreatorsBody": "Pesquise todos os criadores do Pawchive, Kemono e Coomer pelo nome",
   "search.resultsFor": "Criadores que correspondem a \"{query}\"",
   "search.popular": "Criadores no Pawchive",
   "search.count": ["{count} criador", "{count} criadores"],
@@ -402,5 +402,9 @@
   "help.library.body": "A página Estatísticas conta tudo o que você baixou: arquivos, tamanho, publicações e criadores, os últimos doze meses, os criadores mais baixados e arquivos por tipo.\nVerificar agora procura arquivos baixados que foram apagados ou movidos. Baixar de novo traz só esses arquivos (o resto continua conhecido); Só esquecer deixa o próximo download dessas publicações trazê-los.\nLinks para Mega, Google Drive e outros serviços em uma publicação aparecem na aba Links e são salvos em links.txt com as senhas.",
   "nav.collapse": "Recolher a barra lateral",
   "nav.expand": "Expandir a barra lateral",
-  "shortcut.sidebar": "Recolher ou expandir a barra lateral"
+  "shortcut.sidebar": "Recolher ou expandir a barra lateral",
+  "search.site": "Site",
+  "hold.mediaDown": "Os servidores de mídia de {hosts} não respondem; agora não dá para baixar os arquivos completos.",
+  "hold.mediaDownThumbs": " As miniaturas são salvas no lugar.",
+  "hold.useThumbnails": "Salvar miniaturas"
 }

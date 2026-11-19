@@ -17,6 +17,7 @@
   import Toaster from './ui/components/Toaster.svelte';
   import SupportCard from './ui/components/SupportCard.svelte';
   import QueueBanner from './ui/components/QueueBanner.svelte';
+  import { mentionsSite } from './lib/urls';
   import Tooltip from './ui/components/Tooltip.svelte';
   import StatsPage from './features/stats/StatsPage.svelte';
   import BrowsePage from './features/browse/BrowsePage.svelte';
@@ -44,7 +45,7 @@
   onMount(() => {
     startApp()
       .then(() => {
-        const links = app.info?.args.filter((a) => a.includes('pawchive.pw')) ?? [];
+        const links = app.info?.args.filter((a) => mentionsSite(a)) ?? [];
         if (links.length === 1) openLink(links[0] as string);
         else if (links.length > 1) batch.show(links.join('\n'));
         const crash = app.info?.lastCrash;
@@ -115,7 +116,7 @@
       if (file.size < 4 * 1024 * 1024) text = await file.text();
     }
     if (!text) return;
-    const links = text.split(/\s+/).filter((l) => l.includes('pawchive.pw'));
+    const links = text.split(/\s+/).filter((l) => mentionsSite(l));
     if (links.length === 1) openLink(links[0] as string);
     else if (links.length > 1) batch.show(links.join('\n'));
   }

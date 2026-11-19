@@ -9,12 +9,12 @@ use serde::de::DeserializeOwned;
 use tokio::time::{sleep, Instant};
 use tokio_util::sync::CancellationToken;
 
-use crate::net::limiter::{is_transient_status, Cancelled, SiteLimiter};
+use crate::net::limiter::{is_transient_status, site_key, Cancelled, SiteLimiter};
 
-use super::normalize::{normalize_creator, normalize_post};
+use super::normalize::{normalize_creator_on, normalize_post_on};
 use super::relay::{parse_relay_links, RelayIndex};
 use super::types::{Announcement, Comment, Creator, Post, RawPost, RawProfile};
-use super::urls::{api, is_site_host, page, PAGE_SIZE};
+use super::urls::{api, is_site_host, page, split_service, Site, PAGE_SIZE};
 
 #[derive(Debug, Clone, thiserror::Error, PartialEq)]
 pub enum ApiError {
@@ -67,9 +67,76 @@ pub struct PawchiveClient {
     min_interval: Mutex<Duration>,
     next_call_at: tokio::sync::Mutex<Instant>,
     on_retry: Option<RetryHook>,
+    /// When each site last answered an API request.
+    site_ok: Mutex<std::collections::HashMap<String, Instant>>,
+    /// Sites whose media servers stopped answering, and until when to skip them.
+    media_down: Mutex<std::collections::HashMap<String, Instant>>,
+}
+
+/// `host` or `host:port` of a URL.
+pub fn host_key(url: &str) -> String {
+    match url::Url::parse(url) {
+        Ok(u) => match (u.host_str(), u.port()) {
+            (Some(h), Some(p)) => format!("{h}:{p}"),
+            (Some(h), None) => h.to_ascii_lowercase(),
+            _ => url.to_string(),
+        },
+        Err(_) => url.to_string(),
+    }
 }
 
 impl PawchiveClient {
+    /// The site answered an API request just now.
+    pub fn note_site_ok(&self, url: &str) {
+        self.site_ok.lock().insert(site_key(url), Instant::now());
+    }
+
+    /// Whether the site behind `url` answered an API request lately, which
+    /// tells a down media server apart from a lost connection.
+    pub fn site_answered_within(&self, url: &str, within: Duration) -> bool {
+        self.site_ok
+            .lock()
+            .get(&site_key(url))
+            .is_some_and(|at| at.elapsed() <= within)
+    }
+
+    /// Remembers that the media server behind `url` is not answering, so
+    /// other files skip the connection timeout for a while. Keyed by host:
+    /// thumbnails come from another host of the same site and still work.
+    pub fn mark_media_down(&self, url: &str, for_how_long: Duration) {
+        self.media_down
+            .lock()
+            .insert(host_key(url), Instant::now() + for_how_long);
+    }
+
+    /// The host when the media server behind `url` is known to be down.
+    pub fn media_down(&self, url: &str) -> Option<String> {
+        let key = host_key(url);
+        let mut down = self.media_down.lock();
+        match down.get(&key) {
+            Some(until) if *until > Instant::now() => Some(key),
+            Some(_) => {
+                down.remove(&key);
+                None
+            }
+            None => None,
+        }
+    }
+
+    /// Media hosts that are down right now.
+    pub fn down_sites(&self) -> Vec<String> {
+        let now = Instant::now();
+        let mut sites: Vec<String> = self
+            .media_down
+            .lock()
+            .iter()
+            .filter(|(_, until)| **until > now)
+            .map(|(k, _)| k.clone())
+            .collect();
+        sites.sort();
+        sites
+    }
+
     pub fn new(http: reqwest::Client, limiter: Arc<SiteLimiter>) -> Self {
         Self {
             http: RwLock::new(http),
@@ -80,6 +147,8 @@ impl PawchiveClient {
             min_interval: Mutex::new(Duration::from_millis(1000)),
             next_call_at: tokio::sync::Mutex::new(Instant::now()),
             on_retry: None,
+            site_ok: Mutex::new(Default::default()),
+            media_down: Mutex::new(Default::default()),
         }
     }
 
@@ -136,7 +205,7 @@ impl PawchiveClient {
         };
         let raw: RawPost =
             serde_json::from_value(raw).map_err(|_| ApiError::Format { url: url.clone() })?;
-        Ok(normalize_post(raw))
+        Ok(normalize_post_on(split_service(service).0, raw))
     }
 
     pub async fn get_creator(
@@ -148,7 +217,7 @@ impl PawchiveClient {
         let raw: RawProfile = self
             .json(&api::profile(service, creator_id), cancel)
             .await?;
-        Ok(normalize_creator(raw))
+        Ok(normalize_creator_on(split_service(service).0, raw))
     }
 
     /// Comments under a post, oldest first. A post without comments may
@@ -172,9 +241,10 @@ impl PawchiveClient {
     /// Every creator on the site (a large list; see `directory`).
     pub async fn get_creator_list(
         &self,
+        site: Site,
         cancel: &CancellationToken,
     ) -> Result<Vec<super::directory::Entry>, ApiError> {
-        self.json(&api::creators(), cancel).await
+        self.json(&api::creators(site), cancel).await
     }
 
     /// Other accounts of the same creator (Patreon and Fanbox, for example).
@@ -188,11 +258,14 @@ impl PawchiveClient {
             .json::<Vec<RawProfile>>(&api::linked(service, creator_id), cancel)
             .await
         {
-            Ok(list) => Ok(list
-                .into_iter()
-                .filter(|c| !(c.service == service && c.id == creator_id))
-                .map(normalize_creator)
-                .collect()),
+            Ok(list) => {
+                let site = split_service(service).0;
+                Ok(list
+                    .into_iter()
+                    .map(|c| normalize_creator_on(site, c))
+                    .filter(|c| !(c.service == service && c.id == creator_id))
+                    .collect())
+            }
             Err(e) if e.not_found() => Ok(Vec::new()),
             Err(e) => Err(e),
         }
@@ -227,7 +300,11 @@ impl PawchiveClient {
                 cancel,
             )
             .await?;
-        Ok(raw.into_iter().map(normalize_post).collect())
+        let site = split_service(service).0;
+        Ok(raw
+            .into_iter()
+            .map(|p| normalize_post_on(site, p))
+            .collect())
     }
 
     /// Every post of a creator, newest first, fetched page by page.
@@ -277,11 +354,14 @@ impl PawchiveClient {
 
     pub async fn get_recent_posts(
         &self,
+        site: Site,
         offset: u32,
         query: Option<&str>,
         cancel: &CancellationToken,
     ) -> Result<Vec<Post>, ApiError> {
-        let raw: serde_json::Value = self.json(&api::recent_posts(offset, query), cancel).await?;
+        let raw: serde_json::Value = self
+            .json(&api::recent_posts(site, offset, query), cancel)
+            .await?;
         // The listing may come bare or wrapped as { posts: [...] }.
         let list = match raw {
             serde_json::Value::Array(_) => raw,
@@ -298,7 +378,7 @@ impl PawchiveClient {
         Ok(items
             .into_iter()
             .filter_map(|v| serde_json::from_value::<RawPost>(v).ok())
-            .map(normalize_post)
+            .map(|p| normalize_post_on(site, p))
             .collect())
     }
 
@@ -310,6 +390,10 @@ impl PawchiveClient {
         post_id: &str,
         cancel: &CancellationToken,
     ) -> Result<RelayIndex, ApiError> {
+        // Only Pawchive offers relay links for preview-only files.
+        if split_service(service).0 != Site::Pawchive {
+            return Ok(RelayIndex::default());
+        }
         let html = self
             .text(
                 &page::post(service, creator_id, post_id),
@@ -427,7 +511,10 @@ impl PawchiveClient {
                     _ = cancel.cancelled() => return Err(ApiError::Cancelled),
                 };
                 match body {
-                    Ok(body) => return Ok(body),
+                    Ok(body) => {
+                        self.note_site_ok(url);
+                        return Ok(body);
+                    }
                     Err(error) if failures < max_retries => {
                         let delay = self.limiter.backoff(failures);
                         self.retried(url, failures + 1, delay, &describe(&error));

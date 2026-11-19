@@ -8,7 +8,7 @@
   "options.thumbnails": "サムネイル",
   "skip.exists": "同じ名前のファイルがすでにあります",
   "conflict.skip": "ダウンロードをスキップ",
-  "browse.placeholder": "Pawchive のリンクを貼り付けるか、クリエイター名を入力",
+  "browse.placeholder": "Pawchive、Kemono、Coomer のリンクを貼り付けるか、クリエイター名を入力",
   "browse.open": "開く",
   "browse.paste": "貼り付け",
   "browse.batch": "一括",
@@ -289,7 +289,7 @@
   "post.password": "パスワード",
   "skip.empty": "保存するものがありません",
   "browse.findCreators": "クリエイターを探す",
-  "browse.findCreatorsBody": "Pawchive の全クリエイターを名前で検索",
+  "browse.findCreatorsBody": "Pawchive、Kemono、Coomer の全クリエイターを名前で検索",
   "search.resultsFor": "「{query}」に一致するクリエイター",
   "search.popular": "Pawchive のクリエイター",
   "search.count": "{count} 人",
@@ -384,5 +384,9 @@
   "help.library.body": "統計ページでは、これまでにダウンロードしたファイル、容量、投稿、クリエイター、直近 12 か月、よくダウンロードしたクリエイター、種類別のファイルを集計します。\n「今すぐ確認」は、ダウンロード後に削除または移動されたファイルを探します。「もう一度ダウンロード」はそのファイルだけを取得します (ほかは記録済み)。「記録だけ消す」にすると、次にその投稿をダウンロードするときに取得されます。\n投稿内の Mega、Google ドライブなどへのリンクは「リンク」タブに表示され、パスワードと一緒に links.txt に保存されます。",
   "nav.collapse": "サイドバーを折りたたむ",
   "nav.expand": "サイドバーを広げる",
-  "shortcut.sidebar": "サイドバーを折りたたむ / 広げる"
+  "shortcut.sidebar": "サイドバーを折りたたむ / 広げる",
+  "search.site": "サイト",
+  "hold.mediaDown": "{hosts} のメディアサーバーが応答しないため、今はフルサイズのファイルをダウンロードできません。",
+  "hold.mediaDownThumbs": " 代わりにサムネイルを保存します。",
+  "hold.useThumbnails": "代わりにサムネイルを保存"
 }

@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 const CREATOR = 'https://pawchive.pw/patreon/user/48151623';
 
 async function openLink(page: Page, url: string) {
-  const bar = page.getByRole('textbox', { name: /Paste a Pawchive link/ });
+  const bar = page.getByRole('textbox', { name: /Paste a Pawchive/ });
   await bar.fill(url);
   await bar.press('Enter');
 }
