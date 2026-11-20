@@ -76,6 +76,10 @@ async fn env() -> Env {
         s.max_retries = 2;
         s.save_content = ContentFormat::Txt;
         s.concurrency = 3;
+        // With fast timing the retry wait is in milliseconds, so the default
+        // would put failed files back in the queue while a test inspects
+        // them. The test for automatic retries turns them on itself.
+        s.auto_retry_minutes = 0;
     }
     core.start();
     Env { server, core, dir }
