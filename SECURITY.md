@@ -45,6 +45,6 @@ week, and credit in the changelog if you want it.
 ## Scope
 
 In scope: the desktop app and its build files in this repository. Out of
-scope: Pawchive itself, the browser extension (report those in
-[its repository](https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension)),
+scope: Pawchive itself, the browser extension (coming soon; it will have its
+own repository),
 and issues that need an already compromised computer.
