@@ -90,24 +90,54 @@ fn build_file(site: Site, raw: &RawFile, role: FileRole, index: u32) -> Option<P
 static IMG_SRC_RE: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r#"(?is)<img\b[^>]*?\bsrc\s*=\s*(["'])(.*?)["']"#).unwrap());
 
+/// Decodes HTML entities in one pass, so text that really contains `&amp;lt;`
+/// comes out as `&lt;` and not `<`. Unknown names and invalid numbers are left
+/// as written.
 pub fn decode_entities(value: &str) -> String {
-    static NUM: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"&#(\d+);").unwrap());
-    let text = value
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
-        .replace("&#x27;", "'")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">");
-    let text = NUM
-        .replace_all(&text, |c: &regex::Captures| {
-            c[1].parse::<u32>()
-                .ok()
-                .and_then(char::from_u32)
-                .map(String::from)
-                .unwrap_or_default()
+    static ENTITY: LazyLock<Regex> = LazyLock::new(|| {
+        Regex::new(r"&(?:#([0-9]{1,7})|#[xX]([0-9a-fA-F]{1,6})|([a-zA-Z]+));").unwrap()
+    });
+    ENTITY
+        .replace_all(value, |c: &regex::Captures| {
+            let decoded = if let Some(dec) = c.get(1) {
+                dec.as_str()
+                    .parse::<u32>()
+                    .ok()
+                    .filter(|&n| n > 0)
+                    .and_then(char::from_u32)
+            } else if let Some(hex) = c.get(2) {
+                u32::from_str_radix(hex.as_str(), 16)
+                    .ok()
+                    .filter(|&n| n > 0)
+                    .and_then(char::from_u32)
+            } else {
+                match c[3].to_ascii_lowercase().as_str() {
+                    "amp" => Some('&'),
+                    "quot" => Some('"'),
+                    "apos" => Some('\''),
+                    "lt" => Some('<'),
+                    "gt" => Some('>'),
+                    "nbsp" => Some(' '),
+                    _ => None,
+                }
+            };
+            decoded.map_or_else(|| c[0].to_string(), String::from)
         })
-        .into_owned();
-    text.replace("&amp;", "&")
+        .into_owned()
+}
+
+/// Removes every tag, repeating until none is left, so `<<b>i>` cannot
+/// rebuild one. A `<` that does not start a tag is kept.
+pub fn strip_tags(html: &str) -> String {
+    static TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"(?i)<[a-z!/?][^<>]*>").unwrap());
+    let mut text = html.to_string();
+    loop {
+        let next = TAG.replace_all(&text, "").into_owned();
+        if next == text {
+            return text;
+        }
+        text = next;
+    }
 }
 
 /// Images embedded in the post body that live on the site's own servers.
@@ -290,7 +320,6 @@ pub fn html_to_text(html: &str) -> String {
     static LINK: LazyLock<Regex> = LazyLock::new(|| {
         Regex::new(r#"(?is)<a\b[^>]*?href\s*=\s*["']([^"']*)["'][^>]*>(.*?)</a>"#).unwrap()
     });
-    static TAG: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"<[^>]+>").unwrap());
     static GAPS: LazyLock<Regex> = LazyLock::new(|| Regex::new(r"\n{3,}").unwrap());
 
     let text = html.replace("\r\n", "\n").replace('\r', "\n");
@@ -299,15 +328,14 @@ pub fn html_to_text(html: &str) -> String {
     let text = LI.replace_all(&text, "- ");
     let text = LINK.replace_all(&text, |c: &regex::Captures| {
         let href = &c[1];
-        let inner = TAG.replace_all(&c[2], "");
+        let inner = strip_tags(&c[2]);
         if !inner.is_empty() && inner != href {
             format!("{inner} ({href})")
         } else {
             href.to_string()
         }
     });
-    let text = TAG.replace_all(&text, "");
-    let text = decode_entities(&text.replace("&nbsp;", " "));
+    let text = decode_entities(&strip_tags(&text));
     let joined = text
         .split('\n')
         .map(str::trim_end)
@@ -318,6 +346,40 @@ pub fn html_to_text(html: &str) -> String {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn entities_decode_once_and_keep_invalid_ones() {
+        assert_eq!(decode_entities("&amp;lt;b&amp;gt;"), "&lt;b&gt;");
+        assert_eq!(decode_entities("&#38;amp;"), "&amp;");
+        assert_eq!(
+            decode_entities("&lt;a&gt; &quot;x&quot; &#39;y&#x27; a&nbsp;b"),
+            "<a> \"x\" 'y' a b"
+        );
+        assert_eq!(decode_entities("&#233;&#xE9;&#x1F43E;"), "éé🐾");
+        for raw in [
+            "&#99999999;",
+            "&#xFFFFFF;",
+            "&#0;",
+            "&#xD800;",
+            "&bogus;",
+            "& alone",
+            "&amp",
+        ] {
+            assert_eq!(decode_entities(raw), raw);
+        }
+    }
+
+    #[test]
+    fn tags_cannot_rebuild_themselves() {
+        assert!(!strip_tags("<<b>script>alert(1)<</b>/script>").contains("<script"));
+        assert_eq!(strip_tags("a <b>bold</b> c"), "a bold c");
+        assert_eq!(strip_tags("1 < 2 and 3 > 2"), "1 < 2 and 3 > 2");
+        assert_eq!(
+            html_to_text("<p>&amp;lt;script&amp;gt;</p>"),
+            "&lt;script&gt;"
+        );
+        assert_eq!(html_to_text("<p>&lt;3 you</p>"), "<3 you");
+    }
+
     use super::*;
 
     fn hash(c: char) -> String {
