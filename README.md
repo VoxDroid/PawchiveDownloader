@@ -19,6 +19,10 @@
 </p>
 
 <p align="center">
+  <a href="https://ko-fi.com/izeno"><img src="assets/download-button.svg" alt="Download Pawchive Downloader for Windows, macOS and Linux" width="314" /></a>
+</p>
+
+<p align="center">
   <a href="https://ko-fi.com/izeno"><img src="https://ko-fi.com/img/githubbutton_sm.svg" alt="Get the official build on Ko-fi" /></a>
 </p>
 
@@ -30,7 +34,7 @@
 
 Paste a link, or just type a creator's name. Pick exactly what you want, and a polite, resumable, checksum-verified download engine takes it from there, in the background, from the tray. Links to Mega, Google Drive, Dropbox, Pixeldrain, GoFile and MediaFire in a post come along too, decrypted and unpacked on your computer with the passwords the post mentions.
 
-It is the big sibling of the [Pawchive Downloader browser extension](https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension), and the next generation of [KemonoDownloader](https://github.com/VoxDroid/KemonoDownloader).
+It is the successor of [KemonoDownloader](#coming-from-kemonodownloader), and a Pawchive Downloader browser extension to go with it is coming soon.
 
 **Free to build, official builds on Ko-fi.** The source code is free and MIT licensed: anyone can [build the app](#building-it-yourself). Ready-made, tested installers for Windows, macOS and Linux are offered on [Ko-fi](https://ko-fi.com/izeno); buying one is the easiest way to get the app and keeps the project going.
 
@@ -48,8 +52,29 @@ It is the big sibling of the [Pawchive Downloader browser extension](https://git
 
 How it compares with every other Pawchive, Kemono and Coomer downloader: [docs/COMPARISON.md](docs/COMPARISON.md).
 
+## Coming from KemonoDownloader
+
+Pawchive Downloader is the successor of [KemonoDownloader](https://github.com/VoxDroid/KemonoDownloader). KemonoDownloader 5.16.0, released on 20 November 2026, is its final version: the project is now a legacy project. It stays available and open source, but new features and site updates go into Pawchive Downloader.
+
+**Why a new app.** KemonoDownloader is a Python and PyQt6 app that grew one tab at a time. Shipping Python and Qt made it 54 to 82 MB on Windows, and features such as downloads that survive a restart, one queue for everything, files on outside hosts and a watchlist did not fit its design. Pawchive Downloader was written from scratch instead, with a Rust download engine and a Svelte interface in Tauri, and is about 6 MB.
+
+**What carries over.**
+
+- The same three sites, and old kemono.su and coomer.su links still open.
+- The polite request limits KemonoDownloader introduced: at most five downloads and one new request per second per site, a user agent that says who is asking, and a shared wait when a site answers 429.
+- History and favorites, thumbnails when a media server is down, Tor and custom proxies, and the Midnight, Graphite, Plum, Forest and Ember themes (now joined by Light).
+
+**What is new** is most of this README: resumable, checksum-verified downloads, Mega, Google Drive, Dropbox, Pixeldrain, GoFile and MediaFire, ZIP unpacking, creator search, the watchlist, automatic retries, the tray and nine languages. KemonoDownloader's README has a [side-by-side comparison](https://github.com/VoxDroid/KemonoDownloader#moving-to-pawchive-downloader).
+
+**Switching.**
+
+- Pawchive Downloader installs next to KemonoDownloader; the two do not share settings, history or favorites, so nothing is moved over or changed.
+- You can choose the same download folder in **Settings > Downloads**. New downloads are arranged by Pawchive Downloader's own [folder template](#file-names-and-folders), which you can change.
+- Monthly supporters on [Ko-fi](https://ko-fi.com/izeno) get Pawchive Downloader builds as part of their support.
+
 ## Contents
 
+- [Coming from KemonoDownloader](#coming-from-kemonodownloader)
 - [Features](#features)
 - [Screenshots](#screenshots)
 - [Getting the app](#getting-the-app)
@@ -77,7 +102,7 @@ How it compares with every other Pawchive, Kemono and Coomer downloader: [docs/C
 | Image viewer   | Look at a post's images full size with the arrow keys and pick them while you look.                                                                                                   |
 | Read markers   | Posts you opened before are marked, so you can see where you left off.                                                                                                                |
 | Clipboard      | Optionally, links you copy anywhere are noticed and offered for opening.                                                                                                              |
-| Browser bridge | The browser extension can hand a download to the app with one click, after pairing with a six-digit code.                                                                             |
+| Browser bridge | The browser extension (coming soon) can hand a download to the app with one click, after pairing with a six-digit code.                                                               |
 
 **Downloading**
 

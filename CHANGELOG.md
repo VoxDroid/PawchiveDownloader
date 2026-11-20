@@ -8,7 +8,10 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [2.0.0] - 2026-11-19
 
-The next generation: more sites, outside hosts and a lot of convenience.
+The first public release, and the successor to
+[KemonoDownloader](https://github.com/VoxDroid/KemonoDownloader): Pawchive,
+Kemono and Coomer in one app, outside hosts and a lot of convenience. Versions
+1.0.0 to 1.1.1 were private test builds; the changes since then are below.
 
 ### Added
 
@@ -30,8 +33,8 @@ The next generation: more sites, outside hosts and a lot of convenience.
   seconds instead of waiting for the network, and skipped for a while.
 - **Automatic retries** of failed files after a chosen time, up to three
   times.
-- **Browser bridge**: a paired browser extension can hand downloads to the
-  app (loopback only, off by default).
+- **Browser bridge**: a paired browser extension (coming soon) can hand
+  downloads to the app (loopback only, off by default).
 - **Portable mode**: with a `data` folder next to the program everything
   stays there; the portable zip ships with one.
 - **Backup and restore** of settings, watchlist, favorites and history.
@@ -155,8 +158,7 @@ The next generation: more sites, outside hosts and a lot of convenience.
 
 ## [1.0.0] - 2026-11-18
 
-The first version of the desktop app, the big sibling of the Pawchive
-Downloader browser extension.
+The first version of the desktop app, a private test build.
 
 ### Added
 

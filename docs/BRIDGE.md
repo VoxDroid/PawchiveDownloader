@@ -1,10 +1,9 @@
 # Extension bridge
 
-Status: **implemented in the app (1.2.0)**, in `src-tauri/src/bridge.rs`.
-This describes how the
-[browser extension](https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension)
-hands downloads to the desktop app; the extension side can be built against it
-as written.
+Status: **implemented in the app (2.0.0)**, in `src-tauri/src/bridge.rs`. The
+Pawchive Downloader browser extension that uses it is coming soon.
+This describes how the browser extension hands downloads to the desktop app;
+the extension side can be built against it as written.
 
 ## Goal
 

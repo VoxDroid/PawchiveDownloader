@@ -20,8 +20,8 @@ The tools:
   downloader with a Pawchive extractor.
 - **[kumono](https://github.com/APT37/kumono)**: Rust command line tool.
 - **Pawchive File Ripper**: a userscript that zips one post in the browser.
-- **[Pawchive Downloader for the browser](https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension)**:
-  this app's little sibling, an extension that works on the page you view.
+- **Pawchive Downloader for the browser** (coming soon): this app's little
+  sibling, an extension that will work on the page you view.
 
 Legend: **Yes**, **Partly**, a short note, or **-** when the project's
 documentation does not mention it (it may still exist).
@@ -99,19 +99,19 @@ project there.
 
 ## Keeping up and looking back
 
-| Feature                                          | This app | whyamihere773 | KToolBox   | Yuvi9587          | gallery-dl        | kumono |
-| ------------------------------------------------ | -------- | ------------- | ---------- | ----------------- | ----------------- | ------ |
-| Watchlist with new-post badges and notifications | Yes      | Yes           | Sync plans | -                 | -                 | -      |
-| Download new posts automatically                 | Yes      | Yes           | Yes        | -                 | -                 | -      |
-| Per-creator folder, mode and filters             | Yes      | Yes           | Per plan   | -                 | -                 | -      |
-| Favorites with notes                             | Yes      | Partly        | Yes        | Account favorites | Account favorites | -      |
-| History with download again and CSV              | Yes      | Yes           | Yes        | Yes               | -                 | -      |
-| Statistics                                       | Yes      | Yes           | Overview   | -                 | -                 | -      |
-| Find deleted or moved files and get them back    | Yes      | Yes           | -          | -                 | -                 | -      |
-| Crash-safe queue                                 | Yes      | Yes           | Yes        | Partly            | -                 | -      |
-| Read markers on posts                            | **Yes**  | -             | -          | -                 | -                 | -      |
-| Portable mode, full backup and restore           | **Yes**  | -             | -          | -                 | -                 | -      |
-| Browser extension hands downloads to the app     | **Yes**  | -             | -          | -                 | -                 | -      |
+| Feature                                          | This app                         | whyamihere773 | KToolBox   | Yuvi9587          | gallery-dl        | kumono |
+| ------------------------------------------------ | -------------------------------- | ------------- | ---------- | ----------------- | ----------------- | ------ |
+| Watchlist with new-post badges and notifications | Yes                              | Yes           | Sync plans | -                 | -                 | -      |
+| Download new posts automatically                 | Yes                              | Yes           | Yes        | -                 | -                 | -      |
+| Per-creator folder, mode and filters             | Yes                              | Yes           | Per plan   | -                 | -                 | -      |
+| Favorites with notes                             | Yes                              | Partly        | Yes        | Account favorites | Account favorites | -      |
+| History with download again and CSV              | Yes                              | Yes           | Yes        | Yes               | -                 | -      |
+| Statistics                                       | Yes                              | Yes           | Overview   | -                 | -                 | -      |
+| Find deleted or moved files and get them back    | Yes                              | Yes           | -          | -                 | -                 | -      |
+| Crash-safe queue                                 | Yes                              | Yes           | Yes        | Partly            | -                 | -      |
+| Read markers on posts                            | **Yes**                          | -             | -          | -                 | -                 | -      |
+| Portable mode, full backup and restore           | **Yes**                          | -             | -          | -                 | -                 | -      |
+| Browser extension hands downloads to the app     | **Ready, extension coming soon** | -             | -          | -                 | -                 | -      |
 
 ## The app itself
 
