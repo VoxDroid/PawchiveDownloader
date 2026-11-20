@@ -20,7 +20,7 @@
 
 <p align="center">
   <a href="https://ko-fi.com/izeno/shop/pawchivedownloader"><img src="assets/download-button.svg" alt="Download Pawchive Downloader for Windows, macOS and Linux" width="314" /></a>
-  <a href="https://ko-fi.com/izeno/shop"><img src="assets/extension-download-button.svg" alt="Get the Pawchive Downloader browser extension for Chrome, Edge and Firefox" width="314" /></a>
+  <a href="https://ko-fi.com/izeno/shop/pawchivedownloader"><img src="assets/extension-download-button.svg" alt="Get the Pawchive Downloader browser extension for Chrome, Edge and Firefox" width="314" /></a>
 </p>
 
 <p align="center">
@@ -80,7 +80,7 @@ Pawchive Downloader is the successor of [KemonoDownloader](https://github.com/Vo
 Pair the two once: in the app, open **Settings > Browser extension**, turn it on and press **Pair**; enter the six-digit code in the extension's **Settings > Desktop app** and switch on **Send downloads to the app**. From then on, the panel's downloads and watched creators go to the app, which keeps going after the browser closes and also fetches the Mega, Google Drive and Dropbox links. The connection stays on this computer (`127.0.0.1`); see [docs/BRIDGE.md](docs/BRIDGE.md).
 
 <p align="center">
-  <a href="https://ko-fi.com/izeno/shop"><img src="assets/extension-download-button.svg" alt="Get the Pawchive Downloader browser extension for Chrome, Edge and Firefox" width="314" /></a>
+  <a href="https://ko-fi.com/izeno/shop/pawchivedownloader"><img src="assets/extension-download-button.svg" alt="Get the Pawchive Downloader browser extension for Chrome, Edge and Firefox" width="314" /></a>
 </p>
 
 ## Contents
