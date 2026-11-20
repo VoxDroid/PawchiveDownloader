@@ -19,7 +19,7 @@
 </p>
 
 <p align="center">
-  <a href="https://ko-fi.com/izeno"><img src="assets/download-button.svg" alt="Download Pawchive Downloader for Windows, macOS and Linux" width="314" /></a>
+  <a href="https://ko-fi.com/izeno/shop/pawchivedownloader"><img src="assets/download-button.svg" alt="Download Pawchive Downloader for Windows, macOS and Linux" width="314" /></a>
 </p>
 
 <p align="center">
