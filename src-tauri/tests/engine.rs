@@ -473,7 +473,7 @@ async fn writes_one_zip_archive_per_post() {
         .ends_with("Aster Vale - 2026-05-06 Zipped [106].zip"));
     let mut zip = zip::ZipArchive::new(std::fs::File::open(&saved[0]).unwrap()).unwrap();
     let names: Vec<String> = (0..zip.len())
-        .map(|i| zip.by_index(i).unwrap().name().to_string())
+        .map(|i| zip.by_index(i).unwrap().name().unwrap().to_string())
         .collect();
     assert_eq!(names, ["01_a.png", "02_b.txt", "content.txt"]);
     // The staging folder is gone.

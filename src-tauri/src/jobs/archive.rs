@@ -148,7 +148,7 @@ mod tests {
     fn names(path: &Path) -> Vec<String> {
         let mut archive = zip::ZipArchive::new(File::open(path).unwrap()).unwrap();
         (0..archive.len())
-            .map(|i| archive.by_index(i).unwrap().name().to_string())
+            .map(|i| archive.by_index(i).unwrap().name().unwrap().to_string())
             .collect()
     }
 
