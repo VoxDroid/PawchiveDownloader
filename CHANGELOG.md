@@ -6,6 +6,16 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+### Security
+
+- **Safer ZIP unpacking**: the ZIP library is updated from 2.6.1 to 9.7.3,
+  which fixes three problems a crafted archive in a post could exploit while
+  being unpacked: headers that disagree could bypass checks and overwrite
+  files (critical), symlinks with endless targets could crash the app or use up
+  its memory (high), and a truncated encrypted entry could skip its
+  authentication check (medium). Building from source now needs Rust 1.88 or
+  newer.
+
 ## [2.0.0] - 2026-11-19
 
 The first public release, and the successor to

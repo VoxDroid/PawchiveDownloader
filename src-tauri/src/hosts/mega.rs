@@ -121,8 +121,8 @@ fn file_key(raw: &[u8]) -> Option<([u8; 16], [u8; 16])> {
 fn decrypt_node_key(encrypted: &[u8], folder_key: &[u8; 16]) -> Vec<u8> {
     let cipher = Aes128::new(folder_key.into());
     let mut out = encrypted.to_vec();
-    for block in out.chunks_exact_mut(16) {
-        cipher.decrypt_block(block.into());
+    for block in out.as_chunks_mut::<16>().0 {
+        cipher.decrypt_block(block.as_mut_slice().into());
     }
     out
 }
@@ -419,8 +419,8 @@ mod tests {
         let folder_key = [7u8; 16];
         let cipher = Aes128::new(&folder_key.into());
         let mut enc = raw.clone();
-        for block in enc.chunks_exact_mut(16) {
-            cipher.encrypt_block(block.into());
+        for block in enc.as_chunks_mut::<16>().0 {
+            cipher.encrypt_block(block.as_mut_slice().into());
         }
         assert_eq!(decrypt_node_key(&enc, &folder_key), raw);
     }
