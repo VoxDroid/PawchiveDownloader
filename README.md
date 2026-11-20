@@ -20,6 +20,7 @@
 
 <p align="center">
   <a href="https://ko-fi.com/izeno/shop/pawchivedownloader"><img src="assets/download-button.svg" alt="Download Pawchive Downloader for Windows, macOS and Linux" width="314" /></a>
+  <a href="https://ko-fi.com/izeno/shop"><img src="assets/extension-download-button.svg" alt="Get the Pawchive Downloader browser extension for Chrome, Edge and Firefox" width="314" /></a>
 </p>
 
 <p align="center">
@@ -34,7 +35,7 @@
 
 Paste a link, or just type a creator's name. Pick exactly what you want, and a polite, resumable, checksum-verified download engine takes it from there, in the background, from the tray. Links to Mega, Google Drive, Dropbox, Pixeldrain, GoFile and MediaFire in a post come along too, decrypted and unpacked on your computer with the passwords the post mentions.
 
-It is the successor of [KemonoDownloader](#coming-from-kemonodownloader), and a Pawchive Downloader browser extension to go with it is coming soon.
+It is the successor of [KemonoDownloader](#coming-from-kemonodownloader), and it has a [browser extension](#the-browser-extension) that downloads right on the sites and hands bigger jobs to the app.
 
 **Free to build, official builds on Ko-fi.** The source code is free and MIT licensed: anyone can [build the app](#building-it-yourself). Ready-made, tested installers for Windows, macOS and Linux are offered on [Ko-fi](https://ko-fi.com/izeno); buying one is the easiest way to get the app and keeps the project going.
 
@@ -72,9 +73,20 @@ Pawchive Downloader is the successor of [KemonoDownloader](https://github.com/Vo
 - You can choose the same download folder in **Settings > Downloads**. New downloads are arranged by Pawchive Downloader's own [folder template](#file-names-and-folders), which you can change.
 - Monthly supporters on [Ko-fi](https://ko-fi.com/izeno) get Pawchive Downloader builds as part of their support.
 
+## The browser extension
+
+[Pawchive Downloader for the browser](https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension) is this app's companion for Chrome, Edge and Firefox. It adds a download panel to every post and creator page on Pawchive, Kemono and Coomer, and works on its own too.
+
+Pair the two once: in the app, open **Settings > Browser extension**, turn it on and press **Pair**; enter the six-digit code in the extension's **Settings > Desktop app** and switch on **Send downloads to the app**. From then on, the panel's downloads and watched creators go to the app, which keeps going after the browser closes and also fetches the Mega, Google Drive and Dropbox links. The connection stays on this computer (`127.0.0.1`); see [docs/BRIDGE.md](docs/BRIDGE.md).
+
+<p align="center">
+  <a href="https://ko-fi.com/izeno/shop"><img src="assets/extension-download-button.svg" alt="Get the Pawchive Downloader browser extension for Chrome, Edge and Firefox" width="314" /></a>
+</p>
+
 ## Contents
 
 - [Coming from KemonoDownloader](#coming-from-kemonodownloader)
+- [The browser extension](#the-browser-extension)
 - [Features](#features)
 - [Screenshots](#screenshots)
 - [Getting the app](#getting-the-app)
@@ -102,7 +114,7 @@ Pawchive Downloader is the successor of [KemonoDownloader](https://github.com/Vo
 | Image viewer   | Look at a post's images full size with the arrow keys and pick them while you look.                                                                                                   |
 | Read markers   | Posts you opened before are marked, so you can see where you left off.                                                                                                                |
 | Clipboard      | Optionally, links you copy anywhere are noticed and offered for opening.                                                                                                              |
-| Browser bridge | The browser extension (coming soon) can hand a download to the app with one click, after pairing with a six-digit code.                                                               |
+| Browser bridge | The [browser extension](#the-browser-extension) hands downloads to the app with one click, after pairing with a six-digit code.                                                       |
 
 **Downloading**
 
