@@ -15,6 +15,11 @@ All notable changes to Pawchive Downloader. The format follows
   its memory (high), and a truncated encrypted entry could skip its
   authentication check (medium). Building from source now needs Rust 1.88 or
   newer.
+- **Safer post text**: HTML entities in post text, file names and Google
+  Drive folders are decoded in one pass, so text that shows `&amp;lt;` is no
+  longer turned into `<`, and tags are removed until none is left, so pieces
+  like `<<b>script>` cannot form a new one. An entity with an impossible
+  number (such as `&#99999999;`) no longer breaks the post view.
 
 ## [2.0.0] - 2026-11-19
 

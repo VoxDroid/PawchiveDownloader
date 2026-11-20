@@ -411,11 +411,7 @@ fn drive_folder_entries(html: &str) -> Vec<DriveEntry> {
 }
 
 fn html_unescape(s: &str) -> String {
-    s.replace("&amp;", "&")
-        .replace("&lt;", "<")
-        .replace("&gt;", ">")
-        .replace("&quot;", "\"")
-        .replace("&#39;", "'")
+    crate::pawchive::normalize::decode_entities(s)
 }
 
 async fn gofile(
