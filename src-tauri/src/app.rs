@@ -598,8 +598,64 @@ pub fn spawn_clipboard_watch(app: AppHandle, core: Arc<Core>) {
 
 // ------------------------------------------------------------ library media
 
-/// Thumbnails being made at once: decoding big images takes memory.
-static THUMBNAILING: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(3);
+/// Thumbnails being made at once: half the processor's cores, two to six
+/// (decoding a big image takes memory as well as time).
+fn thumbnailing() -> &'static tokio::sync::Semaphore {
+    static TURNS: std::sync::OnceLock<tokio::sync::Semaphore> = std::sync::OnceLock::new();
+    TURNS.get_or_init(|| {
+        let cores = std::thread::available_parallelism().map_or(4, |n| n.get());
+        tokio::sync::Semaphore::new((cores / 2).clamp(2, 6))
+    })
+}
+
+/// Makes the thumbnail of a recorded image unless it exists; true when it is
+/// there afterwards.
+pub async fn ensure_thumbnail(core: &Arc<Core>, hash: &str, path: &std::path::Path) -> bool {
+    use crate::gallery;
+    if !gallery::can_thumbnail(path) {
+        return false;
+    }
+    let dest = gallery::thumb_path(&core.data_dir.join("thumbs"), hash);
+    if dest.exists() {
+        return true;
+    }
+    let Ok(_turn) = thumbnailing().acquire().await else {
+        return false;
+    };
+    if dest.exists() {
+        return true;
+    }
+    let (src, out) = (path.to_path_buf(), dest.clone());
+    let made =
+        tauri::async_runtime::spawn_blocking(move || gallery::make_thumbnail(&src, &out)).await;
+    if let Ok(Err(e)) = made {
+        core.log
+            .debug(format!("No thumbnail for {}: {e}", path.display()));
+    }
+    dest.exists()
+}
+
+/// Makes the Library's missing thumbnails in the background, newest first,
+/// one at a time, so scrolling finds them ready. Only one runs at a time.
+pub fn warm_thumbnails(core: Arc<Core>, files: Vec<(String, std::path::PathBuf)>) {
+    static WARMING: AtomicBool = AtomicBool::new(false);
+    let dir = core.data_dir.join("thumbs");
+    let todo: Vec<_> = files
+        .into_iter()
+        .filter(|(hash, path)| {
+            crate::gallery::can_thumbnail(path) && !crate::gallery::thumb_path(&dir, hash).exists()
+        })
+        .collect();
+    if todo.is_empty() || WARMING.swap(true, Ordering::SeqCst) {
+        return;
+    }
+    tauri::async_runtime::spawn(async move {
+        for (hash, path) in todo {
+            ensure_thumbnail(&core, &hash, &path).await;
+        }
+        WARMING.store(false, Ordering::SeqCst);
+    });
+}
 
 /// Answers the `pdl-media` protocol: `/<hash>` is a downloaded image or
 /// video (with byte ranges), `/<hash>?thumb=1` its thumbnail.
@@ -649,23 +705,9 @@ async fn serve_media(
         .uri()
         .query()
         .is_some_and(|q| q.split('&').any(|p| p == "thumb=1"));
-    if thumb && gallery::can_thumbnail(&path) {
+    if thumb && ensure_thumbnail(&core, &hash, &path).await {
         let dest = gallery::thumb_path(&core.data_dir.join("thumbs"), &hash);
-        if !dest.exists() {
-            let _turn = THUMBNAILING.acquire().await;
-            if !dest.exists() {
-                let (src, out) = (path.clone(), dest.clone());
-                let made = tauri::async_runtime::spawn_blocking(move || {
-                    gallery::make_thumbnail(&src, &out)
-                })
-                .await;
-                if let Ok(Err(e)) = made {
-                    core.log
-                        .debug(format!("No thumbnail for {}: {e}", path.display()));
-                }
-            }
-        }
-        if dest.exists() {
+        {
             return tauri::async_runtime::spawn_blocking(move || gallery::serve_thumb(&dest))
                 .await
                 .unwrap_or_else(|_| missing());

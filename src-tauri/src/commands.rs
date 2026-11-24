@@ -371,7 +371,7 @@ pub fn library_stats(core: State<'_, Core_>) -> crate::library::Stats {
 pub async fn library_media(core: State<'_, Core_>) -> R<crate::gallery::Gallery> {
     let files = core.store.list_known_files_with_time();
     let history = core.store.list_history();
-    tauri::async_runtime::spawn_blocking(move || {
+    let gallery = tauri::async_runtime::spawn_blocking(move || {
         crate::gallery::build(&files, &history, |p| {
             std::fs::metadata(p)
                 .ok()
@@ -380,7 +380,17 @@ pub async fn library_media(core: State<'_, Core_>) -> R<crate::gallery::Gallery>
         })
     })
     .await
-    .map_err(|e| e.to_string())
+    .map_err(|e| e.to_string())?;
+    // Thumbnails the page will ask for, made ahead in the background.
+    let images = gallery
+        .posts
+        .iter()
+        .flat_map(|p| &p.files)
+        .filter(|f| f.kind == crate::gallery::MediaKind::Image)
+        .map(|f| (f.hash.clone(), PathBuf::from(&f.path)))
+        .collect();
+    crate::app::warm_thumbnails(Arc::clone(&core), images);
+    Ok(gallery)
 }
 
 /// Opens a downloaded image or video in the program the system uses for
