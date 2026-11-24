@@ -62,6 +62,8 @@ const rows = page.getByRole('option');
 await rows.nth(1).click();
 await rows.nth(2).click();
 await rows.nth(4).click();
+// The banner and the creator's name at the top, with the picked rows.
+await page.evaluate(() => document.querySelector('main')?.scrollTo(0, 0));
 await shot('creator');
 
 await rows.first().dblclick();
@@ -105,6 +107,19 @@ await page.getByRole('button', { name: 'Check now' }).click();
 await page.getByText(/files are missing/).waitFor();
 await shot('statistics');
 
+await nav('Library');
+await page
+  .getByText(/^\d+ images$/)
+  .first()
+  .waitFor();
+await shot('library');
+
+await page.locator('button.tile').nth(1).click();
+await page.getByRole('toolbar', { name: 'Zoom' }).waitFor();
+await shot('library-viewer');
+await page.keyboard.press('Escape');
+await page.getByRole('dialog').waitFor({ state: 'hidden' });
+
 await nav('Browse');
 await open('aster');
 await page.getByRole('heading', { name: /Creators matching/ }).waitFor();
@@ -112,6 +127,15 @@ await shot('search');
 
 await nav('Settings');
 await shot('settings');
+
+// Pairing with the browser extension, with a connected browser.
+const bridge = page.locator('#s-bridge');
+const accept = bridge.getByRole('switch', { name: 'Accept downloads from the browser' });
+if ((await accept.getAttribute('aria-checked')) !== 'true') await accept.click();
+await bridge.locator('.browsers').waitFor();
+await bridge.evaluate((el) => el.scrollIntoView({ block: 'center' }));
+await shot('pairing');
+await page.evaluate(() => document.querySelector('main')?.scrollTo(0, 0));
 
 await page.getByRole('button', { name: 'Light' }).click();
 await nav('Browse');

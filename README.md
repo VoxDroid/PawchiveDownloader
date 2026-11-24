@@ -41,15 +41,16 @@ It is the successor of [KemonoDownloader](#coming-from-kemonodownloader), and it
 
 ## At a glance
 
-|                         |                                                                                              |
-| ----------------------- | -------------------------------------------------------------------------------------------- |
-| **3 sites**             | Pawchive, Kemono and Coomer, with old kemono.su and coomer.su links still opening            |
-| **7 outside hosts**     | Mega (decrypted locally), Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire, direct links |
-| **6.4 MB**              | the Windows download; native installers for Windows, macOS (universal) and Linux             |
-| **Every file verified** | SHA-256 checked against the site's own hash, resumed after any interruption                  |
-| **Never stuck**         | dead media servers detected in seconds, thumbnails as a fallback, failed files retried later |
-| **9 languages**         | English, Japanese, Korean, Chinese, Spanish, Portuguese, Russian, German, French             |
-| **About 180 tests**     | Rust engine, interface and end-to-end, run on Windows, macOS and Linux for every change      |
+|                         |                                                                                                            |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------- |
+| **3 sites**             | Pawchive, Kemono and Coomer, with old kemono.su and coomer.su links still opening                          |
+| **7 outside hosts**     | Mega (decrypted locally), Google Drive, Dropbox, Pixeldrain, GoFile, MediaFire, direct links               |
+| **5.5 MB**              | the Windows installer download (7 MB portable); native installers for Windows, macOS (universal) and Linux |
+| **Every file verified** | SHA-256 checked against the site's own hash, resumed after any interruption                                |
+| **Never stuck**         | dead media servers detected in seconds, thumbnails as a fallback, failed files retried later               |
+| **An offline Library**  | everything in your download folders by creator and post, with zoom, full screen and videos                 |
+| **9 languages**         | English, Japanese, Korean, Chinese, Spanish, Portuguese, Russian, German, French                           |
+| **About 185 tests**     | Rust engine, interface and end-to-end, run on Windows, macOS and Linux for every change                    |
 
 How it compares with every other Pawchive, Kemono and Coomer downloader: [docs/COMPARISON.md](docs/COMPARISON.md).
 
@@ -77,7 +78,7 @@ Pawchive Downloader is the successor of [KemonoDownloader](https://github.com/Vo
 
 [Pawchive Downloader for the browser](https://github.com/VoxDroid/PawchiveDownloader-BrowserExtension) is this app's companion for Chrome, Edge and Firefox. It adds a download panel to every post and creator page on Pawchive, Kemono and Coomer, and works on its own too.
 
-Pair the two once: in the app, open **Settings > Browser extension**, turn it on and press **Pair**; enter the six-digit code in the extension's **Settings > Desktop app** and switch on **Send downloads to the app**. From then on, the panel's downloads and watched creators go to the app, which keeps going after the browser closes and also fetches the Mega, Google Drive and Dropbox links. The connection stays on this computer (`127.0.0.1`); see [docs/BRIDGE.md](docs/BRIDGE.md).
+Pair the two once: in the app, open **Settings > Browser extension**, turn it on and press **Pair a browser**; enter the six-digit code in the extension's **Settings > Desktop app** and switch on **Send downloads to the app**. The app notices the new browser by itself and from then on shows which browsers are paired and connected. From then on, the panel's downloads and watched creators go to the app, which keeps going after the browser closes and also fetches the Mega, Google Drive and Dropbox links. The connection stays on this computer (`127.0.0.1`); see [docs/BRIDGE.md](docs/BRIDGE.md).
 
 <p align="center">
   <a href="https://ko-fi.com/izeno/shop/pawchivedownloader"><img src="assets/extension-download-button.svg" alt="Get the Pawchive Downloader browser extension for Chrome, Edge and Firefox" width="314" /></a>
@@ -106,57 +107,57 @@ Pair the two once: in the app, open **Settings > Browser extension**, turn it on
 
 **Finding things**
 
-| Feature        | What it does                                                                                                                                                                          |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Three sites    | Links from pawchive.pw, kemono.cr and coomer.st (and their old domains) all work the same way: posts, creators, searches and recent posts.                                            |
-| Creator search | Type a name instead of a link to search every creator on a site (about 100,000 on Pawchive alone), by service, popularity, update date or name. Lists are fetched at most once a day. |
-| Browse         | Posts show every file with a thumbnail; creators show their posts with banner, avatar and their other accounts; recent posts can be searched per site.                                |
-| Image viewer   | Look at a post's images full size with the arrow keys and pick them while you look; zoom (wheel, + and -, actual size), full screen, and play its videos from the site.               |
-| Read markers   | Posts you opened before are marked, so you can see where you left off.                                                                                                                |
-| Clipboard      | Optionally, links you copy anywhere are noticed and offered for opening.                                                                                                              |
-| Browser bridge | The [browser extension](#the-browser-extension) hands downloads to the app with one click, after pairing with a six-digit code.                                                       |
+| Feature        | What it does                                                                                                                                                                                                                                                                                            |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Three sites    | Links from pawchive.pw, kemono.cr and coomer.st (and their old domains) all work the same way: posts, creators, searches and recent posts.                                                                                                                                                              |
+| Creator search | Type a name instead of a link to search every creator on a site (about 100,000 on Pawchive alone), by service, popularity, update date or name. Lists are fetched at most once a day.                                                                                                                   |
+| Browse         | Posts show every file with a thumbnail; creators show their posts with banner, avatar and their other accounts; recent posts can be searched per site. Back and forward (Alt+Left, Alt+Right, mouse buttons) return to what you opened as it was, and Browse keeps its place while you use other pages. |
+| Image viewer   | Look at a post's images full size with the arrow keys and pick them while you look; zoom (wheel, + and -, actual size), full screen, and play its videos from the site.                                                                                                                                 |
+| Read markers   | Posts you opened before are marked, so you can see where you left off.                                                                                                                                                                                                                                  |
+| Clipboard      | Optionally, links you copy anywhere are noticed and offered for opening.                                                                                                                                                                                                                                |
+| Browser bridge | The [browser extension](#the-browser-extension) hands downloads to the app with one click, after pairing with a six-digit code; Settings shows which browsers are paired and connected.                                                                                                                 |
 
 **Downloading**
 
-| Feature                    | What it does                                                                                                                                                                                                                     |
-| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| File picking               | Select files or posts by click and Shift-click, filter by type (images, videos, audio, archives, documents, text), invert, hide what you already have.                                                                           |
-| Whole creators             | Download everything, a date range, a site search, or just the posts you tick. Large creators are scanned page by page while downloads already run.                                                                               |
-| Filters                    | Only posts with certain words, skip posts or files with others (plain or `/regex/`), the newest N posts, file types to keep or skip. Defaults in Settings, changeable for each download.                                         |
-| Outside hosts              | Files a post shares on Mega (files and folders, decrypted on your computer), Google Drive (files and folders), Dropbox, Pixeldrain, GoFile and MediaFire are downloaded with the post.                                           |
-| Unpacking                  | Downloaded ZIP archives can be unpacked next to themselves, trying the passwords the post mentions; nothing can be written outside the folder.                                                                                   |
-| Batch queue and URL import | Paste any number of links, import a `.txt` file or drag links onto the window. Each creator becomes one download; posts of the same creator are grouped.                                                                         |
-| Three formats              | Separate files in a folder per post, one ZIP archive per post (ZIP64, no size limit, optional parts), or thumbnails only.                                                                                                        |
-| Resumable downloads        | Files are written as `.part` files and continue with HTTP Range requests after a pause, a dropped connection or a restart of the app.                                                                                            |
-| Checksums                  | Every finished file is checked against the SHA-256 in its address and downloaded again if it does not match.                                                                                                                     |
-| Preview-only files         | When Pawchive only keeps a preview, the full file is fetched through the temporary link the post page offers.                                                                                                                    |
-| Dead media servers         | Before a Kemono or Coomer download, the app checks the site's media server; when it is down you choose: cancel, thumbnails instead, or queue the full files for later. During downloads a dead server is noticed within seconds. |
-| Duplicate skipping         | Files are recognised by content hash, across posts, creators and sites, and skipped when you already have them.                                                                                                                  |
-| Post text and metadata     | Save the description as `content.txt` and/or `content.html`, a `post.json`, `links.txt` with outside links and passwords, comments with their replies, and a creator's announcements.                                            |
-| Clean names                | Remove words such as `[HD]` from titles and file names.                                                                                                                                                                          |
-| Fast mode                  | One switch: every file type, your saved options, no per-download choices.                                                                                                                                                        |
+| Feature                    | What it does                                                                                                                                                                                                                                                                                                    |
+| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| File picking               | Select files or posts by click and Shift-click, filter by type (images, videos, audio, archives, documents, text), invert, hide what you already have.                                                                                                                                                          |
+| Whole creators             | Download everything, a date range, a site search, or just the posts you tick. Large creators are scanned page by page while downloads already run.                                                                                                                                                              |
+| Filters                    | Only posts with certain words, skip posts or files with others (plain or `/regex/`), the newest N posts, file types to keep or skip. Defaults in Settings, changeable for each download.                                                                                                                        |
+| Outside hosts              | Files a post shares on Mega (files and folders, decrypted on your computer), Google Drive (files and folders), Dropbox, Pixeldrain, GoFile and MediaFire are downloaded with the post.                                                                                                                          |
+| Unpacking                  | Downloaded ZIP archives can be unpacked next to themselves, trying the passwords the post mentions; nothing can be written outside the folder.                                                                                                                                                                  |
+| Batch queue and URL import | Paste any number of links, import a `.txt` file or drag links onto the window. Each creator becomes one download; posts of the same creator are grouped.                                                                                                                                                        |
+| Three formats              | Separate files in a folder per post, one ZIP archive per post (ZIP64, no size limit, optional parts), or thumbnails only.                                                                                                                                                                                       |
+| Resumable downloads        | Files are written as `.part` files and continue with HTTP Range requests after a pause, a dropped connection or a restart of the app.                                                                                                                                                                           |
+| Checksums                  | Every finished file is checked against the SHA-256 in its address and downloaded again if it does not match.                                                                                                                                                                                                    |
+| Preview-only files         | When Pawchive only keeps a preview, the full file is fetched through the temporary link the post page offers.                                                                                                                                                                                                   |
+| Dead media servers         | Before a Kemono or Coomer download, the app checks the site's media server; when it is down you choose: cancel, thumbnails instead, or queue the full files for later. During downloads a dead server is noticed within seconds.                                                                                |
+| Duplicate skipping         | Files are recognised by content hash, across posts, creators and sites, and skipped while you still have them: files you deleted or moved are fetched again, and a file already in the folder is skipped rather than copied as `name (1)`. A download with nothing new says so and offers to download it again. |
+| Post text and metadata     | Save the description as `content.txt` and/or `content.html`, a `post.json`, `links.txt` with outside links and passwords, comments with their replies, and a creator's announcements.                                                                                                                           |
+| Clean names                | Remove words such as `[HD]` from titles and file names.                                                                                                                                                                                                                                                         |
+| Fast mode                  | One switch: every file type, your saved options, no per-download choices.                                                                                                                                                                                                                                       |
 
 **Managing**
 
-| Feature             | What it does                                                                                                                                                            |
-| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Download queue      | Pause, resume, cancel, retry and reorder downloads; follow speed, progress and every item, retry single files, open folders.                                            |
-| Automatic retries   | Failed files go back in the queue by themselves after a chosen time, up to three times. Retry everything at once or export the failed list.                             |
-| Download window     | Start downloads only at chosen times (for example at night); the computer is kept awake while they run.                                                                 |
-| Disk space guard    | New downloads wait instead of failing when the drive is nearly full, and go on by themselves.                                                                           |
-| When done           | Quit, sleep or shut down after the queue finishes, with a cancellable countdown.                                                                                        |
-| Crash-safe          | The queue is saved continuously to a local SQLite library and picks up where it stopped.                                                                                |
-| Library             | An offline gallery of everything downloaded, by creator and post: search, images or videos, slideshow, zoom, full screen, video playback with seeking. Nothing online.  |
-| History             | Every finished download with its files, size, duration and errors. Show it in the folder, download it again, export CSV or JSON.                                        |
-| Watchlist           | Follow creators on any site. They are checked on a schedule; new posts raise a badge and a notification and can be downloaded automatically, each with its own options. |
-| Favorites           | Bookmark posts and creators with notes, download them again in one click, import and export the list.                                                                   |
-| Statistics          | Lifetime totals, the last twelve months, most downloaded creators, files by kind, and a check that finds deleted or moved files and downloads just those again.         |
-| Portable mode       | With a `data` folder next to the program, everything stays there, so the app runs from a USB stick.                                                                     |
-| Backup              | Settings, watchlist, favorites and history in one file, restored on another computer.                                                                                   |
-| Tray and background | Closing the window keeps the app in the tray; progress shows on the tray tooltip and the taskbar button. Optional start at sign-in.                                     |
-| Notifications       | Finished downloads, problems and new posts, in your language, optionally without titles or names.                                                                       |
-| Logs and help       | A live, searchable activity log, also written to a rotating file, and a searchable guide inside the app.                                                                |
-| Update check        | Looks for a newer version and points to Ko-fi (or the source). It never installs anything by itself.                                                                    |
+| Feature             | What it does                                                                                                                                                                                                                                                                            |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Download queue      | Pause, resume, cancel, retry and reorder downloads; follow speed, progress and every item, retry single files, open folders.                                                                                                                                                            |
+| Automatic retries   | Failed files go back in the queue by themselves after a chosen time, up to three times. Retry everything at once or export the failed list.                                                                                                                                             |
+| Download window     | Start downloads only at chosen times (for example at night); the computer is kept awake while they run.                                                                                                                                                                                 |
+| Disk space guard    | New downloads wait instead of failing when the drive is nearly full, and go on by themselves.                                                                                                                                                                                           |
+| When done           | Quit, sleep or shut down after the queue finishes, with a cancellable countdown.                                                                                                                                                                                                        |
+| Crash-safe          | The queue is saved continuously to a local SQLite library and picks up where it stopped.                                                                                                                                                                                                |
+| Library             | An offline gallery of everything in your download folders, by creator and post, including files saved by another install, the browser extension or before the history was cleared: search, images or videos, slideshow, zoom, full screen, video playback with seeking. Nothing online. |
+| History             | Every finished download with its files, size, duration and errors. Show it in the folder, download it again, export CSV or JSON.                                                                                                                                                        |
+| Watchlist           | Follow creators on any site. They are checked on a schedule; new posts raise a badge and a notification and can be downloaded automatically, each with its own options.                                                                                                                 |
+| Favorites           | Bookmark posts and creators with notes, download them again in one click, import and export the list.                                                                                                                                                                                   |
+| Statistics          | Lifetime totals, the last twelve months, most downloaded creators, files by kind, and a check that finds deleted or moved files and downloads just those again.                                                                                                                         |
+| Portable mode       | With a `data` folder next to the program, everything stays there, so the app runs from a USB stick.                                                                                                                                                                                     |
+| Backup              | Settings, watchlist, favorites and history in one file, restored on another computer.                                                                                                                                                                                                   |
+| Tray and background | Closing the window keeps the app in the tray; progress shows on the tray tooltip and the taskbar button. Optional start at sign-in.                                                                                                                                                     |
+| Notifications       | Finished downloads, problems and new posts, in your language, optionally without titles or names.                                                                                                                                                                                       |
+| Logs and help       | A live, searchable activity log, also written to a rotating file, and a searchable guide inside the app.                                                                                                                                                                                |
+| Update check        | Looks for a newer version and points to Ko-fi (or the source). It never installs anything by itself.                                                                                                                                                                                    |
 
 **Interface**
 
@@ -173,14 +174,16 @@ Pair the two once: in the app, open **Settings > Browser extension**, turn it on
 
 ## Screenshots
 
-|                                                        |                                                               |
-| ------------------------------------------------------ | ------------------------------------------------------------- |
-| ![Start page](docs/screenshots/browse.png)             | ![A post with its files](docs/screenshots/post.png)           |
-| ![Outside links of a post](docs/screenshots/links.png) | ![Creator search](docs/screenshots/search.png)                |
-| ![Downloads](docs/screenshots/downloads.png)           | ![Compact sidebar](docs/screenshots/compact.png)              |
-| ![Watchlist](docs/screenshots/watchlist.png)           | ![Statistics](docs/screenshots/statistics.png)                |
-| ![Favorites](docs/screenshots/favorites.png)           | ![History](docs/screenshots/history.png)                      |
-| ![Settings](docs/screenshots/settings.png)             | ![Batch queue, light theme](docs/screenshots/batch-light.png) |
+|                                                               |                                                                        |
+| ------------------------------------------------------------- | ---------------------------------------------------------------------- |
+| ![Start page](docs/screenshots/browse.png)                    | ![A post with its files](docs/screenshots/post.png)                    |
+| ![The Library](docs/screenshots/library.png)                  | ![The Library's viewer with zoom](docs/screenshots/library-viewer.png) |
+| ![Outside links of a post](docs/screenshots/links.png)        | ![Creator search](docs/screenshots/search.png)                         |
+| ![Downloads](docs/screenshots/downloads.png)                  | ![Compact sidebar](docs/screenshots/compact.png)                       |
+| ![Watchlist](docs/screenshots/watchlist.png)                  | ![Statistics](docs/screenshots/statistics.png)                         |
+| ![Favorites](docs/screenshots/favorites.png)                  | ![History](docs/screenshots/history.png)                               |
+| ![Settings](docs/screenshots/settings.png)                    | ![Pairing with the browser extension](docs/screenshots/pairing.png)    |
+| ![Batch queue, light theme](docs/screenshots/batch-light.png) |                                                                        |
 
 The screenshots use the app's demo data.
 
@@ -275,6 +278,7 @@ src-tauri/            Rust: the app and its download engine
   src/jobs/           job model, filters, planning, engine, transfers, ZIP, unpacking
   src/store/          SQLite library: queue, history, hashes, watchlist, favorites, read marks
   src/library.rs      statistics and the missing-file check
+  src/gallery.rs      the Library: folder scan, thumbnails, the pdl-media protocol
   src/bridge.rs       the browser extension's local server
   src/power.rs        keep-awake, free space, sleep and shut down
   src/watch.rs        scheduled watchlist checks
@@ -282,11 +286,11 @@ src-tauri/            Rust: the app and its download engine
   src/commands.rs     what the interface can call
   tests/              integration tests against a mock site, and live checks
 src/                  Svelte 5 interface
-  features/           Browse, Downloads, History, Watchlist, Favorites, Statistics, Logs, Settings, Help, About
+  features/           Browse, Downloads, Library, History, Watchlist, Favorites, Statistics, Logs, Settings, Help, About
   ui/                 components, layout, theme, state
   lib/                bridge to Rust, demo backend, translations, helpers
 tests/                Vitest unit and component tests, Playwright UI tests
-scripts/              font subsetting, icon rendering, translations, screenshots
+scripts/              font subsetting, icon outlines, icon rendering, translations, screenshots
 docs/                 architecture, extension bridge, translating, screenshots
 ```
 
