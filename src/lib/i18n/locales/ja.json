@@ -768,7 +768,7 @@
   "settings.privateNotifications": "プライベート通知",
   "settings.privateNotificationsHint": "通知には件数だけを表示し、投稿タイトルやクリエイター名は表示しません。",
   "settings.blurPreviews": "プレビューをぼかす",
-  "settings.blurPreviewsHint": "サムネイル、アイコン、バナーはマウスを乗せるまでぼかします。画面共有や人前での作業に。",
+  "settings.blurPreviewsHint": "サムネイル、アイコン、バナー、ライブラリはマウスを乗せるまでぼかします。画面共有や人前での作業に。",
   "settings.backup": "バックアップ",
   "settings.backupHint": "設定、ウォッチリスト、お気に入り、履歴を 1 つのファイルにまとめます。別のコンピューターへの移行や保管に。復元すると足りないものだけを追加し、今あるものは残します。",
   "settings.backupSave": "バックアップを保存",

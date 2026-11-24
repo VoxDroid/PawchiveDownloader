@@ -12,6 +12,7 @@
   import { openLink } from '../../ui/state/router.svelte';
   import { app, fmt, t } from '../../ui/state/app.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
+  import Avatar from '../../ui/components/Avatar.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Empty from '../../ui/components/Empty.svelte';
   import Icon from '../../ui/components/Icon.svelte';
@@ -178,11 +179,11 @@
         animate:flip={{ duration: 260, easing: cubicOut }}
       >
         <div class="top">
-          <img
-            class="avatar"
+          <Avatar
             src={pageUrls.icon(entry.service, entry.creatorId)}
-            alt=""
-            loading="lazy"
+            name={entry.name}
+            size={42}
+            radius="12px"
           />
           <div class="who">
             <a
@@ -319,6 +320,9 @@
   }
   .card {
     display: grid;
+    /* One column as wide as the card: long titles shorten, nothing spills. */
+    grid-template-columns: minmax(0, 1fr);
+    min-width: 0;
     gap: 12px;
     align-content: start;
     padding: 14px;
@@ -344,15 +348,6 @@
     gap: 12px;
     min-width: 0;
   }
-  .avatar {
-    width: 42px;
-    height: 42px;
-    border-radius: 12px;
-    object-fit: cover;
-    background: var(--bg-elev-2);
-    border: 1px solid var(--border);
-    flex: none;
-  }
   .who {
     flex: 1;
     display: grid;
@@ -369,6 +364,7 @@
     margin: 0 6px;
   }
   .new {
+    flex: none;
     padding: 2px 9px;
     border-radius: 99px;
     background: color-mix(in srgb, var(--success) 18%, transparent);
@@ -410,15 +406,23 @@
   }
   .posts li {
     display: flex;
+    align-items: baseline;
     justify-content: space-between;
     gap: 10px;
+    min-width: 0;
+  }
+  .posts a {
+    flex: 1;
+    min-width: 0;
   }
   .posts span {
+    flex: none;
     font-size: var(--fs-xs);
     white-space: nowrap;
   }
   .bottom {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 8px;
@@ -427,11 +431,16 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    /* The buttons move to their own line before the label wraps. */
+    flex: 1 1 230px;
+    min-width: 0;
     font-size: var(--fs-xs);
     color: var(--text-dim);
   }
   .actions {
     display: flex;
+    flex: none;
     gap: 2px;
+    margin-left: auto;
   }
 </style>

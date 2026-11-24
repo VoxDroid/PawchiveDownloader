@@ -167,7 +167,7 @@ Pair the two once: in the app, open **Settings > Browser extension**, turn it on
 | Six themes      | Midnight, Graphite, Plum, Forest, Ember and Light, or Match system, with six accent colors or your own.                    |
 | Compact mode    | The sidebar folds to icons (Ctrl+B); tooltips float above everything and never get cut off.                                |
 | Settings search | Find any setting by typing (Ctrl+F).                                                                                       |
-| Privacy blur    | Thumbnails, avatars and banners stay blurred until pointed at, for sharing the screen or working in public.                |
+| Privacy blur    | Thumbnails, avatars, banners and the Library stay blurred until pointed at, for sharing the screen or working in public.   |
 | Typography      | JetBrains Mono Nerd Font throughout; every icon is drawn from the font's own outlines, centered on its shape.              |
 | Keyboard        | Ctrl+L link bar, Ctrl+Shift+B batch, Ctrl+B sidebar, Ctrl+1 to Ctrl+9 pages, Ctrl+, settings, Ctrl+F settings search.      |
 | Network         | System proxy, no proxy, a custom HTTP, HTTPS or SOCKS5 proxy, or Tor; a total speed limit.                                 |

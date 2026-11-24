@@ -7,6 +7,7 @@
   import { fmt, t } from '../../ui/state/app.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
   import { openLink } from '../../ui/state/router.svelte';
+  import Avatar from '../../ui/components/Avatar.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Chip from '../../ui/components/Chip.svelte';
   import Empty from '../../ui/components/Empty.svelte';
@@ -246,7 +247,9 @@
         onerror={(e) => ((e.currentTarget as HTMLImageElement).style.opacity = '0')}
       />
       <div class="hero-row">
-        <img class="avatar" src={creator.iconUrl} alt="" />
+        <span class="avatar">
+          <Avatar src={creator.iconUrl} name={creator.name} size={76} radius="18px" />
+        </span>
         <div class="who">
           <h2 class="selectable">{creator.name}</h2>
           <p>
@@ -265,7 +268,7 @@
               <span class="faint">{t('creator.alsoOn')}</span>
               {#each linked as other (`${other.service}:${other.id}`)}
                 <button class="link-chip" onclick={() => openLink(other.url)} title={other.url}>
-                  <img src={other.iconUrl} alt="" loading="lazy" />
+                  <Avatar src={other.iconUrl} name={other.name} size={20} radius="99px" />
                   <span class="truncate">{other.name}</span>
                   <span class="faint">{serviceLabel(other.service)}</span>
                 </button>
@@ -437,12 +440,6 @@
   .link-chip:hover {
     border-color: var(--accent);
   }
-  .link-chip img {
-    width: 20px;
-    height: 20px;
-    border-radius: 99px;
-    object-fit: cover;
-  }
   .loading {
     display: flex;
     align-items: center;
@@ -479,16 +476,16 @@
     padding: 0 18px 16px;
     position: relative;
   }
+  /* The picture with a frame in the card's color, reaching into the banner. */
   .avatar {
-    width: 84px;
-    height: 84px;
-    margin-top: -42px;
-    border-radius: 22px;
-    object-fit: cover;
-    border: 4px solid var(--bg-elev);
-    background: var(--bg-elev-2);
-    box-shadow: var(--shadow-md);
     flex: none;
+    display: block;
+    margin-top: -42px;
+    padding: 4px;
+    border-radius: 22px;
+    background: var(--bg-elev);
+    box-shadow: var(--shadow-md);
+    line-height: 0;
   }
   .who {
     flex: 1;

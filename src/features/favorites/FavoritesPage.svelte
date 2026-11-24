@@ -12,6 +12,7 @@
   import { fmt, t } from '../../ui/state/app.svelte';
   import { go, openLink } from '../../ui/state/router.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
+  import Avatar from '../../ui/components/Avatar.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Checkbox from '../../ui/components/Checkbox.svelte';
   import Dialog from '../../ui/components/Dialog.svelte';
@@ -230,11 +231,11 @@
           onchange={() => toggle(fav.key)}
         />
         {#if fav.kind === 'creator'}
-          <img
-            class="avatar"
+          <Avatar
             src={pageUrls.icon(fav.service, fav.creatorId)}
-            alt=""
-            loading="lazy"
+            name={fav.title}
+            size={40}
+            radius="11px"
           />
         {:else}
           <span class="avatar post"><Icon name="document" /></span>

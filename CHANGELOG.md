@@ -6,6 +6,24 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- **Watchlist cards stay inside their border**: a creator with new posts no
+  longer pushes the "new" badge and the download button past the edge of the
+  card, and post dates show in full next to titles that are shortened.
+- **Creator pictures that cannot load show initials**: in Browse, creator
+  search, the watchlist, favorites and the Library, a picture that is
+  missing or cannot load (offline, removed, a site that is down) shows the
+  creator's initials on a color made from their name instead of a
+  broken-image symbol. The initials also show while the picture loads.
+- **Blur previews covers the Library**: with the setting on, Library tiles,
+  video tiles and the Library viewer stay blurred until pointed at, as
+  thumbnails in Browse already did, and so does video in the Browse viewer.
+- **Search fields show focus around the whole field**: the settings, help
+  and other search boxes with a clear button drew the focus ring around the
+  text only, cutting the button off; the filter terms field had a second
+  ring inside its own.
+
 ## [2.1.0] - 2026-11-24
 
 The Library: an offline gallery of everything in your download folders,

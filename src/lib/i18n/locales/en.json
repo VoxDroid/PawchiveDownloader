@@ -824,7 +824,7 @@
   "settings.privateNotifications": "Private notifications",
   "settings.privateNotificationsHint": "Notifications show only counts, never post titles or creator names.",
   "settings.blurPreviews": "Blur previews",
-  "settings.blurPreviewsHint": "Thumbnails, avatars and banners stay blurred until you point at them, for sharing the screen or working in public.",
+  "settings.blurPreviewsHint": "Thumbnails, avatars, banners and the Library stay blurred until you point at them, for sharing the screen or working in public.",
   "settings.backup": "Backup",
   "settings.backupHint": "One file with your settings, watchlist, favorites and history, to move to another computer or keep safe. Restoring adds what is missing and keeps what is here.",
   "settings.backupSave": "Save backup",

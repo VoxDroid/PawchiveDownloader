@@ -9,6 +9,7 @@
   import { describeError } from '../../ui/state/errors';
   import { go, openLink } from '../../ui/state/router.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
+  import Avatar from '../../ui/components/Avatar.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Empty from '../../ui/components/Empty.svelte';
   import Icon from '../../ui/components/Icon.svelte';
@@ -139,15 +140,6 @@
     return () => io.disconnect();
   });
 
-  const initials = (name: string) =>
-    name
-      .split(/\s+/)
-      .map((w) => w.match(/[\p{L}\p{N}]/u)?.[0] ?? '')
-      .filter(Boolean)
-      .slice(0, 2)
-      .join('')
-      .toUpperCase() || '?';
-  const hue = (text: string) => [...text].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
   const siteName = (site: string) => site.charAt(0).toUpperCase() + site.slice(1);
 
   async function showFolder(post: MediaPost) {
@@ -327,17 +319,12 @@
 
 {#snippet creatorRow(c: MediaCreator)}
   <button class="creator" class:on={creator === c.key} onclick={() => (creator = c.key)}>
-    <span class="avatar" style:--h={hue(c.name)}>
-      <span>{initials(c.name)}</span>
-      {#if c.creatorId}
-        <img
-          src={pageUrls.icon(c.service, c.creatorId)}
-          alt=""
-          loading="lazy"
-          onerror={(e) => (e.currentTarget as HTMLImageElement).remove()}
-        />
-      {/if}
-    </span>
+    <Avatar
+      src={c.creatorId ? pageUrls.icon(c.service, c.creatorId) : null}
+      name={c.name}
+      size={32}
+      radius="99px"
+    />
     <span class="who">
       <strong class="truncate">{c.name}</strong>
       <span class="faint truncate">
@@ -463,28 +450,13 @@
   .creator.on {
     background: var(--accent-soft);
   }
-  .avatar {
-    position: relative;
-    flex: none;
+  .avatar.all {
     display: grid;
     place-items: center;
+    flex: none;
     width: 32px;
     height: 32px;
     border-radius: 50%;
-    overflow: hidden;
-    background: hsl(var(--h, 260) 45% 32%);
-    color: #fff;
-    font-size: var(--fs-xs);
-    font-weight: 700;
-  }
-  .avatar img {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  .avatar.all {
     background: var(--bg-elev-3);
     color: var(--accent-strong);
   }

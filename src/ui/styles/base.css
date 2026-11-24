@@ -155,11 +155,34 @@
 }
 
 /* Privacy blur: thumbnails, avatars and banners stay blurred until hovered. */
-:root[data-blur='on'] :is(.thumb img, img.avatar, img.banner, .link-chip img, .lightbox img) {
+:root[data-blur='on']
+  :is(
+    .thumb img,
+    img.avatar,
+    img.banner,
+    .link-chip img,
+    .lightbox img,
+    .lightbox video,
+    .tile img,
+    .tile video,
+    .viewer img,
+    .viewer video
+  ) {
   filter: blur(18px) saturate(0.6);
   transition: filter var(--dur) var(--ease);
 }
-:root[data-blur='on'] :is(.thumb, .avatar, .banner, .link-chip, .lightbox .stage):hover img,
+:root[data-blur='on']
+  :is(
+    .thumb,
+    .avatar,
+    .banner,
+    .link-chip,
+    .lightbox .stage,
+    .tile,
+    .viewer .stage,
+    .viewer .strip button
+  ):hover
+  :is(img, video),
 :root[data-blur='on'] :is(img.avatar, img.banner):hover {
   filter: none;
 }

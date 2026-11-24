@@ -6,6 +6,7 @@
   import { fmt, t } from '../../ui/state/app.svelte';
   import { openLink } from '../../ui/state/router.svelte';
   import { describeError } from '../../ui/state/errors';
+  import Avatar from '../../ui/components/Avatar.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Empty from '../../ui/components/Empty.svelte';
   import Icon from '../../ui/components/Icon.svelte';
@@ -168,7 +169,7 @@
       {#each result.creators as c (`${c.service}:${c.id}`)}
         <li>
           <button class="row" onclick={() => open(c)} title={c.url}>
-            <img class="avatar" src={c.iconUrl} alt="" loading="lazy" decoding="async" />
+            <Avatar src={c.iconUrl} name={c.name} size={40} radius="10px" />
             <span class="who">
               <span class="name truncate">{c.name}</span>
               <span class="meta faint truncate">
@@ -261,14 +262,6 @@
   .row:hover {
     background: var(--bg-hover);
     border-color: var(--border-strong);
-  }
-  .avatar {
-    flex: none;
-    width: 40px;
-    height: 40px;
-    border-radius: 10px;
-    object-fit: cover;
-    background: var(--bg-elev-3);
   }
   .who {
     flex: 1;

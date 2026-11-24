@@ -821,7 +821,7 @@
   "settings.privateNotifications": "Notificações privadas",
   "settings.privateNotificationsHint": "As notificações só mostram contagens, nunca títulos ou nomes de criadores.",
   "settings.blurPreviews": "Desfocar prévias",
-  "settings.blurPreviewsHint": "Miniaturas, avatares e banners ficam desfocados até você passar o mouse, para compartilhar a tela ou usar em público.",
+  "settings.blurPreviewsHint": "Miniaturas, avatares, banners e a biblioteca ficam desfocados até você passar o mouse, para compartilhar a tela ou usar em público.",
   "settings.backup": "Backup",
   "settings.backupHint": "Um arquivo com suas configurações, lista, favoritos e histórico, para outro computador ou guardar. Restaurar adiciona o que falta e mantém o que já existe.",
   "settings.backupSave": "Salvar backup",

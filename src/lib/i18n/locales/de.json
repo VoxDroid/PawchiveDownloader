@@ -824,7 +824,7 @@
   "settings.privateNotifications": "Private Benachrichtigungen",
   "settings.privateNotificationsHint": "Benachrichtigungen zeigen nur Anzahlen, nie Beitragstitel oder Namen von Creators.",
   "settings.blurPreviews": "Vorschauen weichzeichnen",
-  "settings.blurPreviewsHint": "Vorschaubilder, Avatare und Banner bleiben unscharf, bis Sie darauf zeigen: für geteilte Bildschirme oder unterwegs.",
+  "settings.blurPreviewsHint": "Vorschaubilder, Avatare, Banner und die Bibliothek bleiben unscharf, bis Sie darauf zeigen: für geteilte Bildschirme oder unterwegs.",
   "settings.backup": "Sicherung",
   "settings.backupHint": "Eine Datei mit Einstellungen, Beobachtungsliste, Favoriten und Verlauf, für einen anderen Computer oder zur Sicherheit. Beim Wiederherstellen kommt Fehlendes dazu, Vorhandenes bleibt.",
   "settings.backupSave": "Sicherung speichern",

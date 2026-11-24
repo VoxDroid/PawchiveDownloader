@@ -821,7 +821,7 @@
   "settings.privateNotifications": "Notificaciones privadas",
   "settings.privateNotificationsHint": "Las notificaciones solo muestran cantidades, nunca títulos ni nombres de creadores.",
   "settings.blurPreviews": "Difuminar vistas previas",
-  "settings.blurPreviewsHint": "Miniaturas, avatares y banners quedan difuminados hasta pasar el ratón, para compartir pantalla o trabajar en público.",
+  "settings.blurPreviewsHint": "Miniaturas, avatares, banners y la biblioteca quedan difuminados hasta pasar el ratón, para compartir pantalla o trabajar en público.",
   "settings.backup": "Copia de seguridad",
   "settings.backupHint": "Un archivo con tus ajustes, lista de seguimiento, favoritos e historial, para otro equipo o por seguridad. Al restaurar se añade lo que falta y se conserva lo que hay.",
   "settings.backupSave": "Guardar copia",
