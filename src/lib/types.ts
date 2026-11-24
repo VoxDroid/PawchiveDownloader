@@ -317,6 +317,54 @@ export type Hold =
   | { kind: 'schedule'; opensAt: number }
   | { kind: 'disk'; free: number; need: number; folder: string };
 
+/** An image or video in the Library (files the app downloaded). */
+export interface MediaFile {
+  hash: string;
+  name: string;
+  kind: 'image' | 'video';
+  size: number;
+  path: string;
+  at: number;
+  /** Demo backend only: where to show it from. */
+  demo?: { src: string; thumb: string };
+}
+
+export interface MediaPost {
+  /** `service:creator:post`. */
+  key: string;
+  service: string;
+  site: SiteId;
+  creatorId: string;
+  postId: string;
+  title: string;
+  creatorName: string;
+  folder: string;
+  at: number;
+  files: MediaFile[];
+}
+
+export interface MediaCreator {
+  key: string;
+  service: string;
+  site: SiteId;
+  creatorId: string;
+  name: string;
+  posts: number;
+  images: number;
+  videos: number;
+  bytes: number;
+  at: number;
+}
+
+export interface Gallery {
+  creators: MediaCreator[];
+  posts: MediaPost[];
+  images: number;
+  videos: number;
+  bytes: number;
+  missing: number;
+}
+
 export interface BridgePairing {
   id: string;
   name: string;

@@ -6,6 +6,8 @@
   import Icon from '../../ui/components/Icon.svelte';
   import IconButton from '../../ui/components/IconButton.svelte';
   import Spinner from '../../ui/components/Spinner.svelte';
+  import FullscreenButton from '../../ui/components/FullscreenButton.svelte';
+  import ZoomImage from '../../ui/components/ZoomImage.svelte';
 
   interface Props {
     /** Images that can be shown, in order. */
@@ -27,17 +29,21 @@
     file && file.category === 'image' && file.url && !file.previewOnly ? file.url : null,
   );
   const thumb = $derived(file?.thumbnailUrl ?? null);
+  /** A video plays straight from the site's media server. */
+  const clip = $derived(
+    file && file.category === 'video' && file.url && !file.previewOnly ? file.url : null,
+  );
   type Load = 'loading' | 'ready' | 'failed';
   let fullState = $state<Load>('loading');
   let thumbState = $state<Load>('loading');
 
   $effect(() => {
     void file;
-    fullState = full ? 'loading' : 'failed';
+    fullState = full || clip ? 'loading' : 'failed';
     thumbState = thumb ? 'loading' : 'failed';
   });
 
-  const showFull = $derived(!!full && fullState === 'ready');
+  const showFull = $derived(!!(full || clip) && fullState === 'ready');
   const showThumb = $derived(!showFull && !!thumb && thumbState === 'ready');
   const waiting = $derived(
     !showFull && !showThumb && (fullState === 'loading' || thumbState === 'loading'),
@@ -71,7 +77,7 @@
 
 <svelte:window {onkeydown} />
 
-{#if file && (full || thumb)}
+{#if file && (full || thumb || clip)}
   <div
     bind:this={box}
     class="lightbox"
@@ -101,6 +107,7 @@
           onclick={() => openUrl((file.url ?? file.thumbnailUrl) as string)}
         />
       {/if}
+      <FullscreenButton />
       <IconButton
         icon="close"
         label={t('common.close')}
@@ -115,27 +122,44 @@
         </button>
       {/if}
       {#key file.index}
-        {#if thumb && !showFull}
-          <img
-            src={thumb}
-            alt={file.name}
-            class:hidden={!showThumb}
-            onload={() => (thumbState = 'ready')}
-            onerror={() => (thumbState = 'failed')}
-          />
-        {/if}
-        {#if full}
-          <img
-            src={full}
-            alt={file.name}
+        {#if clip}
+          <!-- svelte-ignore a11y_media_has_caption -->
+          <video
+            src={clip}
+            controls
+            autoplay
+            playsinline
             class:gone={!showFull}
-            onload={() => (fullState = 'ready')}
+            onloadeddata={() => (fullState = 'ready')}
             onerror={() => (fullState = 'failed')}
-          />
+          ></video>
+        {:else}
+          {#if full && !showFull}
+            <!-- The full image loads out of sight, then replaces the preview. -->
+            <img
+              class="gone"
+              src={full}
+              alt=""
+              onload={() => (fullState = 'ready')}
+              onerror={() => (fullState = 'failed')}
+            />
+          {/if}
+          {#if showFull && full}
+            <ZoomImage src={full} alt={file.name} onerror={() => (fullState = 'failed')} />
+          {:else if thumb && thumbState !== 'failed'}
+            <ZoomImage
+              src={thumb}
+              alt={file.name}
+              onload={() => (thumbState = 'ready')}
+              onerror={() => (thumbState = 'failed')}
+            />
+          {/if}
         {/if}
       {/key}
       {#if waiting}<span class="state"><Spinner /></span>{/if}
-      {#if failed}<span class="state faint">{t('lightbox.failed')}</span>{/if}
+      {#if failed}
+        <span class="state faint">{clip ? t('lightbox.videoFailed') : t('lightbox.failed')}</span>
+      {/if}
       {#if upgrading}
         <span class="note" transition:fade={{ duration: 140 }}>
           <Spinner size={12} />
@@ -209,6 +233,9 @@
   }
   .stage {
     display: grid;
+    /* One cell as big as the space left, so big images and videos fit
+       inside it instead of being cut off. */
+    grid-template: minmax(0, 1fr) / minmax(0, 1fr);
     place-items: center;
     min-height: 0;
     padding: 0 64px;
@@ -217,18 +244,15 @@
   .stage > * {
     pointer-events: auto;
   }
-  img {
+  video {
     max-width: 100%;
     max-height: 100%;
-    object-fit: contain;
     border-radius: 6px;
+    background: #000;
     box-shadow: var(--shadow-lg);
   }
-  img.hidden {
-    visibility: hidden;
-  }
   /* Loads out of sight until it can replace the preview. */
-  img.gone {
+  .gone {
     position: absolute;
     width: 1px;
     height: 1px;
@@ -243,7 +267,8 @@
     display: inline-flex;
     align-items: center;
     gap: 8px;
-    bottom: 12px;
+    /* Above the picture, clear of the zoom bar at the bottom. */
+    top: 10px;
     padding: 4px 12px;
     border-radius: 99px;
     background: rgb(0 0 0 / 0.6);

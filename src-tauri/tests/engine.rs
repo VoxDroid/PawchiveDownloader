@@ -1302,6 +1302,42 @@ async fn a_file_already_in_the_folder_is_skipped_not_copied() {
     assert_eq!(files_under(&env.out()).len(), 1);
 }
 
+/// What the Library shows comes straight from what was downloaded.
+#[tokio::test(flavor = "multi_thread")]
+async fn downloaded_images_and_videos_appear_in_the_library() {
+    use pawchive_downloader_lib::gallery::{self, MediaKind};
+    let env = env().await;
+    let pic = Fixture::new("page.png", 400, 130);
+    let clip = Fixture::new("clip.mp4", 900, 131);
+    let doc = Fixture::new("notes.pdf", 300, 132);
+    env.mount_creator(vec![post("631", "Ink Set", &[&pic, &clip, &doc])])
+        .await;
+    for f in [&pic, &clip, &doc] {
+        env.serve(f).await;
+    }
+    let id = env.core.engine.create(refs_request("631", no_text()));
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    let files = env.core.store.list_known_files_with_time();
+    let history = env.core.store.list_history();
+    let g = gallery::build(&files, &history, |p| {
+        std::fs::metadata(p).ok().map(|m| m.len())
+    });
+    assert_eq!((g.images, g.videos), (1, 1), "the PDF is not media");
+    assert_eq!(g.posts.len(), 1);
+    assert_eq!(g.posts[0].title, "Ink Set");
+    assert_eq!(g.posts[0].creator_name, "Aster Vale");
+    let video = g.posts[0]
+        .files
+        .iter()
+        .find(|f| f.kind == MediaKind::Video)
+        .unwrap();
+    // The protocol finds the file by its hash and hands out pieces of it.
+    let path = env.core.store.path_of(&video.hash).unwrap();
+    let part = gallery::serve_file(std::path::Path::new(&path), Some("bytes=0-99"));
+    assert_eq!(part.status, 206);
+    assert_eq!(part.body, clip.bytes[..100]);
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn watchlist_downloads_can_filter_posts() {
     let env = env().await;

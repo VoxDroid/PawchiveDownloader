@@ -49,7 +49,7 @@ It is the successor of [KemonoDownloader](#coming-from-kemonodownloader), and it
 | **Every file verified** | SHA-256 checked against the site's own hash, resumed after any interruption                  |
 | **Never stuck**         | dead media servers detected in seconds, thumbnails as a fallback, failed files retried later |
 | **9 languages**         | English, Japanese, Korean, Chinese, Spanish, Portuguese, Russian, German, French             |
-| **About 160 tests**     | Rust engine, interface and end-to-end, run on Windows, macOS and Linux for every change      |
+| **About 180 tests**     | Rust engine, interface and end-to-end, run on Windows, macOS and Linux for every change      |
 
 How it compares with every other Pawchive, Kemono and Coomer downloader: [docs/COMPARISON.md](docs/COMPARISON.md).
 
@@ -111,7 +111,7 @@ Pair the two once: in the app, open **Settings > Browser extension**, turn it on
 | Three sites    | Links from pawchive.pw, kemono.cr and coomer.st (and their old domains) all work the same way: posts, creators, searches and recent posts.                                            |
 | Creator search | Type a name instead of a link to search every creator on a site (about 100,000 on Pawchive alone), by service, popularity, update date or name. Lists are fetched at most once a day. |
 | Browse         | Posts show every file with a thumbnail; creators show their posts with banner, avatar and their other accounts; recent posts can be searched per site.                                |
-| Image viewer   | Look at a post's images full size with the arrow keys and pick them while you look.                                                                                                   |
+| Image viewer   | Look at a post's images full size with the arrow keys and pick them while you look; zoom (wheel, + and -, actual size), full screen, and play its videos from the site.               |
 | Read markers   | Posts you opened before are marked, so you can see where you left off.                                                                                                                |
 | Clipboard      | Optionally, links you copy anywhere are noticed and offered for opening.                                                                                                              |
 | Browser bridge | The [browser extension](#the-browser-extension) hands downloads to the app with one click, after pairing with a six-digit code.                                                       |
@@ -146,6 +146,7 @@ Pair the two once: in the app, open **Settings > Browser extension**, turn it on
 | Disk space guard    | New downloads wait instead of failing when the drive is nearly full, and go on by themselves.                                                                           |
 | When done           | Quit, sleep or shut down after the queue finishes, with a cancellable countdown.                                                                                        |
 | Crash-safe          | The queue is saved continuously to a local SQLite library and picks up where it stopped.                                                                                |
+| Library             | An offline gallery of everything downloaded, by creator and post: search, images or videos, slideshow, zoom, full screen, video playback with seeking. Nothing online.  |
 | History             | Every finished download with its files, size, duration and errors. Show it in the folder, download it again, export CSV or JSON.                                        |
 | Watchlist           | Follow creators on any site. They are checked on a schedule; new posts raise a badge and a notification and can be downloaded automatically, each with its own options. |
 | Favorites           | Bookmark posts and creators with notes, download them again in one click, import and export the list.                                                                   |
@@ -166,7 +167,7 @@ Pair the two once: in the app, open **Settings > Browser extension**, turn it on
 | Compact mode    | The sidebar folds to icons (Ctrl+B); tooltips float above everything and never get cut off.                                |
 | Settings search | Find any setting by typing (Ctrl+F).                                                                                       |
 | Privacy blur    | Thumbnails, avatars and banners stay blurred until pointed at, for sharing the screen or working in public.                |
-| Typography      | JetBrains Mono Nerd Font throughout; every icon comes from the font itself.                                                |
+| Typography      | JetBrains Mono Nerd Font throughout; every icon is drawn from the font's own outlines, centered on its shape.              |
 | Keyboard        | Ctrl+L link bar, Ctrl+Shift+B batch, Ctrl+B sidebar, Ctrl+1 to Ctrl+9 pages, Ctrl+, settings, Ctrl+F settings search.      |
 | Network         | System proxy, no proxy, a custom HTTP, HTTPS or SOCKS5 proxy, or Tor; a total speed limit.                                 |
 

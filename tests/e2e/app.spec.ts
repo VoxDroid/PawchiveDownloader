@@ -185,6 +185,29 @@ test('Back returns to the creator as it was, and Browse keeps its place', async 
   ).toBeVisible();
 });
 
+test('the library shows downloads by creator and opens them in its viewer', async ({ page }) => {
+  await page.getByRole('navigation').getByRole('link', { name: 'Library' }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Library' })).toBeVisible();
+  await expect(page.getByText('34 images')).toBeVisible();
+  const creators = page.getByRole('complementary', { name: 'Creators' });
+  await creators.getByRole('button', { name: /Moss & Ember/ }).click();
+  await expect(page.getByRole('heading', { level: 2, name: 'Moss & Ember' })).toBeVisible();
+  await page.getByRole('radio', { name: 'Videos', exact: true }).click();
+  await expect(page.locator('.tile')).toHaveCount(1);
+  await page.getByRole('radio', { name: 'Images', exact: true }).click();
+  await page.locator('.tile').first().click();
+  const viewer = page.getByRole('dialog');
+  await expect(viewer.getByText('1 / 7')).toBeVisible();
+  await page.keyboard.press('ArrowRight');
+  await expect(viewer.getByText('2 / 7')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(viewer).toBeHidden();
+  // Search narrows the creators and posts.
+  await creators.getByRole('button', { name: /All creators/ }).click();
+  await page.getByRole('textbox', { name: 'Search creators and posts' }).fill('night market');
+  await expect(page.getByRole('heading', { level: 3 })).toHaveText(['Night Market Concept Set']);
+});
+
 test('images open in the viewer and can be selected there', async ({ page }) => {
   await openLink(page, `${CREATOR}/post/175580025`);
   await page.getByRole('button', { name: 'View' }).first().click();
@@ -195,6 +218,14 @@ test('images open in the viewer and can be selected there', async ({ page }) => 
   await expect(viewer.getByRole('button', { name: 'Select', exact: true })).toBeVisible();
   await page.keyboard.press('Space');
   await expect(viewer.getByRole('button', { name: 'Selected' })).toBeVisible();
+  // Zoom: the keyboard and the bar, back to fitting the window.
+  const zoom = viewer.getByRole('toolbar', { name: 'Zoom' });
+  await expect(zoom.getByText('100%')).toBeVisible();
+  await page.keyboard.press('+');
+  await expect(zoom.getByText('140%')).toBeVisible();
+  await zoom.getByRole('button', { name: 'Fit', exact: true }).click();
+  await expect(zoom.getByText('100%')).toBeVisible();
+  await expect(viewer.getByRole('button', { name: 'Full screen (F)' })).toBeVisible();
   await page.keyboard.press('Escape');
   await expect(viewer).toBeHidden();
 });

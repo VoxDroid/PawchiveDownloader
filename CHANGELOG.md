@@ -8,6 +8,27 @@ All notable changes to Pawchive Downloader. The format follows
 
 ### Added
 
+- **Library: an offline gallery of your downloads**: a new page shows the
+  images and videos the app downloaded, by creator and post, straight from
+  your disk with no site and no network. Search creators and posts, show
+  only images or videos, sort, and pick the tile size; video tiles play muted
+  when you point at them. Thumbnails are made once (480 px, cached in the
+  app's data folder). Files deleted or moved since are left out and counted.
+  The window reads the files through a private `pdl-media` protocol that only
+  serves files the library recorded, by content hash and never by path, and
+  only images and videos, with byte ranges so long videos start at once and
+  seek instantly.
+- **Library viewer**: arrow keys, a slideshow (Space), a strip of the post's
+  files, videos with seeking, and buttons for Open in Browse, Show in folder
+  and Open with the default app.
+- **Video previews in Browse**: video tiles get a play button and the viewer
+  plays them straight from the site's media server; when the server is down
+  it says so instead of waiting forever.
+- **Zoom and full screen in both viewers**: pictures fit the window and can
+  be zoomed with the mouse wheel (toward the pointer), + and -, or the bar
+  at the bottom (Fit, actual size 1:1), moved by dragging, and switched with
+  a double click. Full screen with the button or F; closing the viewer
+  leaves full screen.
 - **Back and forward in Browse**: a creator, then a post, then Back returns
   to the creator list exactly as it was, at the same spot, without loading it
   again. A trail under the link bar shows where you came from (creator names
@@ -24,6 +45,17 @@ All notable changes to Pawchive Downloader. The format follows
 
 ### Changed
 
+- **Icons sit in the middle of their badges**: the icons were drawn as Nerd
+  Font text, whose glyphs are wider than their monospace cell, placed
+  differently each and snapped to pixel rows, so the icons in empty pages,
+  help topics, settings sections and other badges looked unevenly placed
+  (up to 2 px across and 1.5 px down). They are now drawn as SVG from the
+  same font's outlines, each centered on its own shape, with the same look
+  and size; every badge is centered to within half a pixel
+  (`scripts/icon-paths.py`).
+- **Creator pages show the whole banner**: the name and the service, id and
+  date line moved below the banner instead of covering it; only the avatar
+  overlaps its edge, and the banner is a little taller.
 - **Browse keeps its place**: going to Downloads, Settings or any other page
   and back to Browse shows the same post or creator, scrolled where you left
   it, instead of starting over.
@@ -45,6 +77,8 @@ All notable changes to Pawchive Downloader. The format follows
 
 ### Fixed
 
+- Large images and videos in the viewer were cut off instead of fitting the
+  window.
 - **Previews did not show**: the window's content security policy only let in
   images from `img.pawchive.pw`, so full-size images in the viewer
   (`n1.pawchive.pw` and the other media servers) and every Kemono and Coomer

@@ -272,6 +272,36 @@ impl Store {
         .unwrap_or_default()
     }
 
+    /// Every remembered file, with when it was saved (epoch ms).
+    pub fn list_known_files_with_time(&self) -> Vec<(KnownFile, i64)> {
+        let conn = self.conn.lock();
+        let Ok(mut stmt) = conn.prepare("SELECT hash, post, path, at FROM files") else {
+            return vec![];
+        };
+        stmt.query_map([], |r| {
+            Ok((
+                KnownFile {
+                    hash: r.get(0)?,
+                    post: r.get(1)?,
+                    path: r.get(2)?,
+                },
+                r.get(3)?,
+            ))
+        })
+        .map(|rows| rows.filter_map(|r| r.ok()).collect())
+        .unwrap_or_default()
+    }
+
+    /// Where a remembered file was saved.
+    pub fn path_of(&self, hash: &str) -> Option<String> {
+        self.conn
+            .lock()
+            .query_row("SELECT path FROM files WHERE hash = ?1", [hash], |r| {
+                r.get(0)
+            })
+            .ok()
+    }
+
     /// Forgets some files and the "downloaded" mark of their posts.
     pub fn forget_files(&self, hashes: &[String], posts: &[String]) -> Result<()> {
         let mut conn = self.conn.lock();

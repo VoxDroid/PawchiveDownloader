@@ -596,6 +596,91 @@ pub fn spawn_clipboard_watch(app: AppHandle, core: Arc<Core>) {
     });
 }
 
+// ------------------------------------------------------------ library media
+
+/// Thumbnails being made at once: decoding big images takes memory.
+static THUMBNAILING: tokio::sync::Semaphore = tokio::sync::Semaphore::const_new(3);
+
+/// Answers the `pdl-media` protocol: `/<hash>` is a downloaded image or
+/// video (with byte ranges), `/<hash>?thumb=1` its thumbnail.
+pub async fn media_response(
+    app: &AppHandle,
+    request: &tauri::http::Request<Vec<u8>>,
+) -> tauri::http::Response<Vec<u8>> {
+    let served = match app.try_state::<Arc<Core>>() {
+        Some(core) => serve_media(Arc::clone(core.inner()), request).await,
+        None => crate::gallery::Served {
+            status: 503,
+            headers: vec![],
+            body: vec![],
+        },
+    };
+    let mut response = tauri::http::Response::builder().status(served.status);
+    for (name, value) in served.headers {
+        response = response.header(name, value);
+    }
+    response
+        .body(served.body)
+        .unwrap_or_else(|_| tauri::http::Response::new(Vec::new()))
+}
+
+async fn serve_media(
+    core: Arc<Core>,
+    request: &tauri::http::Request<Vec<u8>>,
+) -> crate::gallery::Served {
+    use crate::gallery;
+    let missing = || gallery::Served {
+        status: 404,
+        headers: vec![],
+        body: vec![],
+    };
+    let hash = request
+        .uri()
+        .path()
+        .trim_start_matches('/')
+        .to_ascii_lowercase();
+    if !gallery::is_hash(&hash) {
+        return missing();
+    }
+    let Some(path) = core.store.path_of(&hash).map(std::path::PathBuf::from) else {
+        return missing();
+    };
+    let thumb = request
+        .uri()
+        .query()
+        .is_some_and(|q| q.split('&').any(|p| p == "thumb=1"));
+    if thumb && gallery::can_thumbnail(&path) {
+        let dest = gallery::thumb_path(&core.data_dir.join("thumbs"), &hash);
+        if !dest.exists() {
+            let _turn = THUMBNAILING.acquire().await;
+            if !dest.exists() {
+                let (src, out) = (path.clone(), dest.clone());
+                let made = tauri::async_runtime::spawn_blocking(move || {
+                    gallery::make_thumbnail(&src, &out)
+                })
+                .await;
+                if let Ok(Err(e)) = made {
+                    core.log
+                        .debug(format!("No thumbnail for {}: {e}", path.display()));
+                }
+            }
+        }
+        if dest.exists() {
+            return tauri::async_runtime::spawn_blocking(move || gallery::serve_thumb(&dest))
+                .await
+                .unwrap_or_else(|_| missing());
+        }
+    }
+    let range = request
+        .headers()
+        .get("range")
+        .and_then(|v| v.to_str().ok())
+        .map(str::to_string);
+    tauri::async_runtime::spawn_blocking(move || gallery::serve_file(&path, range.as_deref()))
+        .await
+        .unwrap_or_else(|_| missing())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

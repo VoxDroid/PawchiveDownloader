@@ -4,6 +4,7 @@ pub mod app;
 pub mod bridge;
 pub mod commands;
 pub mod core;
+pub mod gallery;
 pub mod hosts;
 pub mod jobs;
 pub mod library;
@@ -67,6 +68,13 @@ pub fn run() {
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             Some(vec!["--minimized"]),
         ))
+        // The Library's images and videos (see gallery.rs).
+        .register_asynchronous_uri_scheme_protocol("pdl-media", |ctx, request, responder| {
+            let app = ctx.app_handle().clone();
+            tauri::async_runtime::spawn(async move {
+                responder.respond(app::media_response(&app, &request).await);
+            });
+        })
         .setup(move |app| {
             let handle = app.handle().clone();
             let (data_dir, log_dir) = match &portable {
@@ -178,6 +186,8 @@ pub fn run() {
             commands::set_watch_options,
             commands::export_backup,
             commands::bridge_status,
+            commands::library_media,
+            commands::open_media,
             commands::check_media,
             commands::bridge_pair,
             commands::bridge_cancel_pairing,

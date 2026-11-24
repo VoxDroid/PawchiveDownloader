@@ -3,6 +3,7 @@ import type { IconName } from '../icons.generated';
 export type Route =
   | 'browse'
   | 'downloads'
+  | 'library'
   | 'history'
   | 'watchlist'
   | 'favorites'
@@ -15,6 +16,7 @@ export type Route =
 export const ROUTES: Array<{ id: Route; icon: IconName; group: 'main' | 'library' | 'app' }> = [
   { id: 'browse', icon: 'compass', group: 'main' },
   { id: 'downloads', icon: 'queue', group: 'main' },
+  { id: 'library', icon: 'thumbnails', group: 'library' },
   { id: 'history', icon: 'history', group: 'library' },
   { id: 'watchlist', icon: 'eye', group: 'library' },
   { id: 'favorites', icon: 'starOutline', group: 'library' },
