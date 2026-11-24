@@ -95,7 +95,7 @@
   const posts = $derived.by(() => {
     if (!gallery) return [];
     const list = gallery.posts
-      .filter((p) => creator === 'all' || `${p.service}:${p.creatorId}` === creator)
+      .filter((p) => creator === 'all' || p.creatorKey === creator)
       .filter(matches)
       .map((p) => (kind === 'all' ? p : { ...p, files: p.files.filter((f) => f.kind === kind) }))
       .filter((p) => p.files.length > 0);
@@ -251,18 +251,25 @@
           <div>
             <h2>{current.name}</h2>
             <span class="faint">
-              {siteName(current.site)} · {t('library.posts', { count: current.posts })} ·
-              {fmt.bytes(current.bytes)}
+              {[
+                siteName(current.site),
+                t('library.posts', { count: current.posts }),
+                fmt.bytes(current.bytes),
+              ]
+                .filter(Boolean)
+                .join(' · ')}
             </span>
           </div>
-          <Button
-            size="sm"
-            variant="secondary"
-            icon="compass"
-            onclick={() => openLink(pageUrls.creator(current.service, current.creatorId))}
-          >
-            {t('common.openInBrowse')}
-          </Button>
+          {#if current.creatorId}
+            <Button
+              size="sm"
+              variant="secondary"
+              icon="compass"
+              onclick={() => openLink(pageUrls.creator(current.service, current.creatorId))}
+            >
+              {t('common.openInBrowse')}
+            </Button>
+          {/if}
         </header>
       {/if}
 
@@ -286,11 +293,13 @@
                   .join(' · ')}
               </span>
             </div>
-            <IconButton
-              icon="compass"
-              label={t('common.openInBrowse')}
-              onclick={() => openLink(pageUrls.post(post.service, post.creatorId, post.postId))}
-            />
+            {#if post.creatorId && post.postId}
+              <IconButton
+                icon="compass"
+                label={t('common.openInBrowse')}
+                onclick={() => openLink(pageUrls.post(post.service, post.creatorId, post.postId))}
+              />
+            {/if}
             <IconButton
               icon="folderOpen"
               label={t('library.showFolder')}
@@ -320,17 +329,21 @@
   <button class="creator" class:on={creator === c.key} onclick={() => (creator = c.key)}>
     <span class="avatar" style:--h={hue(c.name)}>
       <span>{initials(c.name)}</span>
-      <img
-        src={pageUrls.icon(c.service, c.creatorId)}
-        alt=""
-        loading="lazy"
-        onerror={(e) => (e.currentTarget as HTMLImageElement).remove()}
-      />
+      {#if c.creatorId}
+        <img
+          src={pageUrls.icon(c.service, c.creatorId)}
+          alt=""
+          loading="lazy"
+          onerror={(e) => (e.currentTarget as HTMLImageElement).remove()}
+        />
+      {/if}
     </span>
     <span class="who">
       <strong class="truncate">{c.name}</strong>
       <span class="faint truncate">
-        {siteName(c.site)} · {t('library.files', { count: c.images + c.videos })}
+        {[siteName(c.site), t('library.files', { count: c.images + c.videos })]
+          .filter(Boolean)
+          .join(' · ')}
       </span>
     </span>
   </button>

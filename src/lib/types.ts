@@ -338,6 +338,8 @@ export interface MediaPost {
   postId: string;
   title: string;
   creatorName: string;
+  /** `service:creator`, or a stand-in for creators known only by a folder. */
+  creatorKey: string;
   folder: string;
   at: number;
   files: MediaFile[];

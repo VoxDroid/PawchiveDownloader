@@ -33,6 +33,9 @@ pub struct Core {
     /// The local server a browser extension can talk to.
     pub bridge: Arc<crate::bridge::Bridge>,
     pub data_dir: PathBuf,
+    /// Files the last Library scan found in the download folders, by the id
+    /// the window asks for them with.
+    pub media_index: parking_lot::RwLock<std::collections::HashMap<String, PathBuf>>,
     pub cancel: CancellationToken,
     fast_timing: bool,
     pub awake: KeepAwake,
@@ -205,6 +208,7 @@ impl Core {
                 .map(|s| Arc::new(Directory::for_site(options.data_dir.clone(), *s)))
                 .collect(),
             data_dir: options.data_dir,
+            media_index: Default::default(),
             cancel: CancellationToken::new(),
             fast_timing: options.fast_timing,
             awake: KeepAwake::new(),
@@ -411,6 +415,15 @@ impl Core {
             }
         }
         self.awake.set(false);
+    }
+
+    /// Where a Library file is: recorded files by content hash, files found
+    /// in the download folders by the id the last scan gave them.
+    pub fn media_path(&self, id: &str) -> Option<PathBuf> {
+        self.store
+            .path_of(id)
+            .map(PathBuf::from)
+            .or_else(|| self.media_index.read().get(id).cloned())
     }
 
     pub fn directory(&self, site: crate::pawchive::urls::Site) -> &Arc<Directory> {

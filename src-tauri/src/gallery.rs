@@ -1,19 +1,25 @@
-//! The offline library: the images and videos the app downloaded, to look
-//! through without the site and without the network.
+//! The offline library: the images and videos in the download folders, to
+//! look through without the site and without the network.
+//!
+//! It shows what the library recorded and also what is simply in the
+//! download folders (saved by another install, before the history was
+//! cleared, by the browser extension...), placed by the folder names the app
+//! writes: `Site/Creator (service)/date Title [post id]/`.
 //!
 //! The window gets the files through the `pdl-media` protocol, which serves
-//! only files the library recorded, picked by content hash and never by
-//! path, and only images and videos: a page cannot use it to read anything
-//! else on the computer.
+//! only files the library recorded (by content hash) or that the last scan
+//! of the download folders found (by an id made from path, size and time),
+//! never by a path, and only images and videos: a page cannot use it to read
+//! anything else on the computer.
 
-use std::collections::{BTreeMap, HashMap};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::fs::File;
 use std::io::{BufWriter, Read, Seek, SeekFrom};
 use std::path::{Path, PathBuf};
 
 use serde::Serialize;
 
-use crate::pawchive::urls::split_service;
+use crate::pawchive::urls::{qualify, split_service, Site};
 use crate::store::records::HistoryEntry;
 use crate::store::KnownFile;
 
@@ -69,6 +75,8 @@ pub struct MediaPost {
     pub post_id: String,
     pub title: String,
     pub creator_name: String,
+    /// `service:creator`, or a stand-in for creators known only by a folder.
+    pub creator_key: String,
     /// The folder holding the post's files.
     pub folder: String,
     /// When its newest file was saved (epoch ms).
@@ -104,6 +112,215 @@ pub struct Gallery {
     pub bytes: u64,
     /// Recorded images and videos that are no longer on disk.
     pub missing: u32,
+    /// Files found in the folders: their ids and where they are, for serving.
+    #[serde(skip)]
+    pub found: Vec<(String, PathBuf)>,
+}
+
+/// An image or video found in a download folder.
+#[derive(Debug, Clone, PartialEq)]
+pub struct Found {
+    pub path: PathBuf,
+    pub size: u64,
+    /// Last change, epoch ms.
+    pub modified: i64,
+}
+
+impl Found {
+    /// Stands for the file in addresses: from its path, size and time, so
+    /// a changed file gets a new one (and a new thumbnail).
+    pub fn id(&self) -> String {
+        use sha2::{Digest, Sha256};
+        let key = format!(
+            "{}|{}|{}",
+            self.path.to_string_lossy(),
+            self.size,
+            self.modified
+        );
+        hex::encode(Sha256::digest(key.as_bytes()))
+    }
+}
+
+/// How deep and how much a scan looks, so a download folder set to a whole
+/// drive cannot make it run for ever.
+const SCAN_DEPTH: usize = 12;
+const SCAN_ENTRIES: usize = 500_000;
+
+/// The images and videos under these folders. Hidden folders (the staging
+/// area) and links are skipped. Blocking.
+pub fn scan(roots: &[PathBuf]) -> Vec<Found> {
+    let mut out = Vec::new();
+    let mut visited = HashSet::new();
+    let mut budget = SCAN_ENTRIES;
+    for root in roots {
+        let mut stack = vec![(root.clone(), 0usize)];
+        while let Some((dir, depth)) = stack.pop() {
+            if !visited.insert(fold_path(&dir)) {
+                continue;
+            }
+            let Ok(entries) = std::fs::read_dir(&dir) else {
+                continue;
+            };
+            for entry in entries.flatten() {
+                if budget == 0 {
+                    return out;
+                }
+                budget -= 1;
+                if entry.file_name().to_string_lossy().starts_with('.') {
+                    continue;
+                }
+                let Ok(kind) = entry.file_type() else {
+                    continue;
+                };
+                let path = entry.path();
+                if kind.is_dir() {
+                    if depth < SCAN_DEPTH {
+                        stack.push((path, depth + 1));
+                    }
+                } else if kind.is_file() && kind_of(&path).is_some() {
+                    let Ok(meta) = entry.metadata() else {
+                        continue;
+                    };
+                    let modified = meta
+                        .modified()
+                        .ok()
+                        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+                        .map_or(0, |d| d.as_millis() as i64);
+                    out.push(Found {
+                        path,
+                        size: meta.len(),
+                        modified,
+                    });
+                }
+            }
+        }
+    }
+    out
+}
+
+/// A path as a comparable string (one kind of slash, any case).
+pub fn fold_path(path: &Path) -> String {
+    path.to_string_lossy()
+        .replace('\\', "/")
+        .trim_end_matches('/')
+        .to_lowercase()
+}
+
+/// The folders to scan: these, without those inside another, that exist.
+pub fn roots(candidates: Vec<PathBuf>) -> Vec<PathBuf> {
+    let mut list: Vec<(String, PathBuf)> = candidates
+        .into_iter()
+        .filter(|p| p.is_absolute() && p.is_dir())
+        .map(|p| (fold_path(&p), p))
+        .collect();
+    list.sort_by(|a, b| a.0.len().cmp(&b.0.len()).then_with(|| a.0.cmp(&b.0)));
+    let mut kept: Vec<(String, PathBuf)> = Vec::new();
+    for (key, path) in list {
+        let inside = kept
+            .iter()
+            .any(|(k, _)| key == *k || key.starts_with(&format!("{k}/")));
+        if !inside {
+            kept.push((key, path));
+        }
+    }
+    kept.into_iter().map(|(_, p)| p).collect()
+}
+
+/// "... [175803858]" -> "175803858".
+fn post_id_of(name: &str) -> Option<&str> {
+    let inner = name.trim().strip_suffix(']')?;
+    let id = &inner[inner.rfind('[')? + 1..];
+    (!id.is_empty()
+        && id.len() <= 128
+        && id
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_' | '.')))
+    .then_some(id)
+}
+
+/// "Aster Vale (patreon)" -> ("Aster Vale", "patreon").
+fn creator_and_service(name: &str) -> Option<(String, String)> {
+    let inner = name.trim().strip_suffix(')')?;
+    let open = inner.rfind(" (")?;
+    let service = &inner[open + 2..];
+    let ok = (2..=32).contains(&service.len())
+        && service
+            .chars()
+            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '-' | '_'));
+    let creator = inner[..open].trim();
+    (ok && !creator.is_empty()).then(|| (creator.to_string(), service.to_ascii_lowercase()))
+}
+
+/// Where a found file belongs, read from its folders.
+#[derive(Debug, PartialEq)]
+struct Place {
+    /// The qualified service (`fanbox`, `fanbox@kemono`), when known.
+    service: Option<String>,
+    site: Option<Site>,
+    creator: Option<String>,
+    post_id: Option<String>,
+    title: String,
+    folder: PathBuf,
+    creator_folder: Option<PathBuf>,
+}
+
+fn name_of(path: &Path) -> String {
+    path.file_name()
+        .map(|n| n.to_string_lossy().into_owned())
+        .unwrap_or_default()
+}
+
+fn place_of(file: &Path) -> Place {
+    // The post folder is the nearest one named like a post (files of
+    // unpacked archives and outside links sit a level or two below it).
+    let mut post_folder = None;
+    let mut dir = file.parent();
+    for _ in 0..4 {
+        let Some(d) = dir else { break };
+        if post_id_of(&name_of(d)).is_some() {
+            post_folder = Some(d);
+            break;
+        }
+        dir = d.parent();
+    }
+    match post_folder {
+        Some(folder) => {
+            let name = name_of(folder);
+            let post_id = post_id_of(&name).map(str::to_string);
+            let creator_dir = folder.parent();
+            let creator = creator_dir.and_then(|d| creator_and_service(&name_of(d)));
+            let site = creator_dir
+                .and_then(Path::parent)
+                .and_then(|d| Site::parse(&name_of(d)));
+            let service = creator
+                .as_ref()
+                .map(|(_, s)| qualify(site.unwrap_or_default(), s));
+            let title = title_from_folder(&name, post_id.as_deref().unwrap_or(""));
+            Place {
+                service,
+                site: creator.as_ref().map(|_| site.unwrap_or_default()),
+                creator: creator.map(|(c, _)| c),
+                post_id,
+                title: if title.is_empty() { name } else { title },
+                folder: folder.to_path_buf(),
+                creator_folder: creator_dir.map(Path::to_path_buf),
+            }
+        }
+        None => {
+            // Not laid out by the app: one group per folder.
+            let folder = file.parent().unwrap_or(file).to_path_buf();
+            let parent = folder.parent().map(Path::to_path_buf);
+            Place {
+                service: None,
+                site: None,
+                creator: parent.as_deref().map(name_of).filter(|n| !n.is_empty()),
+                post_id: None,
+                title: name_of(&folder),
+                folder,
+                creator_folder: parent,
+            }
+        }
+    }
 }
 
 /// "2026-11-23 Bull (Bull) [175803858]" -> "Bull (Bull)", the default
@@ -141,9 +358,16 @@ fn creator_from_folder(folder: &str, service: &str) -> Option<String> {
 /// Groups the recorded files into posts and creators, with the names the
 /// history knows (or the folder names when it does not). `size_of` answers
 /// None for a file that is no longer there.
+/// Groups the recorded files and the ones found in the folders into posts
+/// and creators, with the names the history and the watchlist know (or the
+/// folder names when they do not). `size_of` answers None for a recorded
+/// file that is no longer there. `known` lists creators as (qualified
+/// service, id, name), to match folders to creators.
 pub fn build(
     files: &[(KnownFile, i64)],
     history: &[HistoryEntry],
+    known: &[(String, String, String)],
+    found: &[Found],
     size_of: impl Fn(&Path) -> Option<u64>,
 ) -> Gallery {
     let mut creator_names: HashMap<String, String> = HashMap::new();
@@ -201,6 +425,7 @@ pub fn build(
                 .unwrap_or_else(|| creator_id.to_string());
             MediaPost {
                 key: f.post.clone(),
+                creator_key: format!("{service}:{creator_id}"),
                 service: service.to_string(),
                 site: site.id().to_string(),
                 creator_id: creator_id.to_string(),
@@ -237,14 +462,122 @@ pub fn build(
         gallery.bytes += size;
     }
 
+    // Files in the folders the library has no record of: placed by their
+    // folder names and joined to the recorded post or creator they belong to.
+    let recorded: HashSet<String> = files
+        .iter()
+        .map(|(f, _)| fold_path(Path::new(&f.path)))
+        .collect();
+    let fold = |s: &str| s.trim().to_lowercase();
+    let mut creator_ids: HashMap<(String, String), String> = HashMap::new();
+    for (service, id, name) in known {
+        creator_ids
+            .entry((service.clone(), fold(name)))
+            .or_insert_with(|| id.clone());
+    }
+    for h in history {
+        if let Some(c) = &h.creator {
+            creator_ids
+                .entry((c.service.clone(), fold(&c.name)))
+                .or_insert_with(|| c.id.clone());
+        }
+    }
+    for p in posts.values() {
+        creator_ids
+            .entry((p.service.clone(), fold(&p.creator_name)))
+            .or_insert_with(|| p.creator_id.clone());
+    }
+    let recorded_posts: HashMap<(String, String), String> = posts
+        .values()
+        .map(|p| ((p.service.clone(), p.post_id.clone()), p.key.clone()))
+        .collect();
+    for f in found {
+        if recorded.contains(&fold_path(&f.path)) {
+            continue;
+        }
+        let Some(kind) = kind_of(&f.path) else {
+            continue;
+        };
+        let place = place_of(&f.path);
+        let creator_name = place.creator.clone().unwrap_or_default();
+        let creator_id = match &place.service {
+            Some(service) => creator_ids
+                .get(&(service.clone(), fold(&creator_name)))
+                .cloned()
+                .unwrap_or_default(),
+            None => String::new(),
+        };
+        let folder_key = |p: &Path| format!("folder:{}", fold_path(p));
+        let key = match (&place.service, &place.post_id) {
+            (Some(service), Some(post_id)) => recorded_posts
+                .get(&(service.clone(), post_id.clone()))
+                .cloned()
+                .unwrap_or_else(|| {
+                    if creator_id.is_empty() {
+                        format!("folder:{service}:{}:{post_id}", fold(&creator_name))
+                    } else {
+                        format!("{service}:{creator_id}:{post_id}")
+                    }
+                }),
+            _ => folder_key(&place.folder),
+        };
+        let post = posts.entry(key.clone()).or_insert_with(|| {
+            let service = place.service.clone().unwrap_or_default();
+            let creator_key = if !creator_id.is_empty() {
+                format!("{service}:{creator_id}")
+            } else if !service.is_empty() {
+                format!("folder:{service}:{}", fold(&creator_name))
+            } else {
+                place
+                    .creator_folder
+                    .as_deref()
+                    .map(folder_key)
+                    .unwrap_or_else(|| folder_key(&place.folder))
+            };
+            MediaPost {
+                key: key.clone(),
+                creator_key,
+                site: place.site.map(|s| s.id().to_string()).unwrap_or_default(),
+                service,
+                creator_id: creator_id.clone(),
+                post_id: place.post_id.clone().unwrap_or_default(),
+                title: place.title.clone(),
+                creator_name: if creator_name.is_empty() {
+                    place.title.clone()
+                } else {
+                    creator_name.clone()
+                },
+                folder: place.folder.to_string_lossy().into_owned(),
+                at: 0,
+                files: vec![],
+            }
+        });
+        post.at = post.at.max(f.modified);
+        let id = f.id();
+        post.files.push(MediaFile {
+            hash: id.clone(),
+            name: name_of(&f.path),
+            kind,
+            size: f.size,
+            path: f.path.to_string_lossy().into_owned(),
+            at: f.modified,
+        });
+        gallery.found.push((id, f.path.clone()));
+        match kind {
+            MediaKind::Image => gallery.images += 1,
+            MediaKind::Video => gallery.videos += 1,
+        }
+        gallery.bytes += f.size;
+    }
+
     let mut creators: BTreeMap<String, MediaCreator> = BTreeMap::new();
     let mut posts: Vec<MediaPost> = posts.into_values().collect();
     for post in &mut posts {
         post.files.sort_by(|a, b| natural(&a.name, &b.name));
         let c = creators
-            .entry(format!("{}:{}", post.service, post.creator_id))
+            .entry(post.creator_key.clone())
             .or_insert_with(|| MediaCreator {
-                key: format!("{}:{}", post.service, post.creator_id),
+                key: post.creator_key.clone(),
                 service: post.service.clone(),
                 site: post.site.clone(),
                 creator_id: post.creator_id.clone(),
@@ -549,7 +882,9 @@ mod tests {
             creator_id: "7".into(),
             post_id: "1".into(),
         }];
-        let g = build(&files, &[h], |p| std::fs::metadata(p).ok().map(|m| m.len()));
+        let g = build(&files, &[h], &[], &[], |p| {
+            std::fs::metadata(p).ok().map(|m| m.len())
+        });
         assert_eq!((g.images, g.videos, g.bytes, g.missing), (3, 1, 16, 1));
         // Newest first; names from the history, else from the folders.
         assert_eq!(g.posts[0].title, "Set");
@@ -563,6 +898,62 @@ mod tests {
         assert_eq!(g.creators.len(), 2);
         assert_eq!(g.creators[1].images, 2);
         assert_eq!(g.creators[1].videos, 1);
+    }
+
+    #[test]
+    fn places_found_files_by_their_folders() {
+        let base = Path::new("/dl");
+        let p = place_of(&base.join("Kemono/Kemo (fanbox)/2026-10-02 Set [9]/x.jpg"));
+        assert_eq!(p.service.as_deref(), Some("fanbox@kemono"));
+        assert_eq!(p.site, Some(Site::Kemono));
+        assert_eq!(p.creator.as_deref(), Some("Kemo"));
+        assert_eq!(p.post_id.as_deref(), Some("9"));
+        assert_eq!(p.title, "Set");
+        // Unpacked archives and outside links sit below the post folder.
+        let p =
+            place_of(&base.join("Pawchive/Aster (patreon)/2026-11-01 Forest [1]/Links/pack/a.png"));
+        assert_eq!(
+            (p.post_id.as_deref(), p.service.as_deref()),
+            (Some("1"), Some("patreon"))
+        );
+        // The old layout had no site folder: Pawchive.
+        let p = place_of(&base.join("Aster (patreon)/2026-11-01 Forest [1]/a.png"));
+        assert_eq!(
+            (p.site, p.service.as_deref()),
+            (Some(Site::Pawchive), Some("patreon"))
+        );
+        // Anything else is one group per folder.
+        let p = place_of(&base.join("misc/wallpapers/a.png"));
+        assert_eq!(
+            (p.post_id, p.service, p.title.as_str()),
+            (None, None, "wallpapers")
+        );
+        assert_eq!(p.creator.as_deref(), Some("misc"));
+    }
+
+    #[test]
+    fn scans_folders_once_and_skips_hidden_ones() {
+        let dir = tempfile::tempdir().unwrap();
+        let post = dir.path().join("Pawchive/A (patreon)/2026-01-01 T [5]");
+        std::fs::create_dir_all(&post).unwrap();
+        std::fs::create_dir_all(dir.path().join(".pawchive-staging/job")).unwrap();
+        for f in ["a.png", "b.MP4", "c.txt"] {
+            std::fs::write(post.join(f), b"x").unwrap();
+        }
+        std::fs::write(dir.path().join(".pawchive-staging/job/d.png"), b"x").unwrap();
+        // The root and a folder inside it: scanned once.
+        let roots = roots(vec![
+            dir.path().to_path_buf(),
+            post.clone(),
+            PathBuf::from("/nope"),
+        ]);
+        assert_eq!(roots, vec![dir.path().to_path_buf()]);
+        let found = scan(&roots);
+        let mut names: Vec<String> = found.iter().map(|f| name_of(&f.path)).collect();
+        names.sort();
+        assert_eq!(names, ["a.png", "b.MP4"]);
+        assert!(is_hash(&found[0].id()));
+        assert_ne!(found[0].id(), found[1].id());
     }
 
     #[test]

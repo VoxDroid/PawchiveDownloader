@@ -698,7 +698,7 @@ async fn serve_media(
     if !gallery::is_hash(&hash) {
         return missing();
     }
-    let Some(path) = core.store.path_of(&hash).map(std::path::PathBuf::from) else {
+    let Some(path) = core.media_path(&hash) else {
         return missing();
     };
     let thumb = request

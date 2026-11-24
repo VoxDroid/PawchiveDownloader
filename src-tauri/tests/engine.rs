@@ -1303,7 +1303,7 @@ async fn a_file_already_in_the_folder_is_skipped_not_copied() {
     // It is the same file (same content), so the library knows it again and
     // the Library page shows it.
     let files = env.core.store.list_known_files_with_time();
-    let g = pawchive_downloader_lib::gallery::build(&files, &[], |p| {
+    let g = pawchive_downloader_lib::gallery::build(&files, &[], &[], &[], |p| {
         std::fs::metadata(p).ok().map(|m| m.len())
     });
     assert_eq!(g.images, 1, "a file already on disk shows in the Library");
@@ -1337,6 +1337,52 @@ async fn a_different_file_with_the_same_name_is_not_recorded() {
         .is_empty());
 }
 
+/// Files in the download folder that the library has no record of (another
+/// install, a cleared history...) still show in the Library, under the right
+/// post and creator, read from the folder names.
+#[tokio::test(flavor = "multi_thread")]
+async fn the_library_shows_files_found_in_the_download_folder() {
+    use pawchive_downloader_lib::gallery;
+    let env = env().await;
+    let a = Fixture::new("found.png", 300, 140);
+    let b = Fixture::new("also.png", 300, 141);
+    env.mount_creator(vec![post("641", "Found Set", &[&a, &b])])
+        .await;
+    env.serve(&a).await;
+    env.serve(&b).await;
+    let id = env.core.engine.create(refs_request("641", no_text()));
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    // Nothing recorded and no history: as on a fresh install.
+    env.core.store.forget_known().unwrap();
+    env.core.store.clear_history(true).unwrap();
+    let found = gallery::scan(&gallery::roots(vec![env.out()]));
+    assert_eq!(found.len(), 2);
+    let known = vec![(
+        "patreon".to_string(),
+        "7".to_string(),
+        "Aster Vale".to_string(),
+    )];
+    let g = gallery::build(&[], &[], &known, &found, |_| None);
+    assert_eq!((g.images, g.posts.len(), g.found.len()), (2, 1, 2));
+    let p = &g.posts[0];
+    assert_eq!(p.title, "Found Set");
+    assert_eq!(
+        (
+            p.service.as_str(),
+            p.creator_id.as_str(),
+            p.post_id.as_str()
+        ),
+        ("patreon", "7", "641")
+    );
+    assert_eq!(p.creator_name, "Aster Vale");
+    assert_eq!(p.key, "patreon:7:641");
+    // Without anything known about the creator it still groups, by folder.
+    let g = gallery::build(&[], &[], &[], &found, |_| None);
+    assert_eq!(g.posts[0].creator_name, "Aster Vale");
+    assert_eq!(g.posts[0].creator_id, "");
+    assert_eq!(g.creators.len(), 1);
+}
+
 /// What the Library shows comes straight from what was downloaded.
 #[tokio::test(flavor = "multi_thread")]
 async fn downloaded_images_and_videos_appear_in_the_library() {
@@ -1354,7 +1400,7 @@ async fn downloaded_images_and_videos_appear_in_the_library() {
     assert_eq!(env.wait(&id).await.status, JobStatus::Done);
     let files = env.core.store.list_known_files_with_time();
     let history = env.core.store.list_history();
-    let g = gallery::build(&files, &history, |p| {
+    let g = gallery::build(&files, &history, &[], &[], |p| {
         std::fs::metadata(p).ok().map(|m| m.len())
     });
     assert_eq!((g.images, g.videos), (1, 1), "the PDF is not media");
