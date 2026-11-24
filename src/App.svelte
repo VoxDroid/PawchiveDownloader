@@ -25,6 +25,7 @@
   import BatchDialog from './features/browse/BatchDialog.svelte';
   import DownloadsPage from './features/downloads/DownloadsPage.svelte';
   import HistoryPage from './features/history/HistoryPage.svelte';
+  import LibraryPage from './features/library/LibraryPage.svelte';
   import WatchlistPage from './features/watchlist/WatchlistPage.svelte';
   import FavoritesPage from './features/favorites/FavoritesPage.svelte';
   import LogsPage from './features/logs/LogsPage.svelte';
@@ -303,6 +304,8 @@
           <div class="page" in:fly={{ y: 8, duration: 240, easing: cubicOut }}>
             {#if router.route === 'downloads'}
               <DownloadsPage />
+            {:else if router.route === 'library'}
+              <LibraryPage />
             {:else if router.route === 'history'}
               <HistoryPage />
             {:else if router.route === 'watchlist'}

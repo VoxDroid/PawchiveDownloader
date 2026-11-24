@@ -627,26 +627,32 @@ mod tests {
     }
 
     /// Previews are shown straight from the sites, so the window's content
-    /// security policy has to let every site's images in, media servers too.
+    /// security policy has to let every site's images and videos in, media
+    /// servers too, and the Library's own files.
     #[test]
-    fn the_window_can_show_images_from_every_site() {
+    fn the_window_can_show_images_and_videos_from_every_site() {
         let conf: serde_json::Value =
             serde_json::from_str(include_str!("../../tauri.conf.json")).unwrap();
         let csp = conf["app"]["security"]["csp"].as_str().unwrap();
-        let img = csp
-            .split(';')
-            .map(str::trim)
-            .find(|d| d.starts_with("img-src"))
-            .unwrap();
-        let sources: Vec<&str> = img.split_whitespace().collect();
-        for site in Site::ALL {
-            for source in [
-                format!("https://{}", site.host()),
-                format!("https://*.{}", site.host()),
-            ] {
+        for directive in ["img-src", "media-src"] {
+            let line = csp
+                .split(';')
+                .map(str::trim)
+                .find(|d| d.starts_with(directive))
+                .unwrap();
+            let sources: Vec<&str> = line.split_whitespace().collect();
+            let mut wanted = vec![
+                "pdl-media:".to_string(),
+                "http://pdl-media.localhost".into(),
+            ];
+            for site in Site::ALL {
+                wanted.push(format!("https://{}", site.host()));
+                wanted.push(format!("https://*.{}", site.host()));
+            }
+            for source in wanted {
                 assert!(
                     sources.contains(&source.as_str()),
-                    "{source} missing from {img}"
+                    "{source} missing from {line}"
                 );
             }
         }

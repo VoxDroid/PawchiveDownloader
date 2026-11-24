@@ -151,8 +151,11 @@
     filter = next;
   }
 
-  // Images (and anything with a thumbnail) can be looked at in the viewer.
-  const viewable = $derived(visible.filter((f) => f.thumbnailUrl));
+  // Images (and anything with a thumbnail) can be looked at in the viewer,
+  // and videos played there, straight from the site.
+  const viewable = $derived(
+    visible.filter((f) => f.thumbnailUrl || (f.category === 'video' && f.url && !f.previewOnly)),
+  );
   let viewing = $state<number | null>(null);
 
   function toggleOne(index: number) {

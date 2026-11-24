@@ -77,6 +77,17 @@ pending and resumes from its part file.
 history, the hashes of downloaded files and posts, the watchlist and
 favorites.
 
+**`gallery.rs`** is the Library: it groups the recorded files that are still
+on disk into posts and creators (names from the history, else from the folder
+names) and serves them to the window through the `pdl-media` protocol
+(`app.rs` registers it). The protocol takes a content hash, never a path, so it
+can only hand out files the library recorded, and only images and videos.
+Videos are served in byte ranges (at most 4 MB per answer), so they start and
+seek without being read whole. Thumbnails are made on first request with the
+`image` crate, at most three at a time, and cached in `thumbs/`. The content
+security policy allows `pdl-media:` for `img-src` and `media-src`, next to the
+three sites' hosts; a test keeps every site in it.
+
 **`watch.rs`** checks followed creators on the interval from Settings; the
 first check of a creator only records a baseline.
 
@@ -92,7 +103,9 @@ loads `src/lib/mock.ts` instead, a demo backend with sample data, which is how
 the Playwright tests and the README screenshots run.
 
 `src/ui/` is the design system shared with the browser extension: theme
-tokens, components and the icon map generated from the subset Nerd Font.
+tokens, components and the icons: SVG outlines taken from the Nerd Font
+(`scripts/icon-paths.py`), each centered on its own shape, so they sit evenly
+in badges at any size, which the font glyphs did not.
 `src/features/` holds one folder per page. State lives in small rune stores in
 `src/ui/state/`.
 

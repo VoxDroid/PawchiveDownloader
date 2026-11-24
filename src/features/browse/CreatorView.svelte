@@ -465,32 +465,35 @@
   .banner {
     display: block;
     width: 100%;
-    height: 120px;
+    height: 150px;
     object-fit: cover;
     background: linear-gradient(120deg, var(--accent-soft), var(--bg-elev-2));
     transition: opacity var(--dur) var(--ease);
   }
+  /* Only the avatar reaches into the banner; the name and details sit
+     below it, so they never cover the picture. */
   .hero-row {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     gap: 16px;
     padding: 0 18px 16px;
-    margin-top: -34px;
     position: relative;
   }
   .avatar {
-    width: 76px;
-    height: 76px;
-    border-radius: 20px;
+    width: 84px;
+    height: 84px;
+    margin-top: -42px;
+    border-radius: 22px;
     object-fit: cover;
-    border: 3px solid var(--bg-elev);
+    border: 4px solid var(--bg-elev);
     background: var(--bg-elev-2);
+    box-shadow: var(--shadow-md);
     flex: none;
   }
   .who {
     flex: 1;
     min-width: 0;
-    padding-bottom: 2px;
+    padding-top: 12px;
   }
   .who h2 {
     font-size: var(--fs-xl);
@@ -508,6 +511,7 @@
     display: flex;
     gap: 4px;
     align-items: center;
+    padding-top: 12px;
   }
   .toolbar {
     display: flex;

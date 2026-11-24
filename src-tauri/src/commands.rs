@@ -365,6 +365,41 @@ pub fn library_stats(core: State<'_, Core_>) -> crate::library::Stats {
     )
 }
 
+/// The Library: downloaded images and videos that are still on disk,
+/// grouped by post and creator.
+#[tauri::command]
+pub async fn library_media(core: State<'_, Core_>) -> R<crate::gallery::Gallery> {
+    let files = core.store.list_known_files_with_time();
+    let history = core.store.list_history();
+    tauri::async_runtime::spawn_blocking(move || {
+        crate::gallery::build(&files, &history, |p| {
+            std::fs::metadata(p)
+                .ok()
+                .filter(|m| m.is_file())
+                .map(|m| m.len())
+        })
+    })
+    .await
+    .map_err(|e| e.to_string())
+}
+
+/// Opens a downloaded image or video in the program the system uses for
+/// it. Only files the library recorded, and only images and videos.
+#[tauri::command(async)]
+pub fn open_media(app: AppHandle, core: State<'_, Core_>, hash: String) -> R<()> {
+    let hash = hash.to_ascii_lowercase();
+    if !crate::gallery::is_hash(&hash) {
+        return Err("missing".into());
+    }
+    let path = PathBuf::from(core.store.path_of(&hash).ok_or("missing")?);
+    if crate::gallery::kind_of(&path).is_none() || !path.is_file() {
+        return Err("missing".into());
+    }
+    app.opener()
+        .open_path(path.to_string_lossy(), None::<&str>)
+        .map_err(|e| e.to_string())
+}
+
 /// Looks for downloaded files that were deleted or moved since.
 #[tauri::command]
 pub async fn check_library(core: State<'_, Core_>) -> R<crate::library::LibraryCheck> {

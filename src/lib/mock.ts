@@ -3,6 +3,10 @@ import {
   DEFAULT_SETTINGS,
   type Creator,
   type Favorite,
+  type Gallery,
+  type MediaCreator,
+  type MediaFile,
+  type MediaPost,
   type HistoryEntry,
   type ItemView,
   type JobRequest,
@@ -189,6 +193,84 @@ function summary(
     current: [],
     folder: 'C:\\Users\\you\\Downloads\\Pawchive',
     ...partial,
+  };
+}
+
+/** A small Library: three creators, images and a video or two. */
+function demoGallery(): Gallery {
+  const now = Date.now();
+  const sets: Array<[string, string, string, string, number, number]> = [
+    ['patreon', '48151623', 'Aster Vale', 'Spring Sketchbook: Forest Studies', 9, 1],
+    ['patreon', '48151623', 'Aster Vale', 'Monthly Wallpapers - November', 6, 0],
+    ['fanbox@kemono', '2207', 'Moss & Ember', 'Character Sheets Vol. 3', 7, 1],
+    ['patreon', '99120', 'Lumen Studio', 'Night Market Concept Set', 12, 0],
+  ];
+  const posts: MediaPost[] = sets.map(
+    ([service, creatorId, creatorName, title, images, videos], p) => {
+      const postId = String(175500000 + p * 731);
+      const files: MediaFile[] = [];
+      for (let i = 0; i < images + videos; i++) {
+        const video = i >= images;
+        const seed = p * 17 + i;
+        files.push({
+          hash: (seed.toString(16) + 'a'.repeat(64)).slice(0, 64),
+          name: video
+            ? `timelapse-${i - images + 1}.mp4`
+            : `${String(i + 1).padStart(2, '0')}_page.png`,
+          kind: video ? 'video' : 'image',
+          size: video ? 48_000_000 : 1_200_000 + seed * 91_000,
+          path: `/downloads/${creatorName}/${title}/${i}`,
+          at: now - p * 86_400_000,
+          demo: video ? undefined : { src: art(seed), thumb: art(seed) },
+        });
+      }
+      return {
+        key: `${service}:${creatorId}:${postId}`,
+        service,
+        site: service.includes('@kemono') ? 'kemono' : 'pawchive',
+        creatorId,
+        postId,
+        title,
+        creatorName,
+        folder: `/downloads/${creatorName}/${title}`,
+        at: now - p * 86_400_000,
+        files,
+      } as MediaPost;
+    },
+  );
+  const creators = new Map<string, MediaCreator>();
+  for (const post of posts) {
+    const key = `${post.service}:${post.creatorId}`;
+    const c =
+      creators.get(key) ??
+      ({
+        key,
+        service: post.service,
+        site: post.site,
+        creatorId: post.creatorId,
+        name: post.creatorName,
+        posts: 0,
+        images: 0,
+        videos: 0,
+        bytes: 0,
+        at: post.at,
+      } as MediaCreator);
+    c.posts += 1;
+    for (const f of post.files) {
+      if (f.kind === 'image') c.images += 1;
+      else c.videos += 1;
+      c.bytes += f.size;
+    }
+    creators.set(key, c);
+  }
+  const all = posts.flatMap((p) => p.files);
+  return {
+    creators: [...creators.values()],
+    posts,
+    images: all.filter((f) => f.kind === 'image').length,
+    videos: all.filter((f) => f.kind === 'video').length,
+    bytes: all.reduce((n, f) => n + f.size, 0),
+    missing: 0,
   };
 }
 
@@ -686,6 +768,8 @@ export function createMockBackend(): Backend {
       bridge = { ...bridge, code: '482917', codeExpiresAt: Date.now() + 120_000 };
       return bridge;
     },
+    library_media: () => demoGallery(),
+    open_media: () => null,
     bridge_cancel_pairing: () => {
       bridge = { ...bridge, code: null, codeExpiresAt: null };
       return bridge;

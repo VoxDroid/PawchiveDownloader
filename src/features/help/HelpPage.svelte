@@ -29,6 +29,7 @@
     { id: 'schedule', icon: 'clock', group: 'features' },
     { id: 'library', icon: 'database', group: 'features' },
     { id: 'outside', icon: 'external', group: 'features' },
+    { id: 'gallery', icon: 'thumbnails', group: 'features' },
     { id: 'portable', icon: 'harddisk', group: 'features' },
     { id: 'bridge', icon: 'web', group: 'features' },
     { id: 'network', icon: 'network', group: 'features' },

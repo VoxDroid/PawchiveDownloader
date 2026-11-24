@@ -30,6 +30,9 @@
   let loaded = $state(false);
   let failed = $state(false);
   const link = $derived(file.url ?? file.thumbnailUrl);
+  /** A video the viewer can play from the site. */
+  const playable = $derived(file.category === 'video' && !!file.url && !file.previewOnly);
+  const viewable = $derived(!!onpreview && (!!file.thumbnailUrl || playable));
 </script>
 
 <div
@@ -60,21 +63,24 @@
         onerror={() => (failed = true)}
       />
     {/if}
-    {#if !file.thumbnailUrl || failed || !loaded}
+    {#if (!file.thumbnailUrl || failed || !loaded) && !playable}
       <span class="placeholder"><Icon name={CATEGORY_ICON[file.category]} size={26} /></span>
     {/if}
     <span class="check" aria-hidden="true">
       <svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7" /></svg>
     </span>
     {#if file.ext}<span class="ext">{file.ext}</span>{/if}
-    {#if (onpreview && file.thumbnailUrl) || link}
+    {#if playable}
+      <span class="play" aria-hidden="true"><Icon name="play" size={18} /></span>
+    {/if}
+    {#if viewable || link}
       <span class="toolbar" role="group">
-        {#if onpreview && file.thumbnailUrl}
+        {#if viewable}
           <button
             type="button"
             class="tool"
-            aria-label={t('file.view')}
-            data-tip={t('file.view')}
+            aria-label={playable ? t('file.play') : t('file.view')}
+            data-tip={playable ? t('file.play') : t('file.view')}
             onclick={(e) => {
               e.stopPropagation();
               onpreview?.();
@@ -193,6 +199,22 @@
     display: grid;
     place-items: center;
     color: var(--text-faint);
+  }
+  /* A video that can be played in the viewer. */
+  .play {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: -22px 0 0 -22px;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    pointer-events: none;
   }
   .check {
     position: absolute;

@@ -9,6 +9,7 @@ import type {
   CreatorSort,
   CreatorView,
   Favorite,
+  Gallery,
   HistoryEntry,
   ItemView,
   JobAction,
@@ -197,6 +198,8 @@ export const api = {
   exportLogs: (path: string) => call<void>('export_logs', { path }),
 
   openPath: (path: string) => call<void>('open_path', { path }),
+  libraryMedia: () => call<Gallery>('library_media'),
+  openMedia: (hash: string) => call<void>('open_media', { hash }),
   revealPath: (path: string) => call<boolean>('reveal_path', { path }),
   pathExists: (path: string) => call<boolean>('path_exists', { path }),
   ensureDir: (path: string) => call<void>('ensure_dir', { path }),

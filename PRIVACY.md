@@ -20,6 +20,7 @@ App data folder):
 | Posts you opened                    | `library.db`                                      | Read markers in creator and listing views       |
 | Creator lists of each site          | `creators*.json`                                  | Creator search; fetched at most once a day      |
 | Browser extension pairings          | `library.db` (only a hash of each token)          | The browser extension bridge; can be removed    |
+| Library thumbnails                  | `thumbs` folder                                   | The Library page; safe to delete, made again    |
 
 Your downloads go to the folder you choose.
 
