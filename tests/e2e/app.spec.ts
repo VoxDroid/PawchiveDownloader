@@ -128,6 +128,36 @@ test('favorites can be edited', async ({ page }) => {
   await expect(page.getByRole('button', { name: 'Brushes' })).toBeVisible();
 });
 
+test('a link already in favorites is not added or counted again', async ({ page }) => {
+  await page.getByRole('link', { name: 'Favorites', exact: true }).click();
+  const rows = page.getByRole('article');
+  await expect(rows.first()).toBeVisible();
+  const before = await rows.count();
+  const box = page.getByPlaceholder(/Paste post or creator links/);
+  await box.fill(`${CREATOR} ${CREATOR}`);
+  await page.getByRole('button', { name: /Add to favorites/ }).click();
+  await expect(page.getByText('Those are in your favorites already.')).toBeVisible();
+  await expect(rows).toHaveCount(before);
+  // A new one twice in the same paste counts once.
+  const post = 'https://pawchive.pw/patreon/user/48151623/post/175580008';
+  await box.fill(`${post} ${post}`);
+  await page.getByRole('button', { name: /Add to favorites/ }).click();
+  await expect(page.getByText('Added 1 favorite')).toBeVisible();
+  await expect(rows).toHaveCount(before + 1);
+});
+
+test('a post with nothing picked and its text unticked queues nothing', async ({ page }) => {
+  await openLink(page, `${CREATOR}/post/175580008`);
+  const files = page.getByRole('listbox', { name: 'Files in this post' });
+  await expect(files).toBeVisible();
+  // Clear the selection, then untick the text.
+  await page.getByRole('button', { name: 'Select none' }).click();
+  await expect(page.getByText(/^0 of \d+ selected/)).toBeVisible();
+  await page.getByRole('checkbox', { name: 'Save post text' }).uncheck();
+  await page.getByRole('button', { name: 'Save post text only' }).click();
+  await expect(page.getByText(/there is nothing to save/)).toBeVisible();
+});
+
 test('plain words search creators and open the one picked', async ({ page }) => {
   await openLink(page, 'moss');
   await expect(page.getByRole('heading', { name: 'Creators matching "moss"' })).toBeVisible();

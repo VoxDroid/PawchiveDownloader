@@ -53,6 +53,33 @@
   let outside = $state(app.settings.downloadOutsideLinks);
   let folder = $state<string | null>(null);
 
+  // Browse keeps pages open: when a default changes in Settings, the bar of
+  // a page opened before follows it. A choice made here stays otherwise,
+  // also when some other setting changes.
+  let defaults = {
+    mode: app.settings.downloadMode,
+    saveText: app.settings.saveContent !== 'none',
+    skipDownloaded: app.settings.skipDownloaded,
+    outside: app.settings.downloadOutsideLinks,
+    filter: JSON.stringify(app.settings.filter),
+  };
+  $effect(() => {
+    const s = app.settings;
+    const next = {
+      mode: s.downloadMode,
+      saveText: s.saveContent !== 'none',
+      skipDownloaded: s.skipDownloaded,
+      outside: s.downloadOutsideLinks,
+      filter: JSON.stringify(s.filter),
+    };
+    if (next.mode !== defaults.mode) mode = next.mode;
+    if (next.saveText !== defaults.saveText) saveText = next.saveText;
+    if (next.skipDownloaded !== defaults.skipDownloaded) skipDownloaded = next.skipDownloaded;
+    if (next.outside !== defaults.outside) outside = next.outside;
+    if (next.filter !== defaults.filter) filter = structuredClone($state.snapshot(s.filter));
+    defaults = next;
+  });
+
   const destination = $derived(folder ?? app.settings.downloadDir);
   const shortDestination = $derived(
     destination.length > 42 ? `...${destination.slice(-40)}` : destination,

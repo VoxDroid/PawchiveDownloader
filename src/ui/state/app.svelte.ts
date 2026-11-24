@@ -108,8 +108,15 @@ export function startApp(): Promise<void> {
 }
 
 export async function updateSettings(patch: Partial<Settings>): Promise<void> {
+  const before = app.settings;
   applySettings({ ...app.settings, ...patch });
-  applySettings(await api.updateSettings(patch));
+  try {
+    applySettings(await api.updateSettings(patch));
+  } catch (error) {
+    // Not saved: show what is in effect, not the change that failed.
+    applySettings(before);
+    throw error;
+  }
 }
 
 export function replaceSettings(settings: Settings): void {

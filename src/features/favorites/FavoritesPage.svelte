@@ -51,8 +51,24 @@
     adding = true;
     try {
       const links = await api.parseLinks(link);
+      // Each favorite once, and none that is there already: those would be
+      // looked up on the site for nothing and counted as added.
+      const have = new Set((items ?? []).map((f) => f.key));
       let added = 0;
+      let already = 0;
       for (const { ref } of links) {
+        const key =
+          ref.kind === 'post'
+            ? `p:${ref.service}:${ref.creatorId}:${ref.postId}`
+            : ref.kind === 'creator'
+              ? `c:${ref.service}:${ref.creatorId}`
+              : null;
+        if (!key) continue;
+        if (have.has(key)) {
+          already += 1;
+          continue;
+        }
+        have.add(key);
         if (ref.kind === 'post') {
           const view = await api.getPost(ref.service, ref.creatorId, ref.postId).catch(() => null);
           await api.addFavorite({
@@ -77,6 +93,9 @@
         toast(t('favorites.addedCount', { count: added }), 'success');
         link = '';
         await load();
+      } else if (already) {
+        toast(t('favorites.already'), 'info');
+        link = '';
       } else toast(t('favorites.invalid'), 'warning');
     } catch (e) {
       toast(describeError(e), 'error');

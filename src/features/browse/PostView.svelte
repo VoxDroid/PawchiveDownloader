@@ -200,8 +200,13 @@
 
   async function download(options: JobOverrides) {
     if (!post) return;
-    busy = true;
     const fileIndexes = [...selected].sort((a, b) => a - b);
+    // No file picked and the text unticked: there is nothing to save.
+    if (!fileIndexes.length && options.saveContent === 'none') {
+      toast(t('post.nothingToSave'), 'warning');
+      return;
+    }
+    busy = true;
     await queueJob(
       {
         kind: 'posts',

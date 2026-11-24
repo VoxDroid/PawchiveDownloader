@@ -6,7 +6,61 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+### Security
+
+- **Pairing codes cannot be guessed**: five wrong codes withdraw the code on
+  show. Before, another extension or a program on the computer could try all
+  million six-digit codes in the two minutes a code lasts.
+- **The browser bridge cannot choose the download folder**: a folder sent
+  with a download from the browser is ignored, and files go to the folder in
+  Settings. A paired caller could otherwise write files into any folder,
+  such as Startup.
+- **Only web and mail links open**: links in posts are opened only when they
+  are `http`, `https` or `mailto`, never a file or another program's scheme.
+
 ### Fixed
+
+- **A failed first watchlist check no longer floods you with "new" posts**:
+  when the first check of a creator failed (offline, the site down), the next
+  good one reported their whole first page as new, and with automatic
+  download on, downloaded it all. It now takes the starting point instead.
+- **A re-download that fails does not keep the old file**: after a failed
+  try that removed its partial file, a file being downloaded again (or
+  replaced by the Overwrite setting) could be marked done with the old copy
+  still in place.
+- **Downloading again keeps a paused download paused** and a creator scan
+  scanning, instead of queueing it.
+- **The Library viewer stays on its picture** when the list changes while it
+  is open (a download finishing puts new posts first), and the Library reads
+  again when a download finishes during a scan instead of missing it.
+- **Long videos in the Library are read a piece at a time** whatever range
+  the player asks for, instead of loading a whole multi-gigabyte file into
+  memory.
+- **Files saved by Windows Notepad import**: a byte order mark at the start of
+  a settings, backup or favorites file no longer breaks the import or drops
+  the first favorite.
+- **Importing a file that is not settings says so** instead of reporting
+  "Settings imported" while nothing changed; a setting that cannot be saved
+  no longer stays on screen as if it were.
+- **Favorites are added once**: a link pasted twice, or one already in your
+  favorites, is no longer counted as added (and no longer looked up on the
+  site); "Those are in your favorites already" says so.
+- **Importing a watchlist skips creators you already follow** instead of
+  looking each of them up on the site again, and the Watchlist page reads its
+  list once when it opens.
+- **A post with nothing to save says so**: no file picked and "Save post
+  text" unticked no longer queues an empty download.
+- **Browse follows your default options**: a page opened before you changed
+  the download mode, text, skip or filter defaults in Settings now uses the
+  new ones.
+- **The same message shows once**: pasting the same wrong link twice no
+  longer stacks copies of the same notice.
+- **The download schedule closes on daylight saving night**: an opening time
+  in the hour the clocks skip no longer leaves downloads running all night.
+- **On Linux, folders that differ only in case are both in the Library**.
+- **"Last seen" for paired browsers is written at most every 30 seconds**,
+  not on every call, and a browser removed in Settings cannot come back
+  through a call that was running at the same time.
 
 - **Watchlist cards stay inside their border**: a creator with new posts no
   longer pushes the "new" badge and the download button past the edge of the

@@ -26,6 +26,17 @@ use crate::jobs::model::JobRequest;
 pub const PORTS: [u16; 3] = [49517, 49518, 49519];
 const PAIRING_KEY: &str = "bridge.pairings";
 const CODE_LIFETIME_MS: i64 = 2 * 60 * 1000;
+/// Wrong codes before the code on show is withdrawn. Six digits are a
+/// million guesses; without a limit a local program or another extension
+/// could try them all within the two minutes.
+const MAX_CODE_ATTEMPTS: u32 = 5;
+/// How often "last seen" is written for a browser that keeps calling.
+const SEEN_EVERY_MS: i64 = 30_000;
+
+/// Pairings are read, changed and written back by the window and by every
+/// bridge call; one at a time, so a browser removed in the window cannot be
+/// brought back by a call that read the list just before.
+static PAIRINGS_LOCK: Mutex<()> = parking_lot::const_mutex(());
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
@@ -55,6 +66,36 @@ struct Inner {
     port: Option<u16>,
     stop: Option<CancellationToken>,
     code: Option<(String, i64)>,
+    /// Wrong codes tried against the code on show.
+    attempts: u32,
+}
+
+#[derive(Debug, PartialEq)]
+enum Tried {
+    Paired,
+    Wrong,
+    /// Wrong, and the last try the code allowed: it is gone.
+    Withdrawn,
+}
+
+impl Inner {
+    /// Checks a code a browser sent. A code works once, and is withdrawn
+    /// after MAX_CODE_ATTEMPTS wrong ones.
+    fn try_code(&mut self, sent: &str, now: i64) -> Tried {
+        let Some((code, until)) = &self.code else {
+            return Tried::Wrong;
+        };
+        if *until > now && code == sent.trim() {
+            self.code = None;
+            return Tried::Paired;
+        }
+        self.attempts += 1;
+        if self.attempts >= MAX_CODE_ATTEMPTS {
+            self.code = None;
+            return Tried::Withdrawn;
+        }
+        Tried::Wrong
+    }
 }
 
 #[derive(Default)]
@@ -105,7 +146,9 @@ impl Bridge {
     pub fn start_pairing(&self) -> (String, i64) {
         let code = format!("{:06}", rand::random::<u32>() % 1_000_000);
         let until = now_ms() + CODE_LIFETIME_MS;
-        self.inner.lock().code = Some((code.clone(), until));
+        let mut inner = self.inner.lock();
+        inner.code = Some((code.clone(), until));
+        inner.attempts = 0;
         (code, until)
     }
 
@@ -115,6 +158,7 @@ impl Bridge {
     }
 
     pub fn revoke(core: &Core, id: &str) -> Result<(), String> {
+        let _one = PAIRINGS_LOCK.lock();
         let mut list = Self::pairings(core);
         list.retain(|p| p.id != id);
         core.store.set(PAIRING_KEY, &list)
@@ -132,11 +176,19 @@ impl Bridge {
             .and_then(|v| v.to_str().ok())
             .and_then(|v| v.strip_prefix("Bearer "))?;
         let wanted = hash(token.trim());
+        let _one = PAIRINGS_LOCK.lock();
         let mut list = Self::pairings(core);
         let p = list.iter_mut().find(|p| p.token_hash == wanted)?;
-        p.last_used_at = Some(now_ms());
+        let now = now_ms();
+        // The popup asks every two seconds; a write each time is wasted.
+        let stale = p.last_used_at.is_none_or(|t| now - t >= SEEN_EVERY_MS);
+        if stale {
+            p.last_used_at = Some(now);
+        }
         let found = p.clone();
-        let _ = core.store.set(PAIRING_KEY, &list);
+        if stale {
+            let _ = core.store.set(PAIRING_KEY, &list);
+        }
         Some(found)
     }
 
@@ -269,22 +321,17 @@ struct PairBody {
 }
 
 async fn pair(State(ctx): State<Ctx>, Json(body): Json<PairBody>) -> Response {
-    let valid = {
-        let mut inner = ctx.bridge.inner.lock();
-        let ok = inner
-            .code
-            .as_ref()
-            .is_some_and(|(code, until)| *until > now_ms() && *code == body.code.trim());
-        if ok {
-            // A code works once.
-            inner.code = None;
-        }
-        ok
-    };
-    if !valid {
+    let tried = ctx.bridge.inner.lock().try_code(&body.code, now_ms());
+    if tried == Tried::Withdrawn {
+        ctx.core
+            .log
+            .warn("Pairing code withdrawn after too many wrong tries", None);
+    }
+    if tried != Tried::Paired {
         return error(StatusCode::UNAUTHORIZED, "bad-code");
     }
     let token = hex::encode(rand::random::<[u8; 32]>());
+    let _one = PAIRINGS_LOCK.lock();
     let mut list = Bridge::pairings(&ctx.core);
     let name: String = body.name.trim().chars().take(60).collect();
     list.push(Pairing {
@@ -328,11 +375,14 @@ async fn list_jobs(State(ctx): State<Ctx>, headers: HeaderMap) -> Response {
 async fn create_job(
     State(ctx): State<Ctx>,
     headers: HeaderMap,
-    Json(request): Json<JobRequest>,
+    Json(mut request): Json<JobRequest>,
 ) -> Response {
     if !Bridge::check_token(&ctx.core, &headers) {
         return error(StatusCode::UNAUTHORIZED, "not-paired");
     }
+    // Files from the browser go to the folder in Settings only: a caller
+    // must not be able to write into any folder (such as Startup).
+    request.options_mut().download_dir = None;
     let (job_id, duplicate) = ctx.core.engine.create_checked(request);
     Json(serde_json::json!({ "jobId": job_id, "duplicate": duplicate })).into_response()
 }
@@ -399,5 +449,32 @@ mod tests {
         assert!(is_loopback_host("localhost:49517"));
         assert!(!is_loopback_host("evil.example:49517"));
         assert_ne!(hash("a"), hash("b"));
+    }
+
+    #[test]
+    fn a_code_works_once_and_not_after_wrong_guesses() {
+        let bridge = Bridge::default();
+        let (code, _) = bridge.start_pairing();
+        let mut inner = bridge.inner.lock();
+        assert_eq!(
+            inner.try_code(&format!(" {code} "), now_ms()),
+            Tried::Paired
+        );
+        assert_eq!(inner.try_code(&code, now_ms()), Tried::Wrong);
+        drop(inner);
+
+        let (code, until) = bridge.start_pairing();
+        let mut inner = bridge.inner.lock();
+        assert_eq!(inner.try_code(&code, until + 1), Tried::Wrong, "expired");
+        for _ in 2..MAX_CODE_ATTEMPTS {
+            assert_eq!(inner.try_code("000000x", now_ms()), Tried::Wrong);
+        }
+        assert_eq!(inner.try_code("000000x", now_ms()), Tried::Withdrawn);
+        // Even the right code is refused now: guessing cannot go on.
+        assert_eq!(inner.try_code(&code, now_ms()), Tried::Wrong);
+        drop(inner);
+        // A new code starts with a clean count.
+        let (code, _) = bridge.start_pairing();
+        assert_eq!(bridge.inner.lock().try_code(&code, now_ms()), Tried::Paired);
     }
 }

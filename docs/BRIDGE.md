@@ -30,7 +30,9 @@ the same everywhere.
 ## Pairing
 
 1. Settings > Browser extension > **Pair a browser** shows a six-digit code
-   for two minutes (it can be cancelled or renewed).
+   for two minutes (it can be cancelled or renewed). Five wrong codes withdraw
+   it, so the million possible codes cannot be tried within those minutes by
+   another extension or program; a new code starts a new count.
 2. The extension's Settings page asks for the code and calls
    `POST /v1/pair { code, name }`. The name is `<browser>: <extension name>`,
    such as `Edge: Pawchive Downloader`; the app shows the browser's full name.
@@ -38,9 +40,11 @@ the same everywhere.
    extension's name, and lists the pairing in Settings, where it can be revoked.
    The Settings page notices the new pairing by itself.
 4. While paired, the extension calls `GET /v1/hello` with its token once a
-   minute. Each authenticated call records when the browser was last seen, and
-   the app shows a browser seen in the last two and a half minutes as
-   connected.
+   minute. Authenticated calls record when the browser was last seen (at most
+   every 30 seconds, as the popup asks every two), and the app shows a browser
+   seen in the last two and a half minutes as connected. Pairings are changed
+   one at a time, so a browser removed in Settings is not brought back by a
+   call that read the list a moment before.
 5. Unpairing in the extension calls `POST /v1/unpair`, so the app forgets the
    pairing too.
 
@@ -59,7 +63,10 @@ All bodies are JSON. Errors use HTTP status codes with `{ "error": "<code>" }`.
 | `POST /v1/watch`              | `{ service, creatorId, name }`                                                     | `{ added }`                                                                   |
 
 `JobRequest` already exists on both sides with the same shape, so the
-extension can send exactly what its own engine would have run.
+extension can send exactly what its own engine would have run. Its
+`options.downloadDir` is ignored: files from the browser always go to the
+download folder in Settings, so a caller cannot write into another folder
+(such as Startup).
 
 ## Implementation notes
 

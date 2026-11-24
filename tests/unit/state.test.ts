@@ -47,6 +47,19 @@ describe('app state', () => {
     expect(toasts).toHaveLength(3);
   });
 
+  it('shows the same message once, not a stack of copies', () => {
+    toasts.splice(0);
+    toast('Not a link', 'warning', { duration: 0 });
+    toast('Saved', 'success', { duration: 0 });
+    toast('Not a link', 'warning', { duration: 0 });
+    expect(toasts.map((t) => t.message)).toEqual(['Saved', 'Not a link']);
+    // Another kind, or one with a button, is its own toast.
+    toast('Not a link', 'error', { duration: 0 });
+    toast('Saved', 'success', { duration: 0, action: { label: 'Open', run: () => {} } });
+    expect(toasts).toHaveLength(4);
+    toasts.splice(0);
+  });
+
   it('remembers recent links and opens the batch dialog', () => {
     clearRecent();
     rememberRecent({ url: 'a', title: 'A', kind: 'post', at: 1 });

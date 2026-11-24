@@ -148,7 +148,7 @@ pub fn export_settings(core: State<'_, Core_>, path: String) -> R<()> {
 
 #[tauri::command(async)]
 pub fn import_settings(app: AppHandle, core: State<'_, Core_>, path: String) -> R<Settings> {
-    let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    let text = read_text(&path)?;
     let value: Value = serde_json::from_str(&text).map_err(|_| "invalid-file".to_string())?;
     let next = core.apply_settings(settings::merge(&core.settings(), &value))?;
     crate::app::emit(&app, "settings", &next);
@@ -1165,8 +1165,9 @@ pub fn export_favorites(core: State<'_, Core_>, path: String) -> R<u32> {
 
 #[tauri::command(async)]
 pub fn import_favorites(core: State<'_, Core_>, path: String) -> R<u32> {
-    let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
-    let existing: Vec<String> = core
+    let text = read_text(&path)?;
+    // Also the ones added from this file: a link listed twice counts once.
+    let mut existing: std::collections::HashSet<String> = core
         .store
         .list_favorites()
         .into_iter()
@@ -1202,7 +1203,7 @@ pub fn import_favorites(core: State<'_, Core_>, path: String) -> R<u32> {
             }
             _ => continue,
         };
-        if existing.contains(&fav.key) {
+        if !existing.insert(fav.key.clone()) {
             continue;
         }
         core.store.put_favorite(&fav)?;
@@ -1307,7 +1308,18 @@ pub fn read_text_file(path: String) -> R<String> {
     if meta.len() > 8 * 1024 * 1024 {
         return Err("too-large".into());
     }
-    std::fs::read_to_string(path).map_err(|e| e.to_string())
+    read_text(&path)
+}
+
+/// A text file without the byte order mark Windows editors put in front
+/// (Notepad saves one): JSON would not parse and the first line of a list
+/// would not match.
+fn read_text(path: &str) -> R<String> {
+    let text = std::fs::read_to_string(path).map_err(|e| e.to_string())?;
+    Ok(match text.strip_prefix('\u{feff}') {
+        Some(rest) => rest.to_string(),
+        None => text,
+    })
 }
 
 // ------------------------------------------------------------------ updates

@@ -53,10 +53,19 @@
   let size = $state<Size>(remembered('pdl.library.size', 'm', ['s', 'm', 'l']));
   let query = $state('');
   let limit = $state(PAGE);
-  let viewing = $state<number | null>(null);
+  /** The file open in the viewer, by its path: by position, it would turn
+   *  into another file when the list changes (a download finishing while
+   *  the viewer is open puts new posts first). */
+  let viewingPath = $state<string | null>(null);
   let sentinel = $state<HTMLElement>();
 
+  /** Asked to read again while reading: done once this read ends. */
+  let again = false;
   async function load() {
+    if (loading) {
+      again = true;
+      return;
+    }
     loading = true;
     try {
       gallery = await api.libraryMedia();
@@ -65,6 +74,10 @@
       error = describeError(e);
     } finally {
       loading = false;
+    }
+    if (again) {
+      again = false;
+      await load();
     }
   }
   onMount(load);
@@ -81,7 +94,7 @@
   $effect(() => {
     const now = finished;
     untrack(() => {
-      if (seenFinished !== null && now !== seenFinished && !loading) void load();
+      if (seenFinished !== null && now !== seenFinished) void load();
       seenFinished = now;
     });
   });
@@ -109,7 +122,9 @@
   const items = $derived<ViewerItem[]>(
     posts.flatMap((post) => post.files.map((file) => ({ file, post }))),
   );
-  const indexOf = $derived(new Map(items.map((item, i) => [item.file.hash, i])));
+  const indexOf = $derived(new Map(items.map((item, i) => [item.file.path, i])));
+  // Gone from the list (deleted, or filtered out): the viewer closes.
+  const viewing = $derived(viewingPath === null ? null : (indexOf.get(viewingPath) ?? null));
   const creators = $derived(
     (gallery?.creators ?? []).filter(
       (c) =>
@@ -300,7 +315,7 @@
             />
           </header>
           <div class="grid">
-            {#each post.files as file (file.hash)}
+            {#each post.files as file (file.path)}
               {@render tile(file)}
             {/each}
           </div>
@@ -314,7 +329,11 @@
     </section>
   </div>
 
-  <LibraryViewer {items} index={viewing} onindex={(i) => (viewing = i)} />
+  <LibraryViewer
+    {items}
+    index={viewing}
+    onindex={(i) => (viewingPath = i === null ? null : (items[i]?.file.path ?? null))}
+  />
 {/if}
 
 {#snippet creatorRow(c: MediaCreator)}
@@ -337,12 +356,11 @@
 {/snippet}
 
 {#snippet tile(file: MediaFile)}
-  {@const index = indexOf.get(file.hash) ?? 0}
   <button
     class="tile"
     class:video={file.kind === 'video'}
     aria-label={file.name}
-    onclick={() => (viewing = index)}
+    onclick={() => (viewingPath = file.path)}
   >
     {#if file.kind === 'image'}
       <img src={mediaSrc(file, true)} alt="" loading="lazy" decoding="async" />
