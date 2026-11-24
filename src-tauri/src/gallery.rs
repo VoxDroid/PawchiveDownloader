@@ -384,7 +384,8 @@ pub fn serve_file(path: &Path, range: Option<&str>) -> Served {
     let mut headers = vec![
         ("Content-Type", mime(path).to_string()),
         ("Accept-Ranges", "bytes".to_string()),
-        ("Cache-Control", "no-cache".to_string()),
+        // The address is the file's content hash, so it never changes.
+        ("Cache-Control", "max-age=31536000, immutable".to_string()),
     ];
     let wanted = match range {
         Some(r) => match parse_range(r, len) {
@@ -636,5 +637,41 @@ mod tests {
         assert!(can_thumbnail(&src));
         assert!(!can_thumbnail(Path::new("a.mp4")));
         assert_eq!(serve_thumb(&dest).status, 200);
+    }
+}
+
+#[cfg(test)]
+mod timing {
+    use super::*;
+
+    /// Not a test: `cargo test --lib gallery::timing -- --ignored --nocapture`.
+    #[test]
+    #[ignore]
+    fn thumbnail_speed() {
+        let dir = tempfile::tempdir().unwrap();
+        let src = dir.path().join("big.png");
+        let mut img = image::RgbaImage::new(3000, 3000);
+        for (x, y, p) in img.enumerate_pixels_mut() {
+            *p = image::Rgba([(x % 251) as u8, (y % 241) as u8, ((x ^ y) % 239) as u8, 255]);
+        }
+        img.save(&src).unwrap();
+        let jpg = dir.path().join("big.jpg");
+        image::DynamicImage::ImageRgba8(img)
+            .to_rgb8()
+            .save(&jpg)
+            .unwrap();
+        for (name, path) in [("png", &src), ("jpg", &jpg)] {
+            let t = std::time::Instant::now();
+            make_thumbnail(path, &dir.path().join(format!("t-{name}.jpg"))).unwrap();
+            let size = std::fs::metadata(path).unwrap().len() / 1024;
+            println!("{name} {size} KiB: thumbnail in {:?}", t.elapsed());
+            let t = std::time::Instant::now();
+            let served = serve_file(path, None);
+            println!(
+                "{name}: served whole in {:?} ({} KiB)",
+                t.elapsed(),
+                served.body.len() / 1024
+            );
+        }
     }
 }

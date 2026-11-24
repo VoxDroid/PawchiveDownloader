@@ -58,11 +58,17 @@
     onindex(null);
   };
 
-  // The next image is fetched ahead, so moving on is instant.
+  // The images on both sides are fetched and decoded ahead, so moving on is
+  // instant either way.
   $effect(() => {
     if (index === null || items.length < 2) return;
-    const next = items[(index + 1) % items.length]?.file;
-    if (next?.kind === 'image') new Image().src = mediaSrc(next);
+    for (const delta of [1, -1]) {
+      const near = items[(index + delta + items.length) % items.length]?.file;
+      if (near?.kind !== 'image') continue;
+      const img = new Image();
+      img.src = mediaSrc(near);
+      void img.decode().catch(() => undefined);
+    }
   });
 
   // Slideshow: images move on by themselves; videos play to their end.
@@ -156,6 +162,10 @@
       {/if}
       {#key src}
         {#if file.kind === 'image'}
+          {#if loading}
+            <!-- The cached thumbnail at once, until the full image is ready. -->
+            <img class="instant" src={mediaSrc(file, true)} alt="" aria-hidden="true" />
+          {/if}
           <ZoomImage
             {src}
             alt={file.name}
@@ -183,7 +193,7 @@
           ></video>
         {/if}
       {/key}
-      {#if loading}<span class="state"><Spinner /></span>{/if}
+      {#if loading && file.kind === 'video'}<span class="state"><Spinner /></span>{/if}
       {#if failed}
         <span class="state failed">
           {file.kind === 'video' ? t('library.videoFailed') : t('lightbox.failed')}
@@ -288,6 +298,16 @@
   }
   .hidden {
     visibility: hidden;
+  }
+  .instant {
+    position: absolute;
+    inset: 0 64px;
+    width: calc(100% - 128px);
+    height: 100%;
+    object-fit: contain;
+    filter: blur(1.5px);
+    opacity: 0.9;
+    pointer-events: none;
   }
   .state {
     position: absolute;

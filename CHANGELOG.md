@@ -45,6 +45,15 @@ All notable changes to Pawchive Downloader. The format follows
 
 ### Changed
 
+- **A much faster Library**: thumbnails are made 15 to 60 times faster in
+  development builds and about a third faster in release builds (the image
+  decoders now always run fully optimized; a 3000 px PNG takes about 0.1 s),
+  more of them at once on processors with more cores, and all of them ahead
+  in the background when the Library opens, so scrolling finds them ready.
+  The viewer shows the cached thumbnail at once and the full image as soon
+  as it is decoded, and decodes the images on both sides ahead, so moving on
+  is instant. Full files are cached by the window (their address is their
+  content hash).
 - **Icons sit in the middle of their badges**: the icons were drawn as Nerd
   Font text, whose glyphs are wider than their monospace cell, placed
   differently each and snapped to pixel rows, so the icons in empty pages,
