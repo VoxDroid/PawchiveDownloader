@@ -13,6 +13,7 @@
   import { app, fmt, t } from '../../ui/state/app.svelte';
   import { openLink } from '../../ui/state/router.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
+  import Avatar from '../../ui/components/Avatar.svelte';
   import Button from '../../ui/components/Button.svelte';
   import Chip from '../../ui/components/Chip.svelte';
   import Empty from '../../ui/components/Empty.svelte';
@@ -264,7 +265,12 @@
         onclick={() => openLink(pageUrls.creator(post.service, post.creatorId))}
         data-tip={t('browse.openCreator')}
       >
-        <img class="avatar" src={view.creator?.iconUrl ?? ''} alt="" loading="lazy" />
+        <Avatar
+          src={view.creator?.iconUrl}
+          name={view.creator?.name ?? post.creatorId}
+          size={56}
+          radius="16px"
+        />
       </button>
       <div class="meta">
         <h2 class="title selectable" title={post.title}>{post.title || t('common.untitled')}</h2>
@@ -502,19 +508,12 @@
     align-items: flex-start;
   }
   .avatar-btn {
+    display: block;
+    line-height: 0;
     padding: 0;
     border: 0;
     background: none;
     border-radius: 16px;
-  }
-  .avatar {
-    width: 56px;
-    height: 56px;
-    border-radius: 16px;
-    object-fit: cover;
-    background: var(--bg-elev-2);
-    border: 1px solid var(--border);
-    display: block;
   }
   .meta {
     flex: 1;

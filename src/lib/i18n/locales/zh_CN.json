@@ -768,7 +768,7 @@
   "settings.privateNotifications": "隐私通知",
   "settings.privateNotificationsHint": "通知只显示数量，不显示帖子标题或创作者名称。",
   "settings.blurPreviews": "模糊预览图",
-  "settings.blurPreviewsHint": "缩略图、头像和横幅在鼠标指向前保持模糊，适合共享屏幕或在公共场合使用。",
+  "settings.blurPreviewsHint": "缩略图、头像、横幅和媒体库在鼠标指向前保持模糊，适合共享屏幕或在公共场合使用。",
   "settings.backup": "备份",
   "settings.backupHint": "将设置、关注列表、收藏和历史保存为一个文件，用于迁移到另一台电脑或妥善保存。恢复时只添加缺少的内容，保留现有内容。",
   "settings.backupSave": "保存备份",

@@ -821,7 +821,7 @@
   "settings.privateNotifications": "Notifications discrètes",
   "settings.privateNotificationsHint": "Les notifications n'affichent que des nombres, jamais de titres ni de noms de créateurs.",
   "settings.blurPreviews": "Flouter les aperçus",
-  "settings.blurPreviewsHint": "Miniatures, avatars et bannières restent floutés jusqu'au survol, pour partager l'écran ou travailler en public.",
+  "settings.blurPreviewsHint": "Miniatures, avatars, bannières et la bibliothèque restent floutés jusqu'au survol, pour partager l'écran ou travailler en public.",
   "settings.backup": "Sauvegarde",
   "settings.backupHint": "Un fichier avec vos paramètres, liste de suivi, favoris et historique, pour un autre ordinateur ou par sécurité. La restauration ajoute ce qui manque et garde l'existant.",
   "settings.backupSave": "Enregistrer la sauvegarde",

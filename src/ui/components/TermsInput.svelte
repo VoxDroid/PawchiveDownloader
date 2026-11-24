@@ -146,6 +146,9 @@
     font: inherit;
     font-size: var(--fs-sm);
   }
+  input:focus-visible {
+    box-shadow: none;
+  }
   input::placeholder {
     color: var(--text-faint);
   }
