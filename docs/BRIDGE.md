@@ -29,12 +29,20 @@ the same everywhere.
 
 ## Pairing
 
-1. Settings > Browser extension > **Pair** shows a six-digit code for two
-   minutes.
+1. Settings > Browser extension > **Pair a browser** shows a six-digit code
+   for two minutes (it can be cancelled or renewed).
 2. The extension's Settings page asks for the code and calls
-   `POST /v1/pair { code, name }`.
+   `POST /v1/pair { code, name }`. The name is `<browser>: <extension name>`,
+   such as `Edge: Pawchive Downloader`; the app shows the browser's full name.
 3. The app answers with a random 256-bit token, stores its hash with the
    extension's name, and lists the pairing in Settings, where it can be revoked.
+   The Settings page notices the new pairing by itself.
+4. While paired, the extension calls `GET /v1/hello` with its token once a
+   minute. Each authenticated call records when the browser was last seen, and
+   the app shows a browser seen in the last two and a half minutes as
+   connected.
+5. Unpairing in the extension calls `POST /v1/unpair`, so the app forgets the
+   pairing too.
 
 ## API (v1)
 
@@ -44,9 +52,10 @@ All bodies are JSON. Errors use HTTP status codes with `{ "error": "<code>" }`.
 | ----------------------------- | ---------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | `GET /v1/hello`               |                                                                                    | `{ app, version, paired }` (no token needed; lets the extension find the app) |
 | `POST /v1/pair`               | `{ code, name }`                                                                   | `{ token }`                                                                   |
+| `POST /v1/unpair`             |                                                                                    | `{ unpaired }` (removes the pairing the token belongs to)                     |
 | `POST /v1/jobs`               | a `JobRequest` (`posts`, `refs` or `creator`, as in `src-tauri/src/jobs/model.rs`) | `{ jobId }`                                                                   |
 | `GET /v1/jobs`                |                                                                                    | `JobSummary[]`                                                                |
-| `POST /v1/jobs/{id}/{action}` |                                                                                    | `204` (`pause`, `resume`, `cancel`, `retry`)                                  |
+| `POST /v1/jobs/{id}/{action}` |                                                                                    | `204` (`pause`, `resume`, `cancel`, `retry`, `redownload`)                    |
 | `POST /v1/watch`              | `{ service, creatorId, name }`                                                     | `{ added }`                                                                   |
 
 `JobRequest` already exists on both sides with the same shape, so the

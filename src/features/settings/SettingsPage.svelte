@@ -956,7 +956,9 @@
     align-items: center;
     gap: 12px;
     max-width: 520px;
-    margin-bottom: 4px;
+    /* Room below, so results never sit right against the box when the
+       section links hide during a search. */
+    margin-bottom: 18px;
   }
   .find :global(.field) {
     flex: 1;
@@ -972,7 +974,7 @@
     flex-wrap: wrap;
     gap: 4px;
     padding: 8px 0 14px;
-    margin-bottom: 8px;
+    margin: -12px 0 8px;
     background: linear-gradient(var(--bg) 80%, transparent);
   }
   .jump a {

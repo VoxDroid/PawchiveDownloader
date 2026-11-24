@@ -20,30 +20,44 @@
   let { files, index, selected, onindex, ontoggle }: Props = $props();
 
   const file = $derived(index === null ? null : (files[index] ?? null));
-  // The full image when the site has it; otherwise the thumbnail.
-  const src = $derived(
-    file
-      ? file.category === 'image' && file.url && !file.previewOnly
-        ? file.url
-        : file.thumbnailUrl
-      : null,
+  // The full image when the site has it. The thumbnail shows at once and
+  // the full image replaces it once it arrives; when the media server is
+  // down the thumbnail simply stays, with a note saying so.
+  const full = $derived(
+    file && file.category === 'image' && file.url && !file.previewOnly ? file.url : null,
   );
-  let loading = $state(true);
-  let failed = $state(false);
+  const thumb = $derived(file?.thumbnailUrl ?? null);
+  type Load = 'loading' | 'ready' | 'failed';
+  let fullState = $state<Load>('loading');
+  let thumbState = $state<Load>('loading');
 
   $effect(() => {
-    void src;
-    loading = true;
-    failed = false;
+    void file;
+    fullState = full ? 'loading' : 'failed';
+    thumbState = thumb ? 'loading' : 'failed';
   });
+
+  const showFull = $derived(!!full && fullState === 'ready');
+  const showThumb = $derived(!showFull && !!thumb && thumbState === 'ready');
+  const waiting = $derived(
+    !showFull && !showThumb && (fullState === 'loading' || thumbState === 'loading'),
+  );
+  const failed = $derived(fullState === 'failed' && thumbState === 'failed');
+  /** Still fetching the full image over a preview already shown. */
+  const upgrading = $derived(showThumb && !!full && fullState === 'loading');
+  const thumbOnly = $derived(showThumb && !!full && fullState === 'failed');
 
   function step(delta: number) {
     if (index === null || files.length === 0) return;
     onindex((index + delta + files.length) % files.length);
   }
 
+  let box = $state<HTMLDivElement>();
+
   function onkeydown(e: KeyboardEvent) {
-    if (index === null) return;
+    if (index === null || e.altKey || e.ctrlKey || e.metaKey) return;
+    // Browse keeps pages loaded out of sight; a viewer there has no say.
+    if (box && !box.checkVisibility()) return;
     if (e.key === 'Escape') onindex(null);
     else if (e.key === 'ArrowRight') step(1);
     else if (e.key === 'ArrowLeft') step(-1);
@@ -57,8 +71,9 @@
 
 <svelte:window {onkeydown} />
 
-{#if file && src}
+{#if file && (full || thumb)}
   <div
+    bind:this={box}
     class="lightbox"
     role="dialog"
     aria-modal="true"
@@ -99,20 +114,36 @@
           <Icon name="chevronLeft" size={26} />
         </button>
       {/if}
-      {#key src}
-        <img
-          {src}
-          alt={file.name}
-          class:hidden={loading}
-          onload={() => (loading = false)}
-          onerror={() => {
-            loading = false;
-            failed = true;
-          }}
-        />
+      {#key file.index}
+        {#if thumb && !showFull}
+          <img
+            src={thumb}
+            alt={file.name}
+            class:hidden={!showThumb}
+            onload={() => (thumbState = 'ready')}
+            onerror={() => (thumbState = 'failed')}
+          />
+        {/if}
+        {#if full}
+          <img
+            src={full}
+            alt={file.name}
+            class:gone={!showFull}
+            onload={() => (fullState = 'ready')}
+            onerror={() => (fullState = 'failed')}
+          />
+        {/if}
       {/key}
-      {#if loading}<span class="state"><Spinner /></span>{/if}
+      {#if waiting}<span class="state"><Spinner /></span>{/if}
       {#if failed}<span class="state faint">{t('lightbox.failed')}</span>{/if}
+      {#if upgrading}
+        <span class="note" transition:fade={{ duration: 140 }}>
+          <Spinner size={12} />
+          {t('lightbox.loadingFull')}
+        </span>
+      {:else if thumbOnly}
+        <span class="note" transition:fade={{ duration: 140 }}>{t('lightbox.thumbOnly')}</span>
+      {/if}
       {#if files.length > 1}
         <button class="nav next" aria-label={t('lightbox.next')} onclick={() => step(1)}>
           <Icon name="chevronRight" size={26} />
@@ -196,8 +227,28 @@
   img.hidden {
     visibility: hidden;
   }
+  /* Loads out of sight until it can replace the preview. */
+  img.gone {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+  }
   .state {
     position: absolute;
+  }
+  .note {
+    position: absolute;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    bottom: 12px;
+    padding: 4px 12px;
+    border-radius: 99px;
+    background: rgb(0 0 0 / 0.6);
+    font-size: var(--fs-sm);
+    opacity: 0.85;
   }
   .nav {
     position: absolute;

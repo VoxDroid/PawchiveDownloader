@@ -109,6 +109,11 @@ impl Bridge {
         (code, until)
     }
 
+    /// Takes the code on show away before it runs out.
+    pub fn cancel_pairing(&self) {
+        self.inner.lock().code = None;
+    }
+
     pub fn revoke(core: &Core, id: &str) -> Result<(), String> {
         let mut list = Self::pairings(core);
         list.retain(|p| p.id != id);
@@ -116,21 +121,23 @@ impl Bridge {
     }
 
     fn check_token(core: &Core, headers: &HeaderMap) -> bool {
-        let Some(token) = headers
+        Self::pairing_for(core, headers).is_some()
+    }
+
+    /// The pairing a request's token belongs to; notes that it was used, so
+    /// the app can show which browsers are connected.
+    fn pairing_for(core: &Core, headers: &HeaderMap) -> Option<Pairing> {
+        let token = headers
             .get("authorization")
             .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.strip_prefix("Bearer "))
-        else {
-            return false;
-        };
+            .and_then(|v| v.strip_prefix("Bearer "))?;
         let wanted = hash(token.trim());
         let mut list = Self::pairings(core);
-        let Some(p) = list.iter_mut().find(|p| p.token_hash == wanted) else {
-            return false;
-        };
+        let p = list.iter_mut().find(|p| p.token_hash == wanted)?;
         p.last_used_at = Some(now_ms());
+        let found = p.clone();
         let _ = core.store.set(PAIRING_KEY, &list);
-        true
+        Some(found)
     }
 
     /// Starts or stops the server to match the setting.
@@ -236,6 +243,7 @@ fn router(bridge: Arc<Bridge>, core: Arc<Core>) -> Router {
     Router::new()
         .route("/v1/hello", get(hello))
         .route("/v1/pair", post(pair))
+        .route("/v1/unpair", post(unpair))
         .route("/v1/jobs", get(list_jobs).post(create_job))
         .route("/v1/jobs/{id}/{action}", post(job_action))
         .route("/v1/watch", post(watch))
@@ -287,7 +295,8 @@ async fn pair(State(ctx): State<Ctx>, Json(body): Json<PairBody>) -> Response {
             name
         },
         created_at: now_ms(),
-        last_used_at: None,
+        // Pairing is the browser talking to the app, so it counts as seen.
+        last_used_at: Some(now_ms()),
         token_hash: hash(&token),
     });
     if let Err(e) = ctx.core.store.set(PAIRING_KEY, &list) {
@@ -295,6 +304,18 @@ async fn pair(State(ctx): State<Ctx>, Json(body): Json<PairBody>) -> Response {
     }
     ctx.core.log.info("A browser extension was paired");
     Json(serde_json::json!({ "token": token })).into_response()
+}
+
+/// The extension forgets the app: the app forgets the extension too.
+async fn unpair(State(ctx): State<Ctx>, headers: HeaderMap) -> Response {
+    let Some(p) = Bridge::pairing_for(&ctx.core, &headers) else {
+        return error(StatusCode::UNAUTHORIZED, "not-paired");
+    };
+    if let Err(e) = Bridge::revoke(&ctx.core, &p.id) {
+        return error(StatusCode::INTERNAL_SERVER_ERROR, &e);
+    }
+    ctx.core.log.info("A browser extension was unpaired");
+    Json(serde_json::json!({ "unpaired": true })).into_response()
 }
 
 async fn list_jobs(State(ctx): State<Ctx>, headers: HeaderMap) -> Response {
@@ -329,6 +350,7 @@ async fn job_action(
         "resume" => JobAction::Resume,
         "cancel" => JobAction::Cancel,
         "retry" => JobAction::Retry,
+        "redownload" => JobAction::Redownload,
         _ => return error(StatusCode::BAD_REQUEST, "unknown-action"),
     };
     ctx.core.engine.act(&id, action);

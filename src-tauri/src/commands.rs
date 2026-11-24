@@ -583,6 +583,13 @@ pub fn bridge_pair(core: State<'_, Core_>) -> crate::bridge::BridgeStatus {
     core.bridge.status(&core)
 }
 
+/// Hides the pairing code before it runs out.
+#[tauri::command(async)]
+pub fn bridge_cancel_pairing(core: State<'_, Core_>) -> crate::bridge::BridgeStatus {
+    core.bridge.cancel_pairing();
+    core.bridge.status(&core)
+}
+
 #[tauri::command(async)]
 pub fn bridge_revoke(core: State<'_, Core_>, id: String) -> R<crate::bridge::BridgeStatus> {
     crate::bridge::Bridge::revoke(&core, &id)?;

@@ -63,6 +63,8 @@ pub struct QueueStatus {
 
 /// Seconds between the queue finishing and the when-done action.
 pub const WHEN_DONE_DELAY_MS: i64 = 60_000;
+/// Set once the old default for existing files (Uniquify) moved to Skip.
+const SKIP_DEFAULT_KEY: &str = "migrated.conflictSkip";
 
 /// When the download window opens next (epoch ms), or None while it is open.
 /// The window may cross midnight; equal start and end mean always open.
@@ -115,7 +117,16 @@ impl Core {
             Store::open(&options.data_dir.join("library.db"))?
         });
         let stored = store.get_raw("settings").unwrap_or(serde_json::Value::Null);
-        let settings = settings::coerce(&stored);
+        let mut settings = settings::coerce(&stored);
+        // 2.1 made Skip the default for files that already exist; settings
+        // still on the old default (Uniquify) move over once.
+        if store.get::<bool>(SKIP_DEFAULT_KEY).is_none() {
+            if settings.conflict_action == settings::ConflictAction::Uniquify {
+                settings.conflict_action = settings::ConflictAction::Skip;
+                let _ = store.set("settings", &settings);
+            }
+            let _ = store.set(SKIP_DEFAULT_KEY, &true);
+        }
         let log = Logger::new();
         if let Some(file) = &options.log_file {
             log.set_file(file);

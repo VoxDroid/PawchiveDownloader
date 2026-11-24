@@ -145,8 +145,10 @@ pub fn choose_target(
         // transfer of this app is writing: that would mix two files.
         ConflictAction::Overwrite if !taken(wanted) => Some(wanted.to_path_buf()),
         ConflictAction::Overwrite => (1..10_000).map(|n| numbered(wanted, n)).find(|p| !busy(p)),
-        ConflictAction::Skip => None,
-        ConflictAction::Uniquify => (1..10_000).map(|n| numbered(wanted, n)).find(|p| !busy(p)),
+        ConflictAction::Skip if wanted.exists() => None,
+        ConflictAction::Skip | ConflictAction::Uniquify => {
+            (1..10_000).map(|n| numbered(wanted, n)).find(|p| !busy(p))
+        }
     }
 }
 
@@ -431,6 +433,13 @@ mod tests {
         assert_eq!(
             choose_target(&wanted, ConflictAction::Skip, |_| false),
             Some(wanted.clone())
+        );
+        // Another file of the same download wants the name: Skip numbers it
+        // rather than losing it; only a file already on disk is skipped.
+        let other = wanted.clone();
+        assert_eq!(
+            choose_target(&wanted, ConflictAction::Skip, move |p| p == other),
+            Some(dir.path().join("x (1).txt"))
         );
         std::fs::write(&wanted, "1").unwrap();
         assert_eq!(

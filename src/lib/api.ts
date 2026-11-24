@@ -143,6 +143,7 @@ export const api = {
   bridgeStatus: () => call<BridgeStatus>('bridge_status'),
   checkMedia: (url: string) => call<{ reachable: boolean; host: string }>('check_media', { url }),
   bridgePair: () => call<BridgeStatus>('bridge_pair'),
+  bridgeCancelPairing: () => call<BridgeStatus>('bridge_cancel_pairing'),
   bridgeRevoke: (id: string) => call<BridgeStatus>('bridge_revoke', { id }),
   importBackup: (path: string) =>
     call<{ watch: number; favorites: number; history: number }>('import_backup', { path }),

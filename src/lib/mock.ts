@@ -217,9 +217,15 @@ export function createMockBackend(): Backend {
     pairings: [
       {
         id: 'p1',
-        name: 'Chrome',
+        name: 'Edge: Pawchive Downloader',
         createdAt: Date.now() - 86_400_000,
-        lastUsedAt: Date.now() - 600_000,
+        lastUsedAt: Date.now() - 20_000,
+      },
+      {
+        id: 'p2',
+        name: 'Firefox: Pawchive Downloader',
+        createdAt: Date.now() - 9 * 86_400_000,
+        lastUsedAt: Date.now() - 3 * 3_600_000,
       },
     ],
     code: null,
@@ -282,6 +288,25 @@ export function createMockBackend(): Backend {
         active: 0,
         bytes: 412_000_000,
         totalBytes: 412_000_000,
+        partial: 0,
+      },
+    }),
+    summary({
+      id: 'j5',
+      title: 'Ink Studies Vol. 2',
+      subtitle: aster.name,
+      status: 'done',
+      finishedAt: Date.now() - 1_800_000,
+      stats: {
+        total: 12,
+        done: 0,
+        failed: 0,
+        skipped: 12,
+        already: 12,
+        cancelled: 0,
+        active: 0,
+        bytes: 0,
+        totalBytes: 0,
         partial: 0,
       },
     }),
@@ -636,6 +661,14 @@ export function createMockBackend(): Backend {
         if (action === 'remove') return [];
         if (action === 'pause') return [{ ...j, status: 'paused' as const, speed: 0 }];
         if (action === 'resume') return [{ ...j, status: 'running' as const }];
+        if (action === 'redownload')
+          return [
+            {
+              ...j,
+              status: 'done' as const,
+              stats: { ...j.stats, done: j.stats.total, skipped: 0, already: 0 },
+            },
+          ];
         if (action === 'cancel')
           return [{ ...j, status: 'cancelled' as const, finishedAt: Date.now() }];
         return [j];
@@ -651,6 +684,10 @@ export function createMockBackend(): Backend {
     }),
     bridge_pair: () => {
       bridge = { ...bridge, code: '482917', codeExpiresAt: Date.now() + 120_000 };
+      return bridge;
+    },
+    bridge_cancel_pairing: () => {
+      bridge = { ...bridge, code: null, codeExpiresAt: null };
       return bridge;
     },
     bridge_revoke: ({ id }) => {

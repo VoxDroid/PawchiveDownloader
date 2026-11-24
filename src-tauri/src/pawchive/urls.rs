@@ -625,4 +625,30 @@ mod tests {
         f.server = Some("https://n1.pawchive.pw".into());
         assert_eq!(file_url(Site::Kemono, &f), None);
     }
+
+    /// Previews are shown straight from the sites, so the window's content
+    /// security policy has to let every site's images in, media servers too.
+    #[test]
+    fn the_window_can_show_images_from_every_site() {
+        let conf: serde_json::Value =
+            serde_json::from_str(include_str!("../../tauri.conf.json")).unwrap();
+        let csp = conf["app"]["security"]["csp"].as_str().unwrap();
+        let img = csp
+            .split(';')
+            .map(str::trim)
+            .find(|d| d.starts_with("img-src"))
+            .unwrap();
+        let sources: Vec<&str> = img.split_whitespace().collect();
+        for site in Site::ALL {
+            for source in [
+                format!("https://{}", site.host()),
+                format!("https://*.{}", site.host()),
+            ] {
+                assert!(
+                    sources.contains(&source.as_str()),
+                    "{source} missing from {img}"
+                );
+            }
+        }
+    }
 }

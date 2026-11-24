@@ -58,7 +58,7 @@
   function hide() {
     clearTimeout(timer);
     target = null;
-    visible = false;
+    if (visible) visible = false;
   }
 
   onMount(() => {
@@ -76,10 +76,13 @@
       if (el && (e.target as HTMLElement).matches(':focus-visible')) show(el);
     };
     const away = () => hide();
+    // Removing a focused element fires focusout while Svelte is still taking
+    // the page apart, where state must not change: hide right after instead.
+    const blurred = () => queueMicrotask(hide);
     document.addEventListener('pointerover', over);
     document.addEventListener('pointerout', out);
     document.addEventListener('focusin', focus);
-    document.addEventListener('focusout', away);
+    document.addEventListener('focusout', blurred);
     document.addEventListener('pointerdown', away, true);
     document.addEventListener('scroll', away, true);
     window.addEventListener('blur', away);
@@ -89,7 +92,7 @@
       document.removeEventListener('pointerover', over);
       document.removeEventListener('pointerout', out);
       document.removeEventListener('focusin', focus);
-      document.removeEventListener('focusout', away);
+      document.removeEventListener('focusout', blurred);
       document.removeEventListener('pointerdown', away, true);
       document.removeEventListener('scroll', away, true);
       window.removeEventListener('blur', away);

@@ -524,6 +524,9 @@ async fn pauses_resumes_and_cancels() {
     env.core.engine.act(&id, JobAction::Resume);
     assert_eq!(env.wait(&id).await.status, JobStatus::Done);
 
+    // The file is on disk now; a second copy is what gets cancelled.
+    env.core.settings.write().conflict_action =
+        pawchive_downloader_lib::settings::ConflictAction::Uniquify;
     let second = env.core.engine.create(request());
     tokio::time::sleep(Duration::from_millis(100)).await;
     env.core.engine.act(&second, JobAction::Cancel);
@@ -1233,6 +1236,72 @@ async fn finds_and_restores_deleted_files() {
     );
 }
 
+/// Deleting downloaded files used to leave them "downloaded" for good: the
+/// library remembered them and skipped them until it was cleared by hand.
+#[tokio::test(flavor = "multi_thread")]
+async fn deleted_files_download_again_by_themselves() {
+    let env = env().await;
+    let a = Fixture::new("kept.png", 300, 110);
+    let b = Fixture::new("gone.png", 300, 111);
+    env.mount_creator(vec![post("611", "Pair", &[&a, &b])])
+        .await;
+    env.serve(&a).await;
+    env.serve(&b).await;
+    let id = env.core.engine.create(refs_request("611", no_text()));
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    let gone = files_under(&env.out())
+        .into_iter()
+        .find(|p| p.to_string_lossy().ends_with("gone.png"))
+        .unwrap();
+    std::fs::remove_file(&gone).unwrap();
+
+    // No repair by hand: the missing file is fetched again, the other kept.
+    let again = env.core.engine.create(refs_request("611", no_text()));
+    let job = env.wait(&again).await;
+    assert_eq!(job.status, JobStatus::Done);
+    assert_eq!(
+        (job.stats.done, job.stats.skipped, job.stats.already),
+        (1, 1, 1)
+    );
+    assert_eq!(std::fs::read(&gone).unwrap(), b.bytes);
+
+    // All there: nothing is fetched and both count as already downloaded.
+    let third = env.core.engine.create(refs_request("611", no_text()));
+    let job = env.wait(&third).await;
+    assert_eq!((job.stats.done, job.stats.already), (0, 2));
+
+    // Download again on request replaces them instead of adding copies.
+    std::fs::write(&gone, b"damaged").unwrap();
+    env.core.engine.act(&third, JobAction::Redownload);
+    let job = env.wait(&third).await;
+    assert_eq!(job.status, JobStatus::Done);
+    assert_eq!((job.stats.done, job.stats.already), (2, 0));
+    assert_eq!(std::fs::read(&gone).unwrap(), b.bytes);
+    let pngs = files_under(&env.out())
+        .into_iter()
+        .filter(|p| p.extension().is_some_and(|e| e == "png"))
+        .count();
+    assert_eq!(pngs, 2, "replaced, not numbered");
+}
+
+/// Skip is the default for a name that is already taken: a file on disk the
+/// library forgot is not saved a second time as "name (1)".
+#[tokio::test(flavor = "multi_thread")]
+async fn a_file_already_in_the_folder_is_skipped_not_copied() {
+    let env = env().await;
+    let a = Fixture::new("here.png", 300, 120);
+    env.mount_creator(vec![post("621", "Here", &[&a])]).await;
+    env.serve(&a).await;
+    let id = env.core.engine.create(refs_request("621", no_text()));
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    env.core.store.forget_known().unwrap();
+    let again = env.core.engine.create(refs_request("621", no_text()));
+    let job = env.wait(&again).await;
+    assert_eq!(job.status, JobStatus::Done);
+    assert_eq!((job.stats.done, job.stats.already), (0, 1));
+    assert_eq!(files_under(&env.out()).len(), 1);
+}
+
 #[tokio::test(flavor = "multi_thread")]
 async fn watchlist_downloads_can_filter_posts() {
     let env = env().await;
@@ -1567,4 +1636,40 @@ async fn a_paired_browser_extension_can_queue_downloads() {
     let status = env.core.bridge.status(&env.core);
     assert_eq!(status.pairings.len(), 1);
     assert_eq!(status.pairings[0].name, "Chrome");
+    assert!(
+        status.pairings[0].last_used_at.is_some(),
+        "the app sees when the browser last checked in"
+    );
+
+    // A code can be taken away before it runs out.
+    env.core.bridge.start_pairing();
+    env.core.bridge.cancel_pairing();
+    assert_eq!(env.core.bridge.status(&env.core).code, None);
+
+    // Unpairing in the extension removes the pairing in the app as well.
+    let anonymous = http
+        .post(format!("{base}/v1/unpair"))
+        .header("Origin", ext)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(anonymous.status(), 401);
+    let unpaired = http
+        .post(format!("{base}/v1/unpair"))
+        .header("Origin", ext)
+        .bearer_auth(&token)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(unpaired.status(), 200);
+    assert!(env.core.bridge.status(&env.core).pairings.is_empty());
+    let after = http
+        .post(format!("{base}/v1/jobs"))
+        .header("Origin", ext)
+        .bearer_auth(&token)
+        .json(&request)
+        .send()
+        .await
+        .unwrap();
+    assert_eq!(after.status(), 401, "the old token no longer works");
 }

@@ -26,8 +26,18 @@
   import Lightbox from './Lightbox.svelte';
   import { rememberRecent } from './batch.svelte';
 
-  let { service, creatorId, postId }: { service: string; creatorId: string; postId: string } =
-    $props();
+  let {
+    service,
+    creatorId,
+    postId,
+    ontitle,
+  }: {
+    service: string;
+    creatorId: string;
+    postId: string;
+    /** Called with the post's title once it is known. */
+    ontitle?: (title: string) => void;
+  } = $props();
 
   let view = $state<PostView | null>(null);
   let error = $state<string | null>(null);
@@ -123,6 +133,7 @@
         kind: 'post',
         at: Date.now(),
       });
+      ontitle?.(loaded.post.title || loaded.post.id);
     } catch (e) {
       error = describeError(e);
     }
