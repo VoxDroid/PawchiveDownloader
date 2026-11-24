@@ -7,7 +7,7 @@ what it deliberately leaves out.
 
 The tools:
 
-- **Pawchive Downloader** (this app, 2.0.0): desktop app for Windows, macOS
+- **Pawchive Downloader** (this app, 2.1.0): desktop app for Windows, macOS
   and Linux.
 - **[Pawchive-Downloader](https://github.com/whyamihere773/Pawchive-Downloader)**
   by whyamihere773: Python desktop app for Pawchive, Kemono, Coomer and
@@ -41,7 +41,7 @@ project there.
 | Systems          | Windows, macOS (universal), Linux             | Windows, Linux                      | Windows, macOS, Linux | Windows                                   | Any with Python       | Windows, macOS, Linux |
 | Built with       | Rust and Svelte (Tauri)                       | Python and QML                      | Python and TypeScript | Python (PyQt5)                            | Python                | Rust                  |
 | Sites            | Pawchive, Kemono, Coomer                      | Pawchive, Kemono, Coomer and others | Pawchive              | Kemono, Coomer, Bunkr, Discord and others | Hundreds              | Kemono, Coomer        |
-| Latest release   | 1.1.1, 2026-11-18                             | 1.4.1, 2026-11-17                   | 1.0.0, 2026-08-23     | 2.0.0, 2026-11-12                         | 1.32.20, 2026-11-14   | 0.77.1, 2026-09-12    |
+| Latest release   | 2.1.0, 2026-11-24                             | 1.4.1, 2026-11-17                   | 1.0.0, 2026-08-23     | 2.0.0, 2026-11-12                         | 1.32.20, 2026-11-14   | 0.77.1, 2026-09-12    |
 | GitHub stars     | private                                       | 91                                  | 597                   | 675                                       | 20,562                | 71                    |
 | License          | MIT (builds on Ko-fi)                         | not stated                          | BSD-3-Clause          | MIT                                       | GPL-2.0               | MIT-0                 |
 | Automated tests  | About 160 (Rust, unit, UI) on 3 systems       | -                                   | Yes                   | -                                         | Yes                   | -                     |

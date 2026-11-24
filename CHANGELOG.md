@@ -6,6 +6,13 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+## [2.1.0] - 2026-11-24
+
+The Library: an offline gallery of everything in your download folders,
+with zoom, full screen and video playback. Also previews that load again,
+Back and forward in Browse, files deleted from disk downloaded again, a
+redesigned pairing with the browser extension and evenly centered icons.
+
 ### Added
 
 - **The Library shows everything in your download folders**: not only the
@@ -322,7 +329,8 @@ The first version of the desktop app, a private test build.
   and component tests, Playwright interface tests; CI on Windows, macOS and
   Linux.
 
-[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/VoxDroid/PawchiveDownloader/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.1.0...v1.1.1
 [1.1.0]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.0.2...v1.1.0
