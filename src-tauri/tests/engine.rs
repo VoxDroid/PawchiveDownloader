@@ -1300,6 +1300,41 @@ async fn a_file_already_in_the_folder_is_skipped_not_copied() {
     assert_eq!(job.status, JobStatus::Done);
     assert_eq!((job.stats.done, job.stats.already), (0, 1));
     assert_eq!(files_under(&env.out()).len(), 1);
+    // It is the same file (same content), so the library knows it again and
+    // the Library page shows it.
+    let files = env.core.store.list_known_files_with_time();
+    let g = pawchive_downloader_lib::gallery::build(&files, &[], |p| {
+        std::fs::metadata(p).ok().map(|m| m.len())
+    });
+    assert_eq!(g.images, 1, "a file already on disk shows in the Library");
+    assert!(!env
+        .core
+        .store
+        .known_hashes(std::slice::from_ref(&a.hash))
+        .is_empty());
+}
+
+/// A different file under the same name is skipped too, but never taken for
+/// the one the post has.
+#[tokio::test(flavor = "multi_thread")]
+async fn a_different_file_with_the_same_name_is_not_recorded() {
+    let env = env().await;
+    let a = Fixture::new("same.png", 300, 125);
+    env.mount_creator(vec![post("622", "Same", &[&a])]).await;
+    env.serve(&a).await;
+    let id = env.core.engine.create(refs_request("622", no_text()));
+    assert_eq!(env.wait(&id).await.status, JobStatus::Done);
+    let saved = files_under(&env.out()).pop().unwrap();
+    std::fs::write(&saved, b"something else entirely").unwrap();
+    env.core.store.forget_known().unwrap();
+    let again = env.core.engine.create(refs_request("622", no_text()));
+    let job = env.wait(&again).await;
+    assert_eq!((job.stats.done, job.stats.skipped), (0, 1));
+    assert!(env
+        .core
+        .store
+        .known_hashes(std::slice::from_ref(&a.hash))
+        .is_empty());
 }
 
 /// What the Library shows comes straight from what was downloaded.
