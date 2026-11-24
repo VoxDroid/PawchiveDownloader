@@ -131,15 +131,17 @@
           onclick={() => (playing = !playing)}
         />
       {/if}
-      <IconButton
-        icon="compass"
-        label={t('common.openInBrowse')}
-        onclick={() => {
-          const url = pageUrls.post(item.post.service, item.post.creatorId, item.post.postId);
-          close();
-          openLink(url);
-        }}
-      />
+      {#if item.post.creatorId && item.post.postId}
+        <IconButton
+          icon="compass"
+          label={t('common.openInBrowse')}
+          onclick={() => {
+            const url = pageUrls.post(item.post.service, item.post.creatorId, item.post.postId);
+            close();
+            openLink(url);
+          }}
+        />
+      {/if}
       <IconButton
         icon="folderOpen"
         label={t('library.showFolder')}

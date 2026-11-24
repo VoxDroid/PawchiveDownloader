@@ -226,6 +226,7 @@ function demoGallery(): Gallery {
       }
       return {
         key: `${service}:${creatorId}:${postId}`,
+        creatorKey: `${service}:${creatorId}`,
         service,
         site: service.includes('@kemono') ? 'kemono' : 'pawchive',
         creatorId,

@@ -8,6 +8,18 @@ All notable changes to Pawchive Downloader. The format follows
 
 ### Added
 
+- **The Library shows everything in your download folders**: not only the
+  files the app recorded, but also images and videos it has no record of,
+  saved by another install (the portable and the installed app, another
+  computer), by the browser extension, or before the history was cleared.
+  They are placed by the folder names the app writes
+  (`Site/Creator (service)/date Title [post id]/`, also with files of
+  unpacked archives and outside links below a post), joined to the post and
+  creator the app knows, and grouped by folder when the layout is different.
+  The download folder and the folders of past downloads are scanned when the
+  Library opens (no network, a second or so for thousands of files). The
+  window still never names a path: found files get an id from their path,
+  size and time, and only files found by the scan are served.
 - **Library: an offline gallery of your downloads**: a new page shows the
   images and videos the app downloaded, by creator and post, straight from
   your disk with no site and no network. Search creators and posts, show

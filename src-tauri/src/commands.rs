@@ -371,8 +371,24 @@ pub fn library_stats(core: State<'_, Core_>) -> crate::library::Stats {
 pub async fn library_media(core: State<'_, Core_>) -> R<crate::gallery::Gallery> {
     let files = core.store.list_known_files_with_time();
     let history = core.store.list_history();
-    let gallery = tauri::async_runtime::spawn_blocking(move || {
-        crate::gallery::build(&files, &history, |p| {
+    let known: Vec<(String, String, String)> = core
+        .store
+        .list_watch()
+        .into_iter()
+        .map(|w| (w.service, w.creator_id, w.name))
+        .collect();
+    // The download folder and the folders of past downloads (an earlier
+    // download folder, say) are scanned for what the library does not know.
+    let mut candidates = vec![PathBuf::from(core.settings().download_dir)];
+    candidates.extend(
+        history
+            .iter()
+            .filter(|h| !h.folder.is_empty())
+            .map(|h| PathBuf::from(&h.folder)),
+    );
+    let mut gallery = tauri::async_runtime::spawn_blocking(move || {
+        let found = crate::gallery::scan(&crate::gallery::roots(candidates));
+        crate::gallery::build(&files, &history, &known, &found, |p| {
             std::fs::metadata(p)
                 .ok()
                 .filter(|m| m.is_file())
@@ -381,6 +397,7 @@ pub async fn library_media(core: State<'_, Core_>) -> R<crate::gallery::Gallery>
     })
     .await
     .map_err(|e| e.to_string())?;
+    *core.media_index.write() = std::mem::take(&mut gallery.found).into_iter().collect();
     // Thumbnails the page will ask for, made ahead in the background.
     let images = gallery
         .posts
@@ -401,7 +418,7 @@ pub fn open_media(app: AppHandle, core: State<'_, Core_>, hash: String) -> R<()>
     if !crate::gallery::is_hash(&hash) {
         return Err("missing".into());
     }
-    let path = PathBuf::from(core.store.path_of(&hash).ok_or("missing")?);
+    let path = core.media_path(&hash).ok_or("missing")?;
     if crate::gallery::kind_of(&path).is_none() || !path.is_file() {
         return Err("missing".into());
     }

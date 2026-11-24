@@ -79,9 +79,14 @@ favorites.
 
 **`gallery.rs`** is the Library: it groups the recorded files that are still
 on disk into posts and creators (names from the history, else from the folder
-names) and serves them to the window through the `pdl-media` protocol
-(`app.rs` registers it). The protocol takes a content hash, never a path, so it
-can only hand out files the library recorded, and only images and videos.
+names), and adds the images and videos a scan of the download folders finds
+without a record, placed by the folder names the app writes
+(`Site/Creator (service)/date Title [post id]/`) and matched to known
+creators by name. It serves them to the window through the `pdl-media`
+protocol (`app.rs` registers it). The protocol takes a content hash (recorded
+files) or an id the last scan gave a found file (from its path, size and
+time), never a path, so it can only hand out those files, and only images and
+videos.
 Videos are served in byte ranges (at most 4 MB per answer), so they start and
 seek without being read whole. Thumbnails are made on first request with the
 `image` crate, at most three at a time, and cached in `thumbs/`. The content
