@@ -96,9 +96,11 @@ pub fn closed_until(now: chrono::DateTime<chrono::Local>, start: &str, end: &str
     } else {
         today + Days::days(1)
     };
-    opens
-        .and_local_timezone(chrono::Local)
-        .earliest()
+    // A time that does not exist that day (skipped when the clocks go
+    // forward) opens an hour later, instead of not closing at all.
+    [opens, opens + Days::hours(1)]
+        .into_iter()
+        .find_map(|t| t.and_local_timezone(chrono::Local).earliest())
         .map(|t| t.timestamp_millis())
 }
 

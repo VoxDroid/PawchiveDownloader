@@ -385,6 +385,16 @@ pub enum JobRequest {
     },
 }
 
+impl JobRequest {
+    pub fn options_mut(&mut self) -> &mut JobOverrides {
+        match self {
+            JobRequest::Posts { options, .. }
+            | JobRequest::Refs { options, .. }
+            | JobRequest::Creator { options, .. } => options,
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct SelectedPost {

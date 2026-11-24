@@ -184,7 +184,11 @@ impl WatchEntry {
     /// whole back catalogue as new. Returns the posts found new this time.
     pub fn apply_check(&mut self, page: &[Post], now: i64) -> Vec<NewPost> {
         let seen: HashSet<&String> = self.seen_ids.iter().collect();
-        let baseline = self.last_checked_at.is_none() && self.seen_ids.is_empty();
+        // No successful check yet: never checked, or every check so far
+        // failed (offline, the site down). A failed first check must not
+        // turn the next good one into "the whole first page is new".
+        let baseline =
+            self.seen_ids.is_empty() && (self.last_checked_at.is_none() || self.error.is_some());
         let known: HashSet<String> = self.new_posts.iter().map(|p| p.id.clone()).collect();
         let found: Vec<NewPost> = if baseline {
             vec![]
@@ -335,6 +339,21 @@ mod tests {
         assert_eq!(total_new(&[w.clone()]), 1);
         w.mark_seen(None);
         assert!(w.new_posts.is_empty());
+    }
+
+    #[test]
+    fn a_failed_first_check_still_takes_a_baseline() {
+        let mut w = WatchEntry::new("s", "1", "C", 0);
+        // What a failed check leaves behind.
+        w.error = Some("offline".into());
+        w.last_checked_at = Some(5);
+        assert!(w.apply_check(&posts(&["3", "2", "1"]), 10).is_empty());
+        assert!(w.new_posts.is_empty());
+        assert_eq!(w.apply_check(&posts(&["4", "3"]), 20).len(), 1);
+        // A creator with no posts yet: their first post is new.
+        let mut empty = WatchEntry::new("s", "2", "D", 0);
+        assert!(empty.apply_check(&[], 10).is_empty());
+        assert_eq!(empty.apply_check(&posts(&["1"]), 20).len(), 1);
     }
 
     #[test]

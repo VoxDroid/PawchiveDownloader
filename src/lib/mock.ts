@@ -587,20 +587,36 @@ export function createMockBackend(): Backend {
       (settings = { ...DEFAULT_SETTINGS, downloadDir: settings.downloadDir, onboarded: true }),
     check_proxy_url: ({ url }) =>
       /^(https?|socks5h?):\/\/[^/]+/.test(String(url)) ? null : 'invalid',
-    parse_links: ({ text }) =>
-      String(text)
+    parse_links: ({ text }) => {
+      // As the app: links of all three sites, other sites' services marked
+      // with their site, each link once.
+      const seen = new Set<string>();
+      return String(text)
         .split(/\s+/)
-        .filter((l) => l.includes('pawchive.pw'))
+        .filter((l) => /(pawchive\.pw|kemono\.(cr|su|party)|coomer\.(st|su|party))\//i.test(l))
         .map((url) => {
-          const m = /pawchive\.pw\/([\w-]+)\/user\/([\w.-]+)(?:\/post\/([\w.-]+))?/.exec(url);
+          const site = /kemono\./i.test(url) ? 'kemono' : /coomer\./i.test(url) ? 'coomer' : null;
+          const qualify = (service: string) => (site ? `${service}@${site}` : service);
+          const m = /\/([\w-]+)\/user\/([\w.-]+)(?:\/post\/([\w.-]+))?\/?$/.exec(
+            url.split(/[?#]/)[0] ?? '',
+          );
           if (m?.[3])
-            return { url, ref: { kind: 'post', service: m[1], creatorId: m[2], postId: m[3] } };
+            return {
+              url,
+              ref: { kind: 'post', service: qualify(m[1]!), creatorId: m[2], postId: m[3] },
+            };
           if (m)
             return {
               url,
-              ref: { kind: 'creator', service: m[1], creatorId: m[2], offset: 0, query: null },
+              ref: {
+                kind: 'creator',
+                service: qualify(m[1]!),
+                creatorId: m[2],
+                offset: 0,
+                query: null,
+              },
             };
-          if (/pawchive\.pw\/posts/.test(url))
+          if (/\/posts\/?(\?|$)/.test(url))
             return {
               url,
               ref: {
@@ -612,7 +628,14 @@ export function createMockBackend(): Backend {
               },
             };
           return { url, ref: { kind: 'other' } };
-        }),
+        })
+        .filter((link) => {
+          const key = JSON.stringify(link.ref);
+          if (link.ref.kind === 'other' || seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+    },
     get_post: ({ creatorId, postId }) => {
       const post =
         findPost(String(postId)) ?? makePost(CREATORS.find((c) => c.id === creatorId) ?? aster, 0);
@@ -921,6 +944,9 @@ export function createMockBackend(): Backend {
         addedAt: Date.now(),
         lastDownloadedAt: null,
       };
+      // Like the app: a favorite that is there already is returned as it is.
+      const existing = favorites.find((f) => f.key === fav.key);
+      if (existing) return existing;
       favorites = [fav, ...favorites];
       return fav;
     },

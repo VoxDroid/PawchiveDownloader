@@ -213,6 +213,10 @@ export const api = {
 
 /** Opens a web page in the default browser. */
 export async function openUrl(url: string): Promise<void> {
+  // Links come from posts too: only web pages and mail, never a file, a
+  // script or another program's scheme. The opener's scope refuses those
+  // as well; this keeps it so should that scope ever be widened.
+  if (!/^(https?:\/\/|mailto:)/i.test(url.trim())) return;
   if (!inTauri) {
     window.open(url, '_blank', 'noopener');
     return;

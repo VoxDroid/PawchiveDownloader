@@ -1,7 +1,6 @@
 <script lang="ts">
   import { serviceLabel } from '../../lib/urls';
   import { describeError } from '../../ui/state/errors';
-  import { onMount } from 'svelte';
   import { flip } from 'svelte/animate';
   import { slide } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -46,8 +45,14 @@
   async function addLinks(text: string): Promise<number> {
     const links = await api.parseLinks(text).catch(() => []);
     const creators = new Map<string, { service: string; creatorId: string }>();
+    // Creators already followed are not looked up again: an import of a
+    // long list would otherwise ask the site for every one of them.
+    const watched = new Set((entries ?? []).map((e) => e.key));
     for (const { ref } of links) {
-      if (ref.kind === 'creator' || ref.kind === 'post')
+      if (
+        (ref.kind === 'creator' || ref.kind === 'post') &&
+        !watched.has(`${ref.service}:${ref.creatorId}`)
+      )
         creators.set(`${ref.service}:${ref.creatorId}`, {
           service: ref.service,
           creatorId: ref.creatorId,
@@ -64,8 +69,7 @@
     return added;
   }
 
-  onMount(load);
-
+  // Runs once on open, then whenever new posts are found.
   $effect(() => {
     void app.watchNew;
     void load();

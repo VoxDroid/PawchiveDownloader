@@ -149,7 +149,16 @@
       const text = await openTextFile(t('common.import'), ['json']);
       if (!text) return;
       const parsed = JSON.parse(text) as Partial<Settings>;
-      if (!parsed || typeof parsed !== 'object') throw new Error('invalid');
+      // Another kind of file (a backup, a favorites export) is not settings:
+      // it would change nothing and still say "imported".
+      if (
+        !parsed ||
+        typeof parsed !== 'object' ||
+        Array.isArray(parsed) ||
+        !Object.keys(parsed).some((key) => key in app.settings)
+      ) {
+        throw new Error('invalid');
+      }
       await updateSettings(parsed);
       toast(t('settings.imported'), 'success');
     } catch {

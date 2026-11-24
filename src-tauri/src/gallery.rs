@@ -198,12 +198,17 @@ pub fn scan(roots: &[PathBuf]) -> Vec<Found> {
     out
 }
 
-/// A path as a comparable string (one kind of slash, any case).
+/// A path as a comparable string: one kind of slash, and any case where the
+/// file system ignores case (Windows, macOS). On Linux `Art` and `art` are
+/// two folders, and both are scanned.
 pub fn fold_path(path: &Path) -> String {
-    path.to_string_lossy()
-        .replace('\\', "/")
-        .trim_end_matches('/')
-        .to_lowercase()
+    let text = path.to_string_lossy().replace('\\', "/");
+    let text = text.trim_end_matches('/');
+    if cfg!(any(windows, target_os = "macos")) {
+        text.to_lowercase()
+    } else {
+        text.to_string()
+    }
 }
 
 /// The folders to scan: these, without those inside another, that exist.
@@ -679,21 +684,25 @@ fn mime(path: &Path) -> &'static str {
 }
 
 /// `bytes=START-END` (END optional) against a file of `len` bytes, clamped.
+/// At most CHUNK bytes are answered at a time, whatever was asked: a player
+/// asking for `bytes=0-` and its full length must not read a 4 GB video into
+/// memory. It asks again for the rest, as with any partial answer.
 fn parse_range(header: &str, len: u64) -> Option<(u64, u64)> {
     let spec = header.trim().strip_prefix("bytes=")?;
     let (start, end) = spec.split(',').next()?.split_once('-')?;
     if start.trim().is_empty() {
         // The last N bytes.
         let n: u64 = end.trim().parse().ok()?;
-        return (n > 0 && len > 0).then(|| (len.saturating_sub(n), len - 1));
+        return (n > 0 && len > 0).then(|| (len.saturating_sub(n.min(CHUNK)), len - 1));
     }
     let start: u64 = start.trim().parse().ok()?;
     if start >= len {
         return None;
     }
+    let most = start.saturating_add(CHUNK).min(len) - 1;
     let end = match end.trim() {
-        "" => (start + CHUNK).min(len) - 1,
-        e => e.parse::<u64>().ok()?.min(len - 1),
+        "" => most,
+        e => e.parse::<u64>().ok()?.min(most),
     };
     (end >= start).then_some((start, end))
 }
@@ -987,6 +996,17 @@ mod tests {
         assert_eq!(tail.body, (95..100u8).collect::<Vec<_>>());
         assert_eq!(serve_file(&video, Some("bytes=500-")).status, 416);
         assert_eq!(serve_file(&video, None).status, 200);
+        // A long range is answered a chunk at a time, never the whole file.
+        let len = CHUNK * 3;
+        assert_eq!(
+            parse_range(&format!("bytes=0-{}", len - 1), len),
+            Some((0, CHUNK - 1))
+        );
+        assert_eq!(
+            parse_range(&format!("bytes=-{len}"), len),
+            Some((len - CHUNK, len - 1))
+        );
+        assert_eq!(parse_range("bytes=5-2", len), None);
 
         let image = dir.path().join("i.png");
         std::fs::write(&image, b"png").unwrap();

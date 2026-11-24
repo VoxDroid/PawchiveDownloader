@@ -1474,7 +1474,11 @@ impl Engine {
         };
         let part = part_path(&target);
         // Finished in an earlier session but not recorded before it ended.
-        if item.target.is_some() && target.exists() && !part.exists() {
+        // Not when the file there is the one being replaced (a re-download,
+        // or Overwrite): after a failed try that removed its part, the old
+        // file would count as the new one.
+        let replacing = item.force || options.conflict_action == ConflictAction::Overwrite;
+        if item.target.is_some() && !replacing && target.exists() && !part.exists() {
             let bytes = std::fs::metadata(&target).map(|m| m.len()).unwrap_or(0);
             return Ok(Outcome::Done { target, bytes });
         }
@@ -2209,7 +2213,11 @@ impl Engine {
                 if count == 0 {
                     return;
                 }
-                job.status = JobStatus::Queued;
+                // A paused job stays paused and a job still scanning keeps
+                // scanning; only a finished one is queued again.
+                if job.status.finished() {
+                    job.status = JobStatus::Queued;
+                }
                 job.finished_at = None;
                 job.error = None;
                 self.log.info(format!(
