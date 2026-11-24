@@ -1,11 +1,11 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import { fade } from 'svelte/transition';
   import { api } from '../../lib/api';
   import { mediaSrc } from '../../lib/media';
   import type { Gallery, MediaCreator, MediaFile, MediaPost } from '../../lib/types';
   import { pageUrls } from '../../lib/urls';
-  import { fmt, t } from '../../ui/state/app.svelte';
+  import { app, fmt, t } from '../../ui/state/app.svelte';
   import { describeError } from '../../ui/state/errors';
   import { go, openLink } from '../../ui/state/router.svelte';
   import { toast } from '../../ui/state/toasts.svelte';
@@ -67,6 +67,23 @@
     }
   }
   onMount(load);
+
+  // Files saved (or found already there) while the page is open show up by
+  // themselves: the page reads the library again when a download finishes.
+  const finished = $derived(
+    app.jobs
+      .filter((j) => j.status === 'done' || j.status === 'failed')
+      .map((j) => `${j.id}:${j.finishedAt ?? 0}`)
+      .join(','),
+  );
+  let seenFinished: string | null = null;
+  $effect(() => {
+    const now = finished;
+    untrack(() => {
+      if (seenFinished !== null && now !== seenFinished && !loading) void load();
+      seenFinished = now;
+    });
+  });
 
   const words = $derived(query.trim().toLowerCase().split(/\s+/).filter(Boolean));
   const matches = (post: MediaPost) => {

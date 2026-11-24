@@ -86,6 +86,14 @@ All notable changes to Pawchive Downloader. The format follows
 
 ### Fixed
 
+- **Files already in the folder were missing from the Library**: when a
+  download found a file already there that the app had no record of (after
+  clearing the history, say), it was skipped as already downloaded but not
+  recorded, so the Library stayed empty. The app now compares that file with
+  the post's: the same file is recorded and shows in the Library, a
+  different one that only shares the name is skipped and left alone. The
+  Library also reads the library again by itself when a download finishes,
+  instead of only on opening or Refresh.
 - Large images and videos in the viewer were cut off instead of fitting the
   window.
 - **Previews did not show**: the window's content security policy only let in

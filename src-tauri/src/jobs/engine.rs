@@ -1453,6 +1453,23 @@ impl Engine {
             }
         }
         let Some(target) = self.ensure_target(job_id, item, options) else {
+            // A file of that name is there already. When it is this very
+            // file (same content), the library knows it again, so it counts
+            // as downloaded and shows in the Library; a different file that
+            // only shares the name is left alone and not recorded.
+            if let Some(h) = hash.filter(|_| !item.fallback) {
+                let there = Path::new(&options.download_dir).join(&item.path);
+                if let Ok(found) = super::transfer::sha256_file(there.clone()).await {
+                    if found.eq_ignore_ascii_case(h) {
+                        let _ = self.store.record_file(
+                            h,
+                            &item.post.key(),
+                            &there.to_string_lossy(),
+                            now_ms(),
+                        );
+                    }
+                }
+            }
             return Ok(Outcome::Skipped(SkipReason::Exists));
         };
         let part = part_path(&target);
