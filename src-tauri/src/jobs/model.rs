@@ -285,6 +285,10 @@ pub struct Item {
     /// Passwords found in the post, for unpacking archives.
     #[serde(default)]
     pub passwords: Vec<String>,
+    /// Asked to download again although it was there already: neither the
+    /// library nor an existing file skips it, and the file is replaced.
+    #[serde(default)]
+    pub force: bool,
     #[serde(flatten)]
     pub kind: ItemKind,
 }
@@ -318,6 +322,9 @@ pub struct JobStats {
     pub done: u32,
     pub failed: u32,
     pub skipped: u32,
+    /// Skipped because they were downloaded before and are still there.
+    #[serde(default)]
+    pub already: u32,
     pub cancelled: u32,
     pub active: u32,
     pub bytes: u64,
@@ -488,7 +495,15 @@ pub fn compute_stats(items: &[Item]) -> JobStats {
         match item.status {
             ItemStatus::Done => s.done += 1,
             ItemStatus::Failed => s.failed += 1,
-            ItemStatus::Skipped => s.skipped += 1,
+            ItemStatus::Skipped => {
+                s.skipped += 1;
+                if matches!(
+                    item.skip_reason,
+                    Some(SkipReason::Duplicate | SkipReason::Exists)
+                ) {
+                    s.already += 1;
+                }
+            }
             ItemStatus::Cancelled => s.cancelled += 1,
             ItemStatus::Active => {
                 s.active += 1;

@@ -144,6 +144,20 @@ describe('JobCard', () => {
     expect(screen.queryByRole('button', { name: 'Pause' })).not.toBeInTheDocument();
   });
 
+  it('says when everything was already downloaded and can fetch it again', async () => {
+    const send = vi.fn(async () => null as never);
+    setBackend({ invoke: send, listen: async () => () => undefined });
+    const stats = { ...job().stats, total: 3, done: 0, failed: 0, skipped: 3, already: 3 };
+    render(JobCard, { job: job({ status: 'done', finishedAt: 10, stats }) });
+    expect(screen.getByText('3 already downloaded')).toBeInTheDocument();
+    expect(
+      screen.getByText('Nothing new: all 3 files are already in your download folder.'),
+    ).toBeInTheDocument();
+    expect(screen.queryByText('3 skipped')).not.toBeInTheDocument();
+    await fireEvent.click(screen.getByRole('button', { name: /Download again/ }));
+    expect(send).toHaveBeenCalledWith('job_action', { jobId: 'job-1', action: 'redownload' });
+  });
+
   it('shows scanning progress and friendly errors', () => {
     const empty = { ...job().stats, total: 0, done: 0, failed: 0, skipped: 0, active: 0 };
     render(JobCard, {

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import { fade } from 'svelte/transition';
   import { api } from '../../lib/api';
   import type { PageRef } from '../../lib/types';
@@ -17,13 +17,134 @@
   import { batch, clearRecent, loadRecent, type RecentLink } from './batch.svelte';
   import { mentionsSite } from '../../lib/urls';
 
+  let { active = true }: { active?: boolean } = $props();
+
   let input = $state(browse.input);
   type Current = PageRef | { kind: 'search'; query: string };
-  let current = $state<Current | null>(null);
+  /** One page opened in Browse. Earlier ones stay loaded underneath. */
+  interface View {
+    id: number;
+    current: Current;
+    input: string;
+    title: string;
+    scroll: number;
+  }
+  /** How many opened pages stay loaded for going back. */
+  const MAX_VIEWS = 8;
+  let views = $state<View[]>([]);
+  let nextId = 0;
+  const top = $derived(views.at(-1) ?? null);
+  const current = $derived(top?.current ?? null);
+  /** Pages left with Back, for going forward again. */
+  let ahead = $state<Array<{ current: Current; input: string; title: string }>>([]);
   let invalid = $state(false);
   let field = $state<HTMLInputElement>();
   let recent = $state<RecentLink[]>(loadRecent());
   const progress = $derived(overallProgress(app.jobs));
+
+  const scroller = () => field?.closest('main') ?? null;
+
+  function keyOf(c: Current): string {
+    switch (c.kind) {
+      case 'post':
+        return `post/${c.service}/${c.creatorId}/${c.postId}`;
+      case 'creator':
+        return `creator/${c.service}/${c.creatorId}/${c.query ?? ''}`;
+      case 'listing':
+        return `listing/${c.site ?? 'pawchive'}/${c.query ?? ''}`;
+      case 'search':
+        return `search/${c.query}`;
+      default:
+        return 'other';
+    }
+  }
+
+  function fallbackTitle(c: Current): string {
+    switch (c.kind) {
+      case 'post':
+        return t('browse.crumbPost');
+      case 'creator':
+        return t('browse.crumbCreator');
+      case 'listing':
+        return t('browse.recentPosts');
+      case 'search':
+        return c.query ? `"${c.query}"` : t('browse.findCreators');
+      default:
+        return '';
+    }
+  }
+
+  function scrollTo(y: number) {
+    void tick().then(() => {
+      const main = scroller();
+      if (main) main.scrollTop = y;
+    });
+  }
+
+  function keepScroll() {
+    const main = scroller();
+    if (top && main) top.scroll = main.scrollTop;
+  }
+
+  /** Shows a page: one already loaded comes back as it was, others load. */
+  function show(next: Current, text: string, title = '', fresh = true) {
+    const key = keyOf(next);
+    const at = views.findIndex((v) => keyOf(v.current) === key);
+    if (top && at === views.length - 1) {
+      top.input = text;
+      return;
+    }
+    keepScroll();
+    if (fresh) ahead = [];
+    if (at >= 0) {
+      // Opened before and still loaded: go back to it as it was.
+      const kept = views[at] as View;
+      views = views.slice(0, at + 1);
+      kept.input = text;
+      scrollTo(kept.scroll);
+      return;
+    }
+    const view: View = { id: nextId++, current: next, input: text, title, scroll: 0 };
+    views = [...views, view].slice(-MAX_VIEWS);
+    scrollTo(0);
+  }
+
+  function setTitle(id: number, title: string) {
+    const view = views.find((v) => v.id === id);
+    if (view) view.title = title;
+  }
+
+  /** Back to the page before, still loaded; from the first page, the start. */
+  function back() {
+    const leaving = views.at(-1);
+    if (!leaving) return;
+    ahead = [
+      { current: leaving.current, input: leaving.input, title: leaving.title },
+      ...ahead,
+    ].slice(0, MAX_VIEWS);
+    views = views.slice(0, -1);
+    const now = views.at(-1);
+    input = now?.input ?? '';
+    invalid = false;
+    if (now) scrollTo(now.scroll);
+    else {
+      recent = loadRecent();
+      scrollTo(0);
+    }
+  }
+
+  function forward() {
+    const [next, ...rest] = ahead;
+    if (!next) return;
+    ahead = rest;
+    input = next.input;
+    show(next.current, next.input, next.title, false);
+  }
+
+  /** Goes back to the page at `index` in the trail (-1 for the start). */
+  function backTo(index: number) {
+    while (views.length - 1 > index) back();
+  }
 
   // Only the newest lookup counts, so a slow one cannot replace what was
   // typed after it.
@@ -33,7 +154,7 @@
     const run = ++openRun;
     const value = text.trim();
     if (!value) {
-      current = null;
+      home();
       return;
     }
     const links = await api.parseLinks(value).catch(() => []);
@@ -51,12 +172,12 @@
         return;
       }
       invalid = false;
-      current = { kind: 'search', query: value };
+      show({ kind: 'search', query: value }, value);
       return;
     }
     invalid = false;
     input = links[0]?.url ?? value;
-    current = ref;
+    show(ref, input);
   }
 
   // Links opened from elsewhere (history, favorites, watchlist, drops).
@@ -84,15 +205,31 @@
   }
 
   function home() {
-    current = null;
+    if (views.length) {
+      keepScroll();
+      ahead = [
+        ...[...views]
+          .reverse()
+          .map((v) => ({ current: v.current, input: v.input, title: v.title })),
+        ...ahead,
+      ].slice(0, MAX_VIEWS);
+    }
+    views = [];
     input = '';
+    invalid = false;
     recent = loadRecent();
+    scrollTo(0);
   }
+
+  /** A dialog or the image viewer is open; keys and buttons belong to it. */
+  const modalOpen = () =>
+    [...document.querySelectorAll('[aria-modal="true"]')].some((el) => el.checkVisibility());
 
   onMount(() => {
     const focus = () => field?.focus();
     // Ctrl+V anywhere on the page (outside text fields) opens the pasted link.
     const onPaste = (event: ClipboardEvent) => {
+      if (!active) return;
       const target = event.target as HTMLElement | null;
       if (target?.closest('input, textarea, [contenteditable]')) return;
       const text = event.clipboardData?.getData('text')?.trim() ?? '';
@@ -101,12 +238,40 @@
       input = text;
       void open(text);
     };
+    // Alt+Left and Alt+Right, and the mouse's back and forward buttons, move
+    // through the pages opened here, like a web browser.
+    const onKey = (event: KeyboardEvent) => {
+      if (!active || !event.altKey || event.ctrlKey || event.metaKey || modalOpen()) return;
+      if (event.key === 'ArrowLeft' && views.length) {
+        event.preventDefault();
+        back();
+      } else if (event.key === 'ArrowRight' && ahead.length) {
+        event.preventDefault();
+        forward();
+      }
+    };
+    const onMouse = (event: MouseEvent) => {
+      if (!active || modalOpen()) return;
+      if (event.button === 3 && views.length) {
+        event.preventDefault();
+        if (event.type === 'mouseup') back();
+      } else if (event.button === 4 && ahead.length) {
+        event.preventDefault();
+        if (event.type === 'mouseup') forward();
+      }
+    };
     window.addEventListener('pdl:focus-link', focus);
     window.addEventListener('paste', onPaste);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('mousedown', onMouse);
+    window.addEventListener('mouseup', onMouse);
     if (!current) field?.focus();
     return () => {
       window.removeEventListener('pdl:focus-link', focus);
       window.removeEventListener('paste', onPaste);
+      window.removeEventListener('keydown', onKey);
+      window.removeEventListener('mousedown', onMouse);
+      window.removeEventListener('mouseup', onMouse);
     };
   });
 
@@ -123,7 +288,7 @@
     }}
   >
     {#if current}
-      <IconButton icon="chevronLeft" label={t('browse.home')} onclick={home} />
+      <IconButton icon="chevronLeft" label={t('browse.back')} onclick={back} />
     {:else}
       <span class="lead"><Icon name="link" /></span>
     {/if}
@@ -166,23 +331,65 @@
     </Button>
   </form>
 
-  {#if current?.kind === 'post'}
-    {#key `${current.service}/${current.creatorId}/${current.postId}`}
-      <PostView service={current.service} creatorId={current.creatorId} postId={current.postId} />
-    {/key}
-  {:else if current?.kind === 'creator'}
-    {#key `${current.service}/${current.creatorId}/${current.query}`}
-      <CreatorView
-        service={current.service}
-        creatorId={current.creatorId}
-        initialQuery={current.query}
-      />
-    {/key}
-  {:else if current?.kind === 'listing'}
-    <ListingView initialQuery={current.query} initialSite={current.site ?? 'pawchive'} />
-  {:else if current?.kind === 'search'}
-    <CreatorSearch query={current.query} />
-  {:else}
+  {#if views.length}
+    <nav class="trail" aria-label={t('browse.trail')}>
+      <button class="crumb home" onclick={home} data-tip={t('browse.home')}>
+        <Icon name="compass" />
+        <span>{t('browse.start')}</span>
+      </button>
+      {#each views as view, i (view.id)}
+        <Icon name="chevronRight" size={14} />
+        {#if i === views.length - 1}
+          <span class="crumb now truncate" aria-current="page">
+            {view.title || fallbackTitle(view.current)}
+          </span>
+        {:else}
+          <button class="crumb truncate" onclick={() => backTo(i)}>
+            {view.title || fallbackTitle(view.current)}
+          </button>
+        {/if}
+      {/each}
+      {#if ahead.length}
+        <span class="spacer"></span>
+        <IconButton
+          icon="chevronRight"
+          size="sm"
+          label={t('browse.forward', {
+            title: ahead[0]?.title || fallbackTitle(ahead[0]!.current),
+          })}
+          tipSide="left"
+          onclick={forward}
+        />
+      {/if}
+    </nav>
+  {/if}
+
+  {#each views as view, i (view.id)}
+    {@const c = view.current}
+    <div class="view" hidden={i !== views.length - 1}>
+      {#if c.kind === 'post'}
+        <PostView
+          service={c.service}
+          creatorId={c.creatorId}
+          postId={c.postId}
+          ontitle={(title) => setTitle(view.id, title)}
+        />
+      {:else if c.kind === 'creator'}
+        <CreatorView
+          service={c.service}
+          creatorId={c.creatorId}
+          initialQuery={c.query}
+          ontitle={(title) => setTitle(view.id, title)}
+        />
+      {:else if c.kind === 'listing'}
+        <ListingView initialQuery={c.query} initialSite={c.site ?? 'pawchive'} />
+      {:else if c.kind === 'search'}
+        <CreatorSearch query={c.query} />
+      {/if}
+    </div>
+  {/each}
+
+  {#if !views.length}
     <section class="welcome" in:fade={{ duration: 200 }}>
       <div class="hello">
         <Logo size={72} />
@@ -198,7 +405,7 @@
           <strong>{t('browse.recentPosts')}</strong>
           <span>{t('browse.recentPostsBody')}</span>
         </button>
-        <button class="card" onclick={() => (current = { kind: 'search', query: '' })}>
+        <button class="card" onclick={() => show({ kind: 'search', query: '' }, '')}>
           <Icon name="search" size={22} />
           <strong>{t('browse.findCreators')}</strong>
           <span>{t('browse.findCreatorsBody')}</span>
@@ -355,6 +562,54 @@
     align-self: stretch;
     margin: 4px 2px;
     background: var(--border);
+  }
+  /* Where you came from: each earlier page is still loaded, so going back
+     is instant and keeps your place. */
+  .trail {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    margin: -10px 2px -8px;
+    color: var(--text-faint);
+    font-size: var(--fs-sm);
+  }
+  .trail > :global(.icon) {
+    flex: none;
+  }
+  .crumb {
+    min-width: 0;
+    max-width: 260px;
+    flex: 0 1 auto;
+    padding: 3px 8px;
+    border: 0;
+    border-radius: var(--radius-sm);
+    background: none;
+    color: var(--text-dim);
+    font: inherit;
+    transition:
+      background-color var(--dur-fast) var(--ease),
+      color var(--dur-fast) var(--ease);
+  }
+  button.crumb:hover {
+    background: var(--bg-elev-2);
+    color: var(--text);
+  }
+  .crumb.home {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex: none;
+  }
+  .crumb.now {
+    color: var(--text);
+    font-weight: 600;
+  }
+  .trail .spacer {
+    flex: 1;
+  }
+  .view[hidden] {
+    display: none;
   }
   .welcome {
     display: grid;

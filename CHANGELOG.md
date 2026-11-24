@@ -6,6 +6,60 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- **Back and forward in Browse**: a creator, then a post, then Back returns
+  to the creator list exactly as it was, at the same spot, without loading it
+  again. A trail under the link bar shows where you came from (creator names
+  and post titles) and jumps back to any step; Alt+Left and Alt+Right and the
+  mouse's back and forward buttons work too. Up to eight pages stay loaded.
+- **Download again**: a download whose files were all there already says so
+  ("Nothing new: all 6 files are already in your download folder") and offers
+  to fetch them again, replacing them instead of adding numbered copies.
+  Job cards count "already downloaded" files apart from other skipped ones.
+- **Image viewer previews first**: the viewer shows the thumbnail at once and
+  swaps in the full image when it arrives. When a media server is down (as
+  Kemono's and Coomer's often are) the preview stays, with a note saying so,
+  instead of an endless spinner and then an error.
+
+### Changed
+
+- **Browse keeps its place**: going to Downloads, Settings or any other page
+  and back to Browse shows the same post or creator, scrolled where you left
+  it, instead of starting over.
+- **Pairing with the browser extension, redesigned**: Settings > Browser
+  extension now says plainly whether a browser is connected ("Connected to
+  Microsoft Edge", with a green light) and lists each paired browser by name
+  with Connected or when it was last seen. Pairing is three numbered steps
+  with a large code, a copy button and a countdown, and the page notices the
+  new browser by itself and confirms it. Codes can be cancelled or renewed.
+  Unpairing in the extension removes the browser here too.
+- **Existing files are skipped by default**: "If a file already exists" now
+  defaults to Skip instead of Keep both, so downloading a post again no longer
+  fills folders with `name (1).png` copies. Settings still on the old default
+  move over once; a choice you made yourself is kept. Skip never drops a
+  different file that only shares a name with another in the same download:
+  that one still gets a number.
+- The settings search box has room below it, so results no longer sit right
+  against it.
+
+### Fixed
+
+- **Previews did not show**: the window's content security policy only let in
+  images from `img.pawchive.pw`, so full-size images in the viewer
+  (`n1.pawchive.pw` and the other media servers) and every Kemono and Coomer
+  thumbnail, icon and banner were blocked. All three sites' hosts are allowed
+  now, and a test keeps every supported site in the policy.
+- **Deleted files were never downloaded again**: the library remembered every
+  file it had saved and skipped it forever, even after it was deleted from the
+  folder (the job then said "0 of 999 done" and the only way out was clearing
+  the history). Now a file counts as downloaded only while it is still where
+  it was saved; deleted or moved files are fetched again by themselves. The
+  library keeps its records, so a download drive that is only unplugged does
+  not lose them.
+- A tooltip could break the page for a moment when the element under it was
+  removed (Svelte "state_unsafe_mutation").
+
 ### Security
 
 - **Safer ZIP unpacking**: the ZIP library is updated from 2.6.1 to 9.7.3,

@@ -227,6 +227,7 @@ fn base_item(post: &Post, id: String, label: String, path: String, kind: ItemKin
         failed_at: None,
         auto_retries: 0,
         passwords: Vec::new(),
+        force: false,
         kind,
     }
 }
@@ -563,6 +564,7 @@ pub fn announcements_item(options: &JobOptions, creator: &CreatorInfo, now_ms: i
         failed_at: None,
         auto_retries: 0,
         passwords: Vec::new(),
+        force: false,
         kind: ItemKind::Announcements {
             name: creator.name.clone(),
         },

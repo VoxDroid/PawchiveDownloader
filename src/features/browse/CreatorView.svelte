@@ -23,9 +23,11 @@
     service: string;
     creatorId: string;
     initialQuery: string | null;
+    /** Called with the creator's name once it is known. */
+    ontitle?: (title: string) => void;
   }
 
-  let { service, creatorId, initialQuery }: Props = $props();
+  let { service, creatorId, initialQuery, ontitle }: Props = $props();
   const PAGE = 50;
 
   let view = $state<CreatorView | null>(null);
@@ -86,6 +88,7 @@
         kind: 'creator',
         at: Date.now(),
       });
+      ontitle?.(view.creator.name);
       await loadMore();
       // Other accounts of the same creator; quietly absent when unavailable.
       const forId = creatorId;

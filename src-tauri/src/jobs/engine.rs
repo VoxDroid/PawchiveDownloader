@@ -19,7 +19,7 @@ use crate::net::throttle::Throttle;
 use crate::pawchive::client::{ApiError, PawchiveClient};
 use crate::pawchive::relay::{find_relay, RelayIndex};
 use crate::pawchive::types::Post;
-use crate::settings::{ContentFormat, Settings};
+use crate::settings::{ConflictAction, ContentFormat, Settings};
 use crate::store::records::{FileCounts, HistoryEntry};
 use crate::store::Store;
 
@@ -130,6 +130,8 @@ pub enum JobAction {
     Resume,
     Cancel,
     Retry,
+    /// Downloads again the files skipped as already downloaded.
+    Redownload,
     Remove,
     Top,
     Up,
@@ -1367,9 +1369,12 @@ impl Engine {
         }
         let wanted = Path::new(&options.download_dir).join(&item.path);
         let reserved = state.reserved.clone();
-        let target = choose_target(&wanted, options.conflict_action, |p| {
-            reserved.contains(&fold(p))
-        })?;
+        let conflict = if item.force {
+            ConflictAction::Overwrite
+        } else {
+            options.conflict_action
+        };
+        let target = choose_target(&wanted, conflict, |p| reserved.contains(&fold(p)))?;
         state.reserved.insert(fold(&target));
         if let Some(i) = state
             .jobs
@@ -1437,7 +1442,7 @@ impl Engine {
         progress: &Arc<Progress>,
     ) -> Result<Outcome, FetchError> {
         // Another job may have saved the same file since this one was planned.
-        if options.skip_downloaded && !item.fallback {
+        if options.skip_downloaded && !item.fallback && !item.force {
             if let Some(h) = hash {
                 if !self.store.known_hashes(&[h.to_string()]).is_empty() {
                     if let Some(t) = &item.target {
@@ -2164,6 +2169,36 @@ impl Engine {
                     self.changed();
                     return;
                 }
+            }
+            JobAction::Redownload => {
+                let job = &mut state.jobs[index];
+                let mut count = 0;
+                for item in job.items.iter_mut().filter(|i| {
+                    i.status == ItemStatus::Skipped
+                        && matches!(
+                            i.skip_reason,
+                            Some(SkipReason::Duplicate | SkipReason::Exists)
+                        )
+                }) {
+                    item.status = ItemStatus::Pending;
+                    item.skip_reason = None;
+                    item.force = true;
+                    item.attempts = 0;
+                    item.error = None;
+                    item.not_before = None;
+                    item.target = None;
+                    count += 1;
+                }
+                if count == 0 {
+                    return;
+                }
+                job.status = JobStatus::Queued;
+                job.finished_at = None;
+                job.error = None;
+                self.log.info(format!(
+                    "Downloading {count} files of \"{}\" again",
+                    job.title
+                ));
             }
             JobAction::Remove => {
                 if let Some(c) = state.resolving.remove(job_id) {

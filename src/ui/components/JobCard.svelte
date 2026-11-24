@@ -68,6 +68,12 @@
       : 0,
   );
 
+  // Files skipped because they were downloaded before and are still there.
+  const already = $derived(s.already ?? 0);
+  const otherSkipped = $derived(Math.max(0, s.skipped - already));
+  // Nothing new came of it: say why, and offer to fetch them anyway.
+  const nothingNew = $derived(finished && already > 0 && s.done === 0 && s.failed === 0);
+
   async function act(action: JobAction) {
     try {
       await api.jobAction(job.id, action);
@@ -159,7 +165,10 @@
           {t('jobs.stillScanning', { posts: job.scan.posts })}
         </span>{/if}
       {#if s.failed}<span class="bad">{t('jobs.failed', { count: s.failed })}</span>{/if}
-      {#if s.skipped}<span>{t('jobs.skipped', { count: s.skipped })}</span>{/if}
+      {#if already}<span class="already" data-tip={t('jobs.alreadyHint')}>
+          {t('jobs.already', { count: already })}
+        </span>{/if}
+      {#if otherSkipped}<span>{t('jobs.skipped', { count: otherSkipped })}</span>{/if}
       {#if s.bytes > 0}<span>{fmt.bytes(s.bytes)}</span>{/if}
       {#if (job.status === 'running' || job.status === 'resolving') && job.speed > 0}<span
           class="speed"
@@ -169,6 +178,20 @@
       {#if eta > 0 && !compact}<span>{t('jobs.eta', { time: fmt.duration(eta) })}</span>{/if}
     {/if}
   </div>
+  {#if finished && already > 0 && !compact}
+    <div class="notice" class:quiet={!nothingNew}>
+      <Icon name="fileCheck" />
+      <span>
+        {nothingNew
+          ? t('jobs.nothingNew', { count: already })
+          : t('jobs.someAlready', { count: already })}
+      </span>
+      <button class="again" onclick={() => act('redownload')}>
+        <Icon name="retry" />
+        {t('jobs.downloadAgain')}
+      </button>
+    </div>
+  {/if}
   {#if job.error && job.error !== 'nothing-found'}
     <p class="error">{describeError(job.error)}</p>
   {:else if job.error === 'nothing-found'}
@@ -300,5 +323,54 @@
     gap: 2px;
     font-size: var(--fs-xs);
     color: var(--text-faint);
+  }
+  .already {
+    color: var(--success);
+  }
+  /* Why nothing (or little) was downloaded, with a way to fetch it anyway. */
+  .notice {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px 8px 12px;
+    border-radius: var(--radius-md);
+    border: 1px solid color-mix(in srgb, var(--success) 35%, var(--border));
+    background: color-mix(in srgb, var(--success) 8%, var(--bg-elev-2));
+    font-size: var(--fs-sm);
+  }
+  .notice > :global(.icon) {
+    flex: none;
+    color: var(--success);
+  }
+  .notice > span {
+    flex: 1;
+    min-width: 0;
+  }
+  .notice.quiet {
+    border-color: var(--border);
+    background: var(--bg-elev-2);
+    color: var(--text-dim);
+  }
+  .again {
+    flex: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    height: 28px;
+    padding: 0 10px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border-strong);
+    background: var(--bg-elev);
+    color: var(--text);
+    font: inherit;
+    font-size: var(--fs-xs);
+    font-weight: 600;
+    transition:
+      background-color var(--dur-fast) var(--ease),
+      border-color var(--dur-fast) var(--ease);
+  }
+  .again:hover {
+    background: var(--bg-elev-3);
+    border-color: color-mix(in srgb, var(--accent) 50%, var(--border-strong));
   }
 </style>

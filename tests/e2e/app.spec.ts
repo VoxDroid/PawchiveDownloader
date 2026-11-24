@@ -155,6 +155,36 @@ test('statistics list missing files and offer to fetch them again', async ({ pag
   await expect(page.getByRole('button', { name: 'Download them again' })).toBeVisible();
 });
 
+test('Back returns to the creator as it was, and Browse keeps its place', async ({ page }) => {
+  await openLink(page, CREATOR);
+  const shown = page.locator('.view:not([hidden])');
+  await expect(shown.locator('.row').first()).toBeVisible();
+  // Mark the loaded list, to tell it was kept rather than loaded again.
+  await shown.evaluate((el) => el.setAttribute('data-kept', 'yes'));
+  await shown.locator('.row').nth(1).dblclick();
+  await expect(page.locator('.view')).toHaveCount(2);
+  const trail = page.getByRole('navigation', { name: 'Pages opened in Browse' });
+  await expect(trail.locator('.now')).not.toHaveText('Post');
+
+  await page.keyboard.press('Alt+ArrowLeft');
+  await expect(page.locator('.view')).toHaveCount(1);
+  await expect(page.locator('.view[data-kept="yes"]')).toBeVisible();
+  await page.keyboard.press('Alt+ArrowRight');
+  await expect(page.locator('.view')).toHaveCount(2);
+
+  // Another page and back: the post is still open, the creator still kept.
+  await page.getByRole('link', { name: /^Settings/ }).click();
+  await expect(page.getByRole('heading', { level: 1, name: 'Settings' })).toBeVisible();
+  await page.getByRole('navigation').getByRole('link', { name: 'Browse', exact: true }).click();
+  await expect(page.locator('.view')).toHaveCount(2);
+  await page.getByRole('button', { name: 'Back (Alt+Left)' }).click();
+  await expect(page.locator('.view[data-kept="yes"]')).toBeVisible();
+  await trail.getByRole('button', { name: 'Start' }).click();
+  await expect(
+    page.getByRole('heading', { name: 'What would you like to download?' }),
+  ).toBeVisible();
+});
+
 test('images open in the viewer and can be selected there', async ({ page }) => {
   await openLink(page, `${CREATOR}/post/175580025`);
   await page.getByRole('button', { name: 'View' }).first().click();

@@ -172,7 +172,7 @@ impl Default for Settings {
             folder_template: DEFAULT_FOLDER_TEMPLATE.into(),
             file_template: DEFAULT_FILE_TEMPLATE.into(),
             archive_template: DEFAULT_ARCHIVE_TEMPLATE.into(),
-            conflict_action: ConflictAction::Uniquify,
+            conflict_action: ConflictAction::Skip,
             skip_downloaded: true,
             verify_hashes: true,
             preview_only: PreviewOnlyAction::Relay,
@@ -468,7 +468,7 @@ mod tests {
         assert_eq!(s.language, "ja");
         assert_eq!(s.accent, "#abcdef");
         assert_eq!(s.download_mode, DownloadMode::Zip);
-        assert_eq!(s.conflict_action, ConflictAction::Uniquify);
+        assert_eq!(s.conflict_action, ConflictAction::Skip);
         assert_eq!(s.folder_template, DEFAULT_FOLDER_TEMPLATE);
         assert_eq!(s.file_template, DEFAULT_FILE_TEMPLATE);
         assert!(!s.categories[&FileCategory::Video]);

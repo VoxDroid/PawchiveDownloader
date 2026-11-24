@@ -171,14 +171,21 @@ impl Store {
 
     // ------------------------------------------------------- known files
 
+    /// Which of these files were downloaded before and are still where they
+    /// were saved. A file deleted or moved since counts as not downloaded, so
+    /// it is fetched again; its record stays (a drive that is only unplugged
+    /// keeps its library) and is updated when the file is saved anew.
     pub fn known_hashes(&self, hashes: &[String]) -> HashSet<String> {
         let conn = self.conn.lock();
         let mut found = HashSet::new();
-        let Ok(mut stmt) = conn.prepare_cached("SELECT 1 FROM files WHERE hash = ?1") else {
+        let Ok(mut stmt) = conn.prepare_cached("SELECT path FROM files WHERE hash = ?1") else {
             return found;
         };
         for hash in hashes {
-            if stmt.exists([hash]).unwrap_or(false) {
+            let Ok(path) = stmt.query_row([hash], |r| r.get::<_, String>(0)) else {
+                continue;
+            };
+            if std::path::Path::new(&path).exists() {
                 found.insert(hash.clone());
             }
         }
@@ -432,12 +439,23 @@ mod tests {
     #[test]
     fn remembers_files_posts_and_kv() {
         let store = Store::in_memory();
-        store.record_file("h1", "p", "a/b.png", 1).unwrap();
+        let dir = tempfile::tempdir().unwrap();
+        let saved = dir.path().join("b.png");
+        std::fs::write(&saved, b"x").unwrap();
+        store
+            .record_file("h1", "p", &saved.to_string_lossy(), 1)
+            .unwrap();
         store.record_post("s:c:p", "Title", 1).unwrap();
         assert_eq!(
             store.known_hashes(&["h1".into(), "h2".into()]),
             ["h1".to_string()].into()
         );
+        // Deleted from disk: no longer counts, but the record stays.
+        std::fs::remove_file(&saved).unwrap();
+        assert!(store.known_hashes(&["h1".into()]).is_empty());
+        assert_eq!(store.counts().files, 1);
+        std::fs::write(&saved, b"x").unwrap();
+        assert_eq!(store.known_hashes(&["h1".into()]).len(), 1);
         assert_eq!(store.known_posts(&["s:c:p".into()]).len(), 1);
         store.set("answer", &42).unwrap();
         assert_eq!(store.get::<i32>("answer"), Some(42));

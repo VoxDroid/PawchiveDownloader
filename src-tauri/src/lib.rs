@@ -180,6 +180,7 @@ pub fn run() {
             commands::bridge_status,
             commands::check_media,
             commands::bridge_pair,
+            commands::bridge_cancel_pairing,
             commands::bridge_revoke,
             commands::import_backup,
             commands::set_when_done,

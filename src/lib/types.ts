@@ -246,7 +246,7 @@ export const DEFAULT_SETTINGS: Readonly<Settings> = Object.freeze({
   folderTemplate: '{site}/{creator} ({service})/{published:YYYY-MM-DD} {title} [{post_id}]',
   fileTemplate: '{index:2}_{filename}',
   archiveTemplate: '{creator} - {published:YYYY-MM-DD} {title} [{post_id}]',
-  conflictAction: 'uniquify',
+  conflictAction: 'skip',
   skipDownloaded: true,
   verifyHashes: true,
   previewOnly: 'relay',
@@ -307,7 +307,8 @@ export type JobStatus =
   'resolving' | 'queued' | 'running' | 'paused' | 'done' | 'failed' | 'cancelled';
 export type ItemStatus = 'pending' | 'active' | 'done' | 'failed' | 'skipped' | 'cancelled';
 export type SkipReason = 'duplicate' | 'preview-only' | 'no-relay' | 'exists' | 'empty';
-export type JobAction = 'pause' | 'resume' | 'cancel' | 'retry' | 'remove' | 'top' | 'up' | 'down';
+export type JobAction =
+  'pause' | 'resume' | 'cancel' | 'retry' | 'redownload' | 'remove' | 'top' | 'up' | 'down';
 
 export type WhenDone = 'nothing' | 'quit' | 'sleep' | 'shutdown';
 
@@ -399,6 +400,8 @@ export interface JobStats {
   done: number;
   failed: number;
   skipped: number;
+  /** Skipped because they were downloaded before and are still there. */
+  already?: number;
   cancelled: number;
   active: number;
   bytes: number;

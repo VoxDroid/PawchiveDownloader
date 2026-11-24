@@ -82,6 +82,38 @@
     document.title = `${t(`nav.${router.route}`)} - ${t('app.name')}`;
   });
 
+  // Browse stays alive while other pages are open, so coming back shows the
+  // same post or creator at the same spot instead of loading it again.
+  let scroller = $state<HTMLElement>();
+  let browsePage = $state<HTMLElement>();
+  let browseSeen = $state(router.route === 'browse');
+  let browseScroll = 0;
+  const onBrowse = $derived(router.route === 'browse');
+
+  function onscroll() {
+    if (onBrowse && scroller) browseScroll = scroller.scrollTop;
+  }
+
+  // Other pages start at the top, before they are drawn.
+  $effect.pre(() => {
+    if (!onBrowse && scroller) scroller.scrollTop = 0;
+  });
+  // Browse returns to where it was, once it is shown again.
+  $effect(() => {
+    if (!onBrowse) return;
+    browseSeen = true;
+    const page = browsePage;
+    if (!page || !scroller) return;
+    scroller.scrollTop = browseScroll;
+    page.animate(
+      [
+        { opacity: 0, transform: 'translateY(8px)' },
+        { opacity: 1, transform: 'none' },
+      ],
+      { duration: 240, easing: 'cubic-bezier(0.33, 1, 0.68, 1)' },
+    );
+  });
+
   function onkeydown(event: KeyboardEvent) {
     const mod = event.ctrlKey || event.metaKey;
     if (!mod || event.altKey) return;
@@ -255,38 +287,41 @@
     </nav>
 
     <main
-      class:flush={router.route === 'browse'}
-      style:--page-width={router.route === 'browse' ? '1240px' : '1040px'}
+      bind:this={scroller}
+      {onscroll}
+      class:flush={onBrowse}
+      style:--page-width={onBrowse ? '1240px' : '1040px'}
     >
       <QueueBanner />
-      {#key router.route}
-        <div
-          class="page"
-          class:wide={router.route === 'browse'}
-          in:fly={{ y: 8, duration: 240, easing: cubicOut }}
-        >
-          {#if router.route === 'browse'}
-            <BrowsePage />
-          {:else if router.route === 'downloads'}
-            <DownloadsPage />
-          {:else if router.route === 'history'}
-            <HistoryPage />
-          {:else if router.route === 'watchlist'}
-            <WatchlistPage />
-          {:else if router.route === 'favorites'}
-            <FavoritesPage />
-          {:else if router.route === 'stats'}
-            <StatsPage />
-          {:else if router.route === 'logs'}
-            <LogsPage />
-          {:else if router.route === 'settings'}
-            <SettingsPage />
-          {:else if router.route === 'help'}
-            <HelpPage />
-          {:else}
-            <AboutPage />
-          {/if}
+      {#if browseSeen}
+        <div class="page wide" bind:this={browsePage} hidden={!onBrowse}>
+          <BrowsePage active={onBrowse} />
         </div>
+      {/if}
+      {#key router.route}
+        {#if !onBrowse}
+          <div class="page" in:fly={{ y: 8, duration: 240, easing: cubicOut }}>
+            {#if router.route === 'downloads'}
+              <DownloadsPage />
+            {:else if router.route === 'history'}
+              <HistoryPage />
+            {:else if router.route === 'watchlist'}
+              <WatchlistPage />
+            {:else if router.route === 'favorites'}
+              <FavoritesPage />
+            {:else if router.route === 'stats'}
+              <StatsPage />
+            {:else if router.route === 'logs'}
+              <LogsPage />
+            {:else if router.route === 'settings'}
+              <SettingsPage />
+            {:else if router.route === 'help'}
+              <HelpPage />
+            {:else}
+              <AboutPage />
+            {/if}
+          </div>
+        {/if}
       {/key}
     </main>
 
