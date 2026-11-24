@@ -1,4 +1,5 @@
 import type { Backend } from './api';
+import pkg from '../../package.json';
 import {
   DEFAULT_SETTINGS,
   type Creator,
@@ -31,6 +32,8 @@ import {
 type Handler = (args: Record<string, unknown>) => unknown;
 
 const ORIGIN = 'https://pawchive.pw';
+/** The demo shows the app's real version (screenshots, the About page). */
+const VERSION = pkg.version;
 const HUES = [258, 205, 152, 32, 340, 188, 280, 12];
 
 function art(seed: number, label = ''): string {
@@ -508,7 +511,7 @@ export function createMockBackend(): Backend {
       id: 1,
       at: Date.now() - 120_000,
       level: 'info',
-      message: 'Pawchive Downloader 1.0.0 started',
+      message: `Pawchive Downloader ${VERSION} started`,
       detail: null,
     },
     {
@@ -562,12 +565,12 @@ export function createMockBackend(): Backend {
 
   const handlers: Record<string, Handler> = {
     app_info: () => ({
-      version: '1.0.0',
+      version: VERSION,
       platform: 'windows',
       arch: 'x86_64',
       dataDir: 'C:\\Users\\you\\AppData\\Roaming\\io.github.voxdroid.pawchivedownloader',
       logFile: null,
-      userAgent: 'PawchiveDownloader/1.0.0 (+mailto:izeno.contact@gmail.com)',
+      userAgent: `PawchiveDownloader/${VERSION} (+mailto:izeno.contact@gmail.com)`,
       args: [],
       channel: 'official',
       lastCrash: null,
@@ -943,8 +946,8 @@ export function createMockBackend(): Backend {
     write_text_file: () => undefined,
     ack_crash: () => undefined,
     check_updates: () => ({
-      current: '1.0.0',
-      latest: '1.0.0',
+      current: VERSION,
+      latest: VERSION,
       available: false,
       url: 'https://ko-fi.com/izeno',
       sourceUrl: 'https://github.com/VoxDroid/PawchiveDownloader',

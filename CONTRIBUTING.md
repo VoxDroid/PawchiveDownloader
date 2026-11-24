@@ -48,9 +48,11 @@ CI runs all of them on Windows, macOS and Linux.
   [docs/TRANSLATING.md](docs/TRANSLATING.md)). If you cannot translate a new
   string, add the English text to every source file and say so in the pull
   request.
-- Icons come from the bundled JetBrains Mono Nerd Font. To add one, add its
-  Nerd Font glyph name to `src/ui/icon-names.json` and run
-  `python scripts/subset-font.py <folder with the Nerd Font TTFs>`.
+- Icons come from the JetBrains Mono Nerd Font and are drawn as SVG outlines,
+  each centered on its shape. To add one, add its Nerd Font glyph name to
+  `src/ui/icon-names.json` and run
+  `python scripts/subset-font.py <folder with the Nerd Font TTFs>`, then
+  `python scripts/icon-paths.py <that folder>/JetBrainsMonoNerdFont-Regular.ttf`.
 - Commit messages are plain and descriptive: what changed and why, in the
   imperative ("Add a speed limit", not "added speed limit").
 

@@ -30,19 +30,19 @@ documentation does not mention it (it may still exist).
 ## At a glance
 
 Sizes are the Windows download of each project's latest release on
-GitHub, checked on 2026-11-19; stars show how many people follow each
-project there.
+GitHub, checked on 2026-11-19 (this app's on 2026-11-24, for 2.1.0); stars
+show how many people follow each project there.
 
 |                  | This app                                      | whyamihere773                       | KToolBox              | Yuvi9587                                  | gallery-dl            | kumono                |
 | ---------------- | --------------------------------------------- | ----------------------------------- | --------------------- | ----------------------------------------- | --------------------- | --------------------- |
 | Kind             | Desktop app                                   | Desktop app                         | CLI and web UI        | Desktop app                               | CLI                   | CLI                   |
-| Windows download | **6.4 MB** zip (16 MB exe)                    | 332 MB zip                          | 43 MB zip             | 15 MB exe + 120 MB `_internal`            | pip or standalone exe | 8 MB exe              |
+| Windows download | **5.5 MB** zip (18 MB exe)                    | 332 MB zip                          | 43 MB zip             | 15 MB exe + 120 MB `_internal`            | pip or standalone exe | 8 MB exe              |
 | Installers       | Setup, MSI, portable, DMG, AppImage, deb, rpm | Zip, tar.gz                         | Zip per system        | Exe and folder                            | pip, exe              | Single binary         |
 | Systems          | Windows, macOS (universal), Linux             | Windows, Linux                      | Windows, macOS, Linux | Windows                                   | Any with Python       | Windows, macOS, Linux |
 | Built with       | Rust and Svelte (Tauri)                       | Python and QML                      | Python and TypeScript | Python (PyQt5)                            | Python                | Rust                  |
 | Sites            | Pawchive, Kemono, Coomer                      | Pawchive, Kemono, Coomer and others | Pawchive              | Kemono, Coomer, Bunkr, Discord and others | Hundreds              | Kemono, Coomer        |
 | Latest release   | 2.1.0, 2026-11-24                             | 1.4.1, 2026-11-17                   | 1.0.0, 2026-08-23     | 2.0.0, 2026-11-12                         | 1.32.20, 2026-11-14   | 0.77.1, 2026-09-12    |
-| GitHub stars     | private                                       | 91                                  | 597                   | 675                                       | 20,562                | 71                    |
+| GitHub stars     | 7 (public since 2.0.0)                        | 91                                  | 597                   | 675                                       | 20,562                | 71                    |
 | License          | MIT (builds on Ko-fi)                         | not stated                          | BSD-3-Clause          | MIT                                       | GPL-2.0               | MIT-0                 |
 | Automated tests  | About 160 (Rust, unit, UI) on 3 systems       | -                                   | Yes                   | -                                         | Yes                   | -                     |
 
@@ -100,19 +100,20 @@ project there.
 
 ## Keeping up and looking back
 
-| Feature                                          | This app | whyamihere773 | KToolBox   | Yuvi9587          | gallery-dl        | kumono |
-| ------------------------------------------------ | -------- | ------------- | ---------- | ----------------- | ----------------- | ------ |
-| Watchlist with new-post badges and notifications | Yes      | Yes           | Sync plans | -                 | -                 | -      |
-| Download new posts automatically                 | Yes      | Yes           | Yes        | -                 | -                 | -      |
-| Per-creator folder, mode and filters             | Yes      | Yes           | Per plan   | -                 | -                 | -      |
-| Favorites with notes                             | Yes      | Partly        | Yes        | Account favorites | Account favorites | -      |
-| History with download again and CSV              | Yes      | Yes           | Yes        | Yes               | -                 | -      |
-| Statistics                                       | Yes      | Yes           | Overview   | -                 | -                 | -      |
-| Find deleted or moved files and get them back    | Yes      | Yes           | -          | -                 | -                 | -      |
-| Crash-safe queue                                 | Yes      | Yes           | Yes        | Partly            | -                 | -      |
-| Read markers on posts                            | **Yes**  | -             | -          | -                 | -                 | -      |
-| Portable mode, full backup and restore           | **Yes**  | -             | -          | -                 | -                 | -      |
-| Browser extension hands downloads to the app     | **Yes**  | -             | -          | -                 | -                 | -      |
+| Feature                                          | This app           | whyamihere773 | KToolBox   | Yuvi9587          | gallery-dl        | kumono |
+| ------------------------------------------------ | ------------------ | ------------- | ---------- | ----------------- | ----------------- | ------ |
+| Watchlist with new-post badges and notifications | Yes                | Yes           | Sync plans | -                 | -                 | -      |
+| Download new posts automatically                 | Yes                | Yes           | Yes        | -                 | -                 | -      |
+| Per-creator folder, mode and filters             | Yes                | Yes           | Per plan   | -                 | -                 | -      |
+| Favorites with notes                             | Yes                | Partly        | Yes        | Account favorites | Account favorites | -      |
+| History with download again and CSV              | Yes                | Yes           | Yes        | Yes               | -                 | -      |
+| Statistics                                       | Yes                | Yes           | Overview   | -                 | -                 | -      |
+| Offline gallery of everything downloaded         | **Yes**            | -             | -          | -                 | -                 | -      |
+| Find deleted or moved files and get them back    | Yes, by themselves | Yes           | -          | -                 | -                 | -      |
+| Crash-safe queue                                 | Yes                | Yes           | Yes        | Partly            | -                 | -      |
+| Read markers on posts                            | **Yes**            | -             | -          | -                 | -                 | -      |
+| Portable mode, full backup and restore           | **Yes**            | -             | -          | -                 | -                 | -      |
+| Browser extension hands downloads to the app     | **Yes**            | -             | -          | -                 | -                 | -      |
 
 ## The app itself
 
