@@ -6,6 +6,13 @@ All notable changes to Pawchive Downloader. The format follows
 
 ## [Unreleased]
 
+## [2.1.1] - 2026-11-25
+
+Security and reliability fixes from a full audit: the browser bridge can no
+longer be paired by guessing or write outside your download folder, a failed
+first watchlist check no longer floods you with "new" posts, and the Library
+viewer, imports, favorites and watchlist cards behave as they should.
+
 ### Security
 
 - **Pairing codes cannot be guessed**: five wrong codes withdraw the code on
@@ -61,7 +68,6 @@ All notable changes to Pawchive Downloader. The format follows
 - **"Last seen" for paired browsers is written at most every 30 seconds**,
   not on every call, and a browser removed in Settings cannot come back
   through a call that was running at the same time.
-
 - **Watchlist cards stay inside their border**: a creator with new posts no
   longer pushes the "new" badge and the download button past the edge of the
   card, and post dates show in full next to titles that are shortened.
@@ -401,7 +407,8 @@ The first version of the desktop app, a private test build.
   and component tests, Playwright interface tests; CI on Windows, macOS and
   Linux.
 
-[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/VoxDroid/PawchiveDownloader/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/VoxDroid/PawchiveDownloader/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/VoxDroid/PawchiveDownloader/compare/v2.0.0...v2.1.0
 [2.0.0]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.1.1...v2.0.0
 [1.1.1]: https://github.com/VoxDroid/PawchiveDownloader/compare/v1.1.0...v1.1.1

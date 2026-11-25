@@ -560,6 +560,8 @@
   "shortcut.batch": "Mettre de nombreux liens en file",
   "shortcut.pages": "Changer de page",
   "shortcut.settings": "Ouvrir les paramètres",
+  "shortcut.search": "Rechercher dans les paramètres (sur la page Paramètres)",
+  "shortcut.history": "Précédent et suivant dans Explorer",
   "shortcut.range": "Sélectionner une plage de fichiers ou de publications",
   "shortcut.openPost": "Ouvrir la publication sélectionnée",
   "about.tagline": "Téléchargez publications, pièces jointes et créateurs entiers depuis Pawchive. Le grand frère pour ordinateur de l'extension de navigateur.",

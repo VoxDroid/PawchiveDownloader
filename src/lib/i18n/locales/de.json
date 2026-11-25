@@ -563,6 +563,8 @@
   "shortcut.batch": "Viele Links einreihen",
   "shortcut.pages": "Seiten wechseln",
   "shortcut.settings": "Einstellungen öffnen",
+  "shortcut.search": "Einstellungen durchsuchen (auf der Einstellungsseite)",
+  "shortcut.history": "Zurück und vor in Durchsuchen",
   "shortcut.range": "Einen Bereich von Dateien oder Beiträgen wählen",
   "shortcut.openPost": "Den fokussierten Beitrag öffnen",
   "about.tagline": "Lade Beiträge, Anhänge und ganze Creator von Pawchive herunter. Das Desktop-Geschwister der Browser-Erweiterung.",

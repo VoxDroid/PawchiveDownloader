@@ -560,6 +560,8 @@
   "shortcut.batch": "Colocar vários links na fila",
   "shortcut.pages": "Trocar de página",
   "shortcut.settings": "Abrir Configurações",
+  "shortcut.search": "Pesquisar nas configurações (na página Configurações)",
+  "shortcut.history": "Voltar e avançar em Explorar",
   "shortcut.range": "Selecionar um intervalo de arquivos ou publicações",
   "shortcut.openPost": "Abrir a publicação em foco",
   "about.tagline": "Baixe publicações, anexos e criadores inteiros do Pawchive. O irmão de desktop da extensão do navegador.",

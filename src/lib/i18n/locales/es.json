@@ -560,6 +560,8 @@
   "shortcut.batch": "Poner muchos enlaces en cola",
   "shortcut.pages": "Cambiar de página",
   "shortcut.settings": "Abrir Ajustes",
+  "shortcut.search": "Buscar en los ajustes (en la página Ajustes)",
+  "shortcut.history": "Atrás y adelante en Explorar",
   "shortcut.range": "Seleccionar un rango de archivos o publicaciones",
   "shortcut.openPost": "Abrir la publicación enfocada",
   "about.tagline": "Descarga publicaciones, adjuntos y creadores completos de Pawchive. El hermano de escritorio de la extensión del navegador.",
