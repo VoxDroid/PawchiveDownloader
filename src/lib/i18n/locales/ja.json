@@ -517,6 +517,8 @@
   "shortcut.batch": "多数のリンクをキューに追加",
   "shortcut.pages": "ページを切り替え",
   "shortcut.settings": "設定を開く",
+  "shortcut.search": "設定を検索（設定ページで）",
+  "shortcut.history": "ブラウズで戻る・進む",
   "shortcut.range": "ファイルや投稿を範囲選択",
   "shortcut.openPost": "フォーカス中の投稿を開く",
   "about.tagline": "Pawchive から投稿、添付ファイル、クリエイター全体をダウンロード。ブラウザー拡張機能のデスクトップ版の兄弟です。",

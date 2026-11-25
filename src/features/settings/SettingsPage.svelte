@@ -239,6 +239,8 @@
     ['Ctrl+B', 'shortcut.sidebar'],
     ['Ctrl+1 ... Ctrl+9', 'shortcut.pages'],
     ['Ctrl+,', 'shortcut.settings'],
+    ['Ctrl+F', 'shortcut.search'],
+    ['Alt+Left / Right', 'shortcut.history'],
     ['Shift+Click', 'shortcut.range'],
     ['Enter', 'shortcut.openPost'],
   ] as const;

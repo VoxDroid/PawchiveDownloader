@@ -517,6 +517,8 @@
   "shortcut.batch": "여러 링크를 대기열에 추가",
   "shortcut.pages": "페이지 전환",
   "shortcut.settings": "설정 열기",
+  "shortcut.search": "설정 검색 (설정 페이지에서)",
+  "shortcut.history": "둘러보기에서 뒤로·앞으로",
   "shortcut.range": "파일이나 게시물 범위 선택",
   "shortcut.openPost": "선택한 게시물 열기",
   "about.tagline": "Pawchive에서 게시물, 첨부 파일, 크리에이터 전체를 다운로드합니다. 브라우저 확장 프로그램의 데스크톱 형제입니다.",

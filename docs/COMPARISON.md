@@ -7,7 +7,7 @@ what it deliberately leaves out.
 
 The tools:
 
-- **Pawchive Downloader** (this app, 2.1.0): desktop app for Windows, macOS
+- **Pawchive Downloader** (this app, 2.1.1): desktop app for Windows, macOS
   and Linux.
 - **[Pawchive-Downloader](https://github.com/whyamihere773/Pawchive-Downloader)**
   by whyamihere773: Python desktop app for Pawchive, Kemono, Coomer and
@@ -30,7 +30,7 @@ documentation does not mention it (it may still exist).
 ## At a glance
 
 Sizes are the Windows download of each project's latest release on
-GitHub, checked on 2026-11-19 (this app's on 2026-11-24, for 2.1.0); stars
+GitHub, checked on 2026-11-19 (this app's on 2026-11-25, for 2.1.1); stars
 show how many people follow each project there.
 
 |                  | This app                                      | whyamihere773                       | KToolBox              | Yuvi9587                                  | gallery-dl            | kumono                |
@@ -41,10 +41,10 @@ show how many people follow each project there.
 | Systems          | Windows, macOS (universal), Linux             | Windows, Linux                      | Windows, macOS, Linux | Windows                                   | Any with Python       | Windows, macOS, Linux |
 | Built with       | Rust and Svelte (Tauri)                       | Python and QML                      | Python and TypeScript | Python (PyQt5)                            | Python                | Rust                  |
 | Sites            | Pawchive, Kemono, Coomer                      | Pawchive, Kemono, Coomer and others | Pawchive              | Kemono, Coomer, Bunkr, Discord and others | Hundreds              | Kemono, Coomer        |
-| Latest release   | 2.1.0, 2026-11-24                             | 1.4.1, 2026-11-17                   | 1.0.0, 2026-08-23     | 2.0.0, 2026-11-12                         | 1.32.20, 2026-11-14   | 0.77.1, 2026-09-12    |
+| Latest release   | 2.1.1, 2026-11-25                             | 1.4.1, 2026-11-17                   | 1.0.0, 2026-08-23     | 2.0.0, 2026-11-12                         | 1.32.20, 2026-11-14   | 0.77.1, 2026-09-12    |
 | GitHub stars     | 7 (public since 2.0.0)                        | 91                                  | 597                   | 675                                       | 20,562                | 71                    |
 | License          | MIT (builds on Ko-fi)                         | not stated                          | BSD-3-Clause          | MIT                                       | GPL-2.0               | MIT-0                 |
-| Automated tests  | About 160 (Rust, unit, UI) on 3 systems       | -                                   | Yes                   | -                                         | Yes                   | -                     |
+| Automated tests  | About 190 (Rust, unit, UI) on 3 systems       | -                                   | Yes                   | -                                         | Yes                   | -                     |
 
 ## Getting posts
 

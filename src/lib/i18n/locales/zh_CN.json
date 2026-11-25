@@ -517,6 +517,8 @@
   "shortcut.batch": "批量加入队列",
   "shortcut.pages": "切换页面",
   "shortcut.settings": "打开设置",
+  "shortcut.search": "搜索设置（在设置页面）",
+  "shortcut.history": "在浏览中后退和前进",
   "shortcut.range": "选择一段文件或帖子",
   "shortcut.openPost": "打开当前聚焦的帖子",
   "about.tagline": "从 Pawchive 下载帖子、附件以及创作者的全部内容。它是浏览器扩展的桌面版兄弟。",

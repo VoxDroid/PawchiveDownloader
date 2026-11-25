@@ -563,6 +563,8 @@
   "shortcut.batch": "Queue many links",
   "shortcut.pages": "Switch pages",
   "shortcut.settings": "Open Settings",
+  "shortcut.search": "Search the settings (on the Settings page)",
+  "shortcut.history": "Back and forward in Browse",
   "shortcut.range": "Select a range of files or posts",
   "shortcut.openPost": "Open the focused post",
   "about.tagline": "Download posts, attachments and whole creators from Pawchive. The desktop sibling of the browser extension.",

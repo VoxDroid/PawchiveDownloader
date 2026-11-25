@@ -16,9 +16,14 @@ Linux) and talks to the core through typed commands and events.
                                              |     |-- jobs/transfer.rs  resumable fetches
                                              |     `-- jobs/archive.rs   ZIP64 writer
                                              |-- pawchive/        API client, normalizing, relay links
+                                             |-- hosts/           Mega, Drive, Dropbox, Pixeldrain, GoFile, MediaFire
                                              |-- net/             HTTP client, limiter, speed limit
                                              |-- naming/          templates, safe file names
                                              |-- store/           SQLite library
+                                             |-- gallery.rs       the Library and the pdl-media protocol
+                                             |-- library.rs       statistics, missing-file check
+                                             |-- bridge.rs        the browser extension's local server
+                                             |-- power.rs         keep awake, free space, sleep, shut down
                                              |-- watch.rs         watchlist scheduler
                                              `-- updates.rs       version check
 ```
@@ -89,12 +94,19 @@ time), never a path, so it can only hand out those files, and only images and
 videos.
 Videos are served in byte ranges (at most 4 MB per answer), so they start and
 seek without being read whole. Thumbnails are made on first request with the
-`image` crate, at most three at a time, and cached in `thumbs/`. The content
+`image` crate, by up to half the processor's cores at a time (two to six),
+and cached in `thumbs/`. The content
 security policy allows `pdl-media:` for `img-src` and `media-src`, next to the
 three sites' hosts; a test keeps every site in it.
 
 **`watch.rs`** checks followed creators on the interval from Settings; the
-first check of a creator only records a baseline.
+first good check of a creator only records a baseline (also after checks that
+failed, so an outage does not turn the whole first page into new posts).
+
+**`bridge.rs`** is the browser extension's server on `127.0.0.1`, off until
+turned on in Settings: extension origins and a loopback Host only, a pairing
+code that works once and is withdrawn after five wrong tries, hashed tokens,
+and downloads always into the folder from Settings. See [BRIDGE.md](BRIDGE.md).
 
 **`app.rs`** is the desktop shell: the tray menu, close-to-tray, notifications
 (translated into the nine languages on the Rust side), taskbar progress and a
